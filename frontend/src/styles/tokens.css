@@ -1,0 +1,55 @@
+/* Design tokens from DESIGN.md. Chrome stays neutral; colour is for data. */
+:root {
+  --canvas: #ffffff;
+  --canvas-subtle: #f8fafc;
+  --canvas-sunken: #f1f4f3;
+  --border: #e5e7eb;
+  --border-subtle: #f3f4f6;
+  --border-strong: #d1d5db;
+  --ink: #101c16;
+  --ink-hover: #22302a;
+  --text: #101c16;
+  --text-2: #5c6670;
+  --text-3: #737b82;
+  --text-disabled: #b4b8bc;
+  --on-ink: #ffffff;
+  --focus: #10b981;
+
+  --brand: #065f2c;
+  --brand-wash: #e5f4e9;
+
+  --sev-high: #b91c1c;
+  --sev-high-soft: #fceaea;
+  --sev-high-border: #f6c9c9;
+  --sev-medium: #8a5a00;
+  --sev-medium-soft: #fdf4e3;
+  --sev-medium-border: #f6dfae;
+  --sev-low: #5c6670;
+  --sev-low-soft: #f2f3f2;
+
+  --area: #1769aa;
+  --area-soft: #e7f2fd;
+
+  --ev-for: #1769aa;
+  --ev-against: #5c6670;
+  --ev-unknown: #b4b8bc;
+
+  --q-usable: #065f2c;
+  --q-partial: #8a5a00;
+  --q-cloudy: #737b82;
+  --q-none: #b4b8bc;
+
+  --r-xs: 4px;
+  --r-sm: 6px;
+  --r-md: 8px;
+  --r-lg: 12px;
+
+  --raised: 0 1px 2px rgba(16, 28, 22, 0.04), 0 2px 8px rgba(16, 28, 22, 0.04);
+  --overlay: 0 8px 28px rgba(16, 28, 22, 0.12);
+
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --fast: 120ms;
+  --base: 180ms;
+
+  --font: "Inter Variable", Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
