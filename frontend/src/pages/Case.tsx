@@ -19,7 +19,7 @@ function StageHead({ r }: { r: CaseResult }) {
   return (
     <header className="stage-head">
       <div className="sh-title">
-        <Link to="/" className="back"><ArrowLeft size={14} aria-hidden /> Inbox</Link>
+        <Link to="/cases" className="back"><ArrowLeft size={14} aria-hidden /> Cases</Link>
         <h1>{r.field.name}</h1>
         <p className="meta">
           {r.field.class_label}, {r.field.area_ha} ha. Alert raised {fmtDate(r.alert_date)}.
@@ -76,7 +76,7 @@ export default function CasePage() {
   const live = useMemo(() => (r && ready ? { ...r, evidence: inv.evidence } : r), [r, ready, inv.evidence]);
 
   if (inv.phase === "error" && !r) {
-    return <main className="page"><Link to="/" className="back"><ArrowLeft size={15} /> Inbox</Link><p className="form-error" role="alert">{inv.error}</p></main>;
+    return <main className="page"><Link to="/cases" className="back"><ArrowLeft size={15} /> Cases</Link><p className="form-error" role="alert">{inv.error}</p></main>;
   }
   if (!r || !live) return <main className="page"><div className="skeleton-rows" aria-busy="true">{[0, 1, 2].map((i) => <span key={i} />)}</div></main>;
 

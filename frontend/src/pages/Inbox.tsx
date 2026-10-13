@@ -94,19 +94,18 @@ function About({ p }: { p: Provenance }) {
       <h2 id="about-h">Where the data comes from</h2>
       <dl>
         <div><dt>Satellite imagery</dt><dd>Copernicus Sentinel-2 L2A at 10 m, read through Google Earth Engine. Clouds, shadow and cirrus are masked with Cloud Score+ (0.60) and the scene classification layer.</dd></div>
-        <div><dt>Field shapes</dt><dd>Predicted by the Fields of the World model (EfficientNet-B5, CC-BY) from two Sentinel-2 dates in 2025. A shape is a remote-sensing field unit, not a legal parcel.</dd></div>
+        <div><dt>Field shapes</dt><dd>{p.boundaries ?? "Fields of the World"}. A shape is a remote-sensing field unit, not a legal parcel.</dd></div>
         <div><dt>Cropland</dt><dd>ESA WorldCover 2021 keeps only cropland. The crop itself is not known; canopy is called perennial or seasonal from a year of NDVI.</dd></div>
         <div><dt>Weather</dt><dd>Open-Meteo archive (ERA5 and ERA5-Land reanalysis) for the area centre.</dd></div>
         <div><dt>Alerts</dt><dd>Any zone 0.10 NDVI or more below the field's own baseline on a clear pass in the last 21 days. Nothing is hand-picked.</dd></div>
-        <div><dt>Not verified yet</dt><dd>The harvest and pruning windows are placeholders until an agronomist confirms them. Each case says when it relies on one.</dd></div>
+        <div><dt>Not verified yet</dt><dd>Harvest and pruning windows are placeholders or inferred from last year's NDVI until an agronomist confirms them. Each case says when it relies on one.</dd></div>
       </dl>
-      {p.boundaries && <p className="muted small">{p.boundaries}</p>}
     </section>
   );
 }
 
 export default function Inbox() {
-  const [data, setData] = useState<{ banner: string; as_of: string; provenance: Provenance; cases: InboxRow[] } | null>(null);
+  const [data, setData] = useState<{ banner: string; as_of: string; area: string; provenance: Provenance; cases: InboxRow[] } | null>(null);
   const [error, setError] = useState("");
   const [view, setView] = useState<"list" | "map">("list");
 
@@ -114,7 +113,7 @@ export default function Inbox() {
     api.inbox().then(setData).catch((e) => setError(e.message));
   }, []);
 
-  if (error) return <main className="page"><p className="form-error" role="alert">Could not load the inbox: {error}. Is the API running on port 8000?</p></main>;
+  if (error) return <main className="page"><p className="form-error" role="alert">Could not load the cases: {error}</p></main>;
   if (!data) return <main className="page"><div className="skeleton-rows" aria-busy="true">{[0, 1, 2, 3].map((i) => <span key={i} />)}</div></main>;
 
   const by = (...o: string[]) => data.cases.filter((c) => o.includes(c.outcome));
@@ -128,9 +127,9 @@ export default function Inbox() {
     <main className="page">
       <header className="page-head">
         <div>
-          <h1>Inbox</h1>
+          <h1>Cases in {data.area}</h1>
           <p className="lede">
-            Fields near Niphad, Nashik that raised an alert in the 21 days to {fmtDate(data.as_of)}, ranked by severity and confidence.
+            Fields in your area that raised an alert in the 21 days to {fmtDate(data.as_of)}, ranked by severity and confidence.
           </p>
         </div>
         <dl className="tally">

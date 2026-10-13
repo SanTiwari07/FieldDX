@@ -173,6 +173,15 @@ export interface SeriesData {
   baseline: string;
 }
 
+export class ApiError extends Error {
+  constructor(message: string, public status: number) {
+    super(message);
+  }
+}
+
+/** Signed out, or no area yet: the app shell listens and moves the officer to the right step. */
+export const SESSION_EVENT = "fielddx:session";
+
 async function json<T>(res: Response): Promise<T> {
   if (!res.ok) {
     let detail = res.statusText;
@@ -181,14 +190,38 @@ async function json<T>(res: Response): Promise<T> {
     } catch {
       /* keep status text */
     }
-    throw new Error(detail);
+    if (res.status === 401 || (res.status === 409 && /area/i.test(detail))) {
+      window.dispatchEvent(new CustomEvent(SESSION_EVENT, { detail: res.status }));
+    }
+    throw new ApiError(detail, res.status);
   }
   return res.json();
 }
 
+const post = (url: string, body?: unknown) =>
+  fetch(url, {
+    method: "POST",
+    headers: body === undefined ? undefined : { "Content-Type": "application/json" },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+
 export const api = {
-  inbox: () => fetch("/api/cases").then((r) => json<{ banner: string; as_of: string; provenance: Provenance; cases: InboxRow[] }>(r)),
-  health: () => fetch("/api/health").then((r) => json<{ ok: boolean; fields: number; cases: number }>(r)),
+  me: () => fetch("/api/me").then((r) => json<Me>(r)),
+  register: (body: { name: string; username: string; pin: string }) => post("/api/auth/register", body).then((r) => json<Me>(r)),
+  login: (body: { username: string; pin: string }) => post("/api/auth/login", body).then((r) => json<Me>(r)),
+  demo: () => post("/api/auth/demo").then((r) => json<Me>(r)),
+  logout: () => post("/api/auth/logout").then((r) => json<{ ok: boolean }>(r)),
+  places: (q: string) => fetch(`/api/places?q=${encodeURIComponent(q)}`).then((r) => json<{ places: Place[] }>(r)),
+  fieldsSource: (country: string, subdivision: string) =>
+    fetch(`/api/places/fields-source?country=${encodeURIComponent(country)}&subdivision=${encodeURIComponent(subdivision)}`)
+      .then((r) => json<FieldsSource>(r)),
+  areas: () => fetch("/api/areas").then((r) => json<{ areas: AreaSummary[] }>(r)),
+  createArea: (body: NewArea) => post("/api/areas", body).then((r) => json<Me>(r)),
+  joinArea: (area_id: string | null) => post("/api/me/area", { area_id }).then((r) => json<Me>(r)),
+  build: () => fetch("/api/area/build").then((r) => json<{ area: AreaSummary; build: BuildState }>(r)),
+  retryBuild: () => post("/api/area/retry").then((r) => json<{ area: AreaSummary; build: BuildState }>(r)),
+  home: () => fetch("/api/home").then((r) => json<HomeData>(r)),
+  inbox: () => fetch("/api/cases").then((r) => json<{ banner: string; as_of: string; area: string; provenance: Provenance; cases: InboxRow[] }>(r)),
   fieldsGeoJson: () => fetch("/api/fields.geojson").then((r) => json<FieldsGeoJson>(r)),
   getCase: (id: string) => fetch(`/api/cases/${id}`).then((r) => json<CaseResult>(r)),
   map: (id: string) => fetch(`/api/cases/${id}/map`).then((r) => json<MapData>(r)),
@@ -199,7 +232,7 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     }).then((r) => json<CaseResult>(r)),
-  reset: () => fetch("/api/admin/reset", { method: "POST" }).then((r) => json<{ ok: boolean }>(r)),
+  reset: () => post("/api/admin/reset").then((r) => json<{ ok: boolean }>(r)),
   raster: (id: string, scene?: string) =>
     fetch(`/api/cases/${id}/raster${scene ? `?scene=${scene}` : ""}`).then((r) => json<RasterData>(r)),
 };
@@ -228,9 +261,113 @@ export interface Provenance {
 
 export interface FieldsGeoJson {
   type: "FeatureCollection";
+  area?: { geometry: GeoPolygon | null; bbox: number[] | null };
   features: {
     type: "Feature";
     geometry: { type: "Polygon"; coordinates: [number, number][][] };
     properties: { id: string; name: string; class: string; area_ha: number; case_outcome: Outcome | null };
   }[];
+}
+
+export type GeoPolygon = { type: "Polygon"; coordinates: number[][][] } | { type: "MultiPolygon"; coordinates: number[][][][] };
+
+export interface Officer {
+  name: string;
+  username: string;
+  demo: boolean;
+}
+
+export type BuildStatus = "ready" | "queued" | "building" | "failed" | "interrupted";
+
+export interface AreaSummary {
+  id: string;
+  name: string;
+  region: string;
+  bbox: number[];
+  center: [number, number];
+  mode?: "draw" | "coords" | "pick";
+  field_source?: "ftw_global" | "ftw_model";
+  km2?: number;
+  status: BuildStatus;
+  geometry: GeoPolygon | null;
+  boundary: GeoPolygon | null;
+  fields?: number;
+  as_of?: string;
+  created_at?: string;
+  built_at?: string;
+}
+
+export interface Me {
+  officer: Officer;
+  area: AreaSummary | null;
+}
+
+export interface Place {
+  id: string;
+  name: string;
+  kind: string;
+  context: string;
+  center: [number, number];
+  bounds: [[number, number], [number, number]];
+  boundary: GeoPolygon | null;
+  country: string;
+  subdivision: string;
+}
+
+export interface Partition {
+  code: string;
+  country: string;
+  parquet: string;
+  pmtiles: string;
+  layers: string[];
+}
+
+export interface FieldsSource {
+  partition: Partition | null;
+  model_available: boolean;
+  max_km2: number;
+}
+
+export interface NewArea {
+  name: string;
+  region: string;
+  geometry: GeoPolygon;
+  mode: "draw" | "coords" | "pick";
+  field_source: "ftw_global" | "ftw_model";
+  boundary: GeoPolygon | null;
+  partition: { code: string } | null;
+  picked_points?: [number, number][];
+}
+
+export interface BuildStep {
+  id: string;
+  label: string;
+  state: "queued" | "running" | "done" | "failed";
+  detail: string;
+  progress: number | null;
+  started_at?: string;
+  ended_at?: string;
+}
+
+export interface BuildState {
+  status: BuildStatus;
+  steps?: BuildStep[];
+  error?: string | null;
+  retryable?: boolean;
+  started_at?: string;
+  ended_at?: string;
+  queue_position?: number | null;
+}
+
+export interface HomeData {
+  area: AreaSummary;
+  officer: { name: string };
+  as_of: string;
+  last_pass: string | null;
+  fields: number;
+  alerts: number;
+  counts: { visit: number; watch: number; area_alert: number; dismissed: number; resolved: number };
+  top: InboxRow[];
+  detector: string;
+  provenance: Provenance;
 }

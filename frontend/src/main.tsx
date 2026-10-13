@@ -5,12 +5,16 @@ import "@fontsource-variable/inter";
 import "./styles/tokens.css";
 import "./styles/app.css";
 import "./styles/workspace.css";
+import "./styles/flow.css";
 import App from "./App";
+import { SessionProvider } from "./session";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <BrowserRouter>
-      <App />
+      <SessionProvider>
+        <App />
+      </SessionProvider>
     </BrowserRouter>
   </React.StrictMode>,
 );

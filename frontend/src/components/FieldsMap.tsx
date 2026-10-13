@@ -58,19 +58,29 @@ export default function FieldsMap({ fieldId }: { fieldId?: string }) {
   const [gj, setGj] = useState<FieldsGeoJson | null>(null);
   const nav = useNavigate();
   useEffect(() => { api.fieldsGeoJson().then(setGj).catch(() => undefined); }, []);
+  const outline = useMemo(() => {
+    const g = gj?.area?.geometry;
+    if (!g) return [];
+    const rings = g.type === "Polygon" ? [g.coordinates[0]] : g.coordinates.map((p) => p[0]);
+    return rings.map((r) => r.map(([lng, lat]) => [lat, lng] as [number, number]));
+  }, [gj]);
   const pts = useMemo(
-    () => (gj ? gj.features.flatMap((f) => f.geometry.coordinates[0].map(([lng, lat]) => [lat, lng] as [number, number])) : []),
-    [gj],
+    () => (gj ? [...gj.features.flatMap((f) => f.geometry.coordinates[0].map(([lng, lat]) => [lat, lng] as [number, number])), ...outline.flat()] : []),
+    [gj, outline],
   );
   if (!gj) return <div className="fieldsmap skeleton" aria-busy="true" />;
   const used = Array.from(new Set(gj.features.map((f) => f.properties.case_outcome ?? "none")));
   return (
     <figure className="fieldsmap-wrap">
       <div className="fieldsmap">
-        <MapContainer center={[20.077, 74.115]} zoom={13} scrollWheelZoom className="map" aria-label="Map of the monitored fields, coloured by case outcome">
+        <MapContainer center={pts[0] ?? [20.5, 78.9]} zoom={13} scrollWheelZoom className="map" aria-label="Map of the monitored fields, coloured by case outcome">
           <TileLayer attribution="Imagery &copy; Esri, Maxar, Earthstar Geographics"
             url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}" maxNativeZoom={18} maxZoom={19} />
           <Fit pts={pts} />
+          {outline.map((r, i) => (
+            <Polygon key={`area-${i}`} positions={r} interactive={false}
+              pathOptions={{ color: "#ffffff", weight: 2, dashArray: "6 6", fill: false, opacity: 0.9 }} />
+          ))}
           {gj.features.map((f) => {
             const o = (f.properties.case_outcome ?? "none") as Outcome | "none";
             const st = STYLE[o];
@@ -92,7 +102,7 @@ export default function FieldsMap({ fieldId }: { fieldId?: string }) {
         {used.map((k) => (
           <span key={k}><i style={{ background: STYLE[k].fill, borderColor: STYLE[k].color }} /> {STYLE[k].label}</span>
         ))}
-        <span className="muted">Zoom in to see the real field shapes. Shapes: Fields of the World model, 2025. Imagery: Esri.</span>
+        <span className="muted">Zoom in to see the real field shapes. Dashed line: your area. Shapes: Fields of the World. Imagery: Esri.</span>
       </figcaption>
     </figure>
   );
