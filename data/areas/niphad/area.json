@@ -1,0 +1,10 @@
+{
+ "id": "niphad",
+ "name": "Niphad",
+ "region": "Nashik, Maharashtra, India",
+ "bbox": [74.07, 20.04, 74.16, 20.12],
+ "center": [20.08, 74.115],
+ "status": "ready",
+ "created_by": null,
+ "built_at": "2026-10-13T19:40:00"
+}
