@@ -17,7 +17,7 @@ Zones follow idea.md section 4.2: the analysis area is the shape shrunk 10 m (dr
 pixels), the interior is shrunk a further 20 m split into four quadrants, the edge ring between them is
 split into N, E, S, W, and the unshrunk 20 m ring (raw_edge_*) exists only for the boundary check.
 
-Run:  python scripts/build_dataset.py
+Run:  python scripts/build_dataset.py [--s2 data/raw/s2] [--fields data/raw/ftw_b5/polygons.parquet]
 """
 from __future__ import annotations
 
@@ -62,8 +62,8 @@ def quadrant(dx: float, dy: float) -> str:
     return ("n" if dy >= 0 else "s") + ("e" if dx >= 0 else "w")
 
 
-def load_polygons(grid):
-    g = gpd.read_parquet(RAW / "ftw_b5" / "polygons.parquet").to_crs(grid["epsg"])
+def load_polygons(grid, path):
+    g = gpd.read_parquet(path).to_crs(grid["epsg"])
     return g.reset_index(drop=True)
 
 
@@ -161,11 +161,17 @@ def zone_polygons(poly, grid_info, grid, to_ll):
 
 
 def main():
-    grid = json.loads((RAW / "s2" / "grid.json").read_text(encoding="utf-8"))
+    import argparse
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--s2", default=str(RAW / "s2"), help="folder written by export_s2.py")
+    ap.add_argument("--fields", default=str(RAW / "ftw_b5" / "polygons.parquet"), help="FTW polygons.parquet")
+    a = ap.parse_args()
+    S2 = Path(a.s2)
+    grid = json.loads((S2 / "grid.json").read_text(encoding="utf-8"))
     to_ll = pyproj.Transformer.from_crs(grid["epsg"], "EPSG:4326", always_xy=True).transform
-    wc = read_band(RAW / "s2" / "worldcover.tif", 1).astype(int)
+    wc = read_band(S2 / "worldcover.tif", 1).astype(int)
 
-    g = load_polygons(grid)
+    g = load_polygons(grid, a.fields)
     print(f"{len(g)} FTW polygons", file=sys.stderr)
     picked = select_fields(g, grid, wc)
     print(f"{len(picked)} pass area, shape, cropland and edge filters", file=sys.stderr)
@@ -189,11 +195,11 @@ def main():
         f["id"] = f"F{n:03d}"
 
     # ---- read every scene once, cut out every field
-    dates = json.loads((RAW / "s2" / "dates.json").read_text(encoding="utf-8"))
+    dates = json.loads((S2 / "dates.json").read_text(encoding="utf-8"))
     series = {f["id"]: {} for f in fields}
     aoi_quality = {}
     for d in dates:
-        with rasterio.open(RAW / "s2" / f"{d}.tif") as ds:
+        with rasterio.open(S2 / f"{d}.tif") as ds:
             ndvi, scl, cs = ds.read(1), ds.read(2), ds.read(3)
         have = scl > -9000
         aoi_quality[d] = {"data": float(have.mean())}

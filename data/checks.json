@@ -116,6 +116,35 @@
           ]
         }
       }
+    },
+    {
+      "id": "water_look",
+      "label": "Look for standing water and check how wet the soil is",
+      "short": "Standing water",
+      "cost_min": 2,
+      "applies_when": "always",
+      "outcomes": {
+        "standing": {
+          "label": "Standing water",
+          "then": "points to flooding or waterlogging (irrigation timing or drainage)",
+          "supports": [
+            "H10"
+          ],
+          "against": [
+            "H7",
+            "H8",
+            "H9"
+          ]
+        },
+        "none": {
+          "label": "No standing water",
+          "then": "rules out ponding; look at the crop itself",
+          "supports": [],
+          "against": [
+            "H10"
+          ]
+        }
+      }
     }
   ],
   "visit_checklist": [

@@ -68,10 +68,10 @@ All steps need network access; Earth Engine needs `earthengine authenticate` onc
 
 ```bash
 # 1. real field boundaries (Fields of the World model, run in its own environment)
-python scripts/ftw_fields.py --bbox 74.09 20.055 74.14 20.10 --year 2025
+python scripts/ftw_fields.py --bbox 74.07 20.04 74.16 20.12 --year 2025
 
 # 2. real Sentinel-2 pixels, Cloud Score+ and SCL, plus WorldCover, on a 10 m UTM grid
-python scripts/export_s2.py --bbox 74.09 20.055 74.14 20.10 --start 2025-10-01 --end 2026-10-13 --out data/raw/s2
+python scripts/export_s2.py --bbox 74.07 20.04 74.16 20.12 --start 2025-10-01 --end 2026-10-13 --out data/raw/s2
 
 # 3. real weather
 python scripts/fetch_weather.py --lat 20.0775 --lon 74.115 --start 2026-06-01 --end 2026-10-12 --out data/weather/niphad.json

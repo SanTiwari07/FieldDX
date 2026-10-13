@@ -2,61 +2,151 @@
  "as_of": "2026-10-10",
  "banner": "Real data: Sentinel-2 imagery via Earth Engine with Cloud Score+ masking, field shapes from the Fields of the World model, weather from Open-Meteo.",
  "detector": "A zone at least 0.10 NDVI below the field's own baseline on any clear or partly clear pass in the last 21 days.",
- "fields_monitored": 50,
+ "fields_monitored": 150,
  "cases": [
   {
-   "id": "F039",
-   "field_id": "F039",
+   "id": "F010",
+   "field_id": "F010",
    "alert_date": "2026-09-20"
   },
   {
-   "id": "F040",
-   "field_id": "F040",
+   "id": "F019",
+   "field_id": "F019",
    "alert_date": "2026-09-20"
   },
   {
-   "id": "F043",
-   "field_id": "F043",
+   "id": "F020",
+   "field_id": "F020",
    "alert_date": "2026-09-20"
   },
   {
-   "id": "F006",
-   "field_id": "F006",
-   "alert_date": "2026-10-02"
+   "id": "F024",
+   "field_id": "F024",
+   "alert_date": "2026-09-20"
   },
   {
-   "id": "F007",
-   "field_id": "F007",
-   "alert_date": "2026-10-02"
-  },
-  {
-   "id": "F014",
-   "field_id": "F014",
-   "alert_date": "2026-10-02"
-  },
-  {
-   "id": "F027",
-   "field_id": "F027",
-   "alert_date": "2026-10-02"
-  },
-  {
-   "id": "F036",
-   "field_id": "F036",
-   "alert_date": "2026-10-02"
-  },
-  {
-   "id": "F038",
-   "field_id": "F038",
-   "alert_date": "2026-10-02"
+   "id": "F025",
+   "field_id": "F025",
+   "alert_date": "2026-09-20"
   },
   {
    "id": "F044",
    "field_id": "F044",
+   "alert_date": "2026-09-20"
+  },
+  {
+   "id": "F045",
+   "field_id": "F045",
+   "alert_date": "2026-09-20"
+  },
+  {
+   "id": "F062",
+   "field_id": "F062",
+   "alert_date": "2026-09-20"
+  },
+  {
+   "id": "F094",
+   "field_id": "F094",
+   "alert_date": "2026-09-20"
+  },
+  {
+   "id": "F103",
+   "field_id": "F103",
+   "alert_date": "2026-09-20"
+  },
+  {
+   "id": "F104",
+   "field_id": "F104",
+   "alert_date": "2026-09-20"
+  },
+  {
+   "id": "F106",
+   "field_id": "F106",
+   "alert_date": "2026-09-20"
+  },
+  {
+   "id": "F016",
+   "field_id": "F016",
    "alert_date": "2026-10-02"
   },
   {
-   "id": "F048",
-   "field_id": "F048",
+   "id": "F041",
+   "field_id": "F041",
+   "alert_date": "2026-10-02"
+  },
+  {
+   "id": "F042",
+   "field_id": "F042",
+   "alert_date": "2026-10-02"
+  },
+  {
+   "id": "F050",
+   "field_id": "F050",
+   "alert_date": "2026-10-02"
+  },
+  {
+   "id": "F067",
+   "field_id": "F067",
+   "alert_date": "2026-10-02"
+  },
+  {
+   "id": "F076",
+   "field_id": "F076",
+   "alert_date": "2026-10-02"
+  },
+  {
+   "id": "F090",
+   "field_id": "F090",
+   "alert_date": "2026-10-02"
+  },
+  {
+   "id": "F092",
+   "field_id": "F092",
+   "alert_date": "2026-10-02"
+  },
+  {
+   "id": "F095",
+   "field_id": "F095",
+   "alert_date": "2026-10-02"
+  },
+  {
+   "id": "F100",
+   "field_id": "F100",
+   "alert_date": "2026-10-02"
+  },
+  {
+   "id": "F109",
+   "field_id": "F109",
+   "alert_date": "2026-10-02"
+  },
+  {
+   "id": "F120",
+   "field_id": "F120",
+   "alert_date": "2026-10-02"
+  },
+  {
+   "id": "F121",
+   "field_id": "F121",
+   "alert_date": "2026-10-02"
+  },
+  {
+   "id": "F122",
+   "field_id": "F122",
+   "alert_date": "2026-10-02"
+  },
+  {
+   "id": "F135",
+   "field_id": "F135",
+   "alert_date": "2026-10-02"
+  },
+  {
+   "id": "F143",
+   "field_id": "F143",
+   "alert_date": "2026-10-02"
+  },
+  {
+   "id": "F146",
+   "field_id": "F146",
    "alert_date": "2026-10-02"
   },
   {
@@ -65,49 +155,54 @@
    "alert_date": "2026-10-05"
   },
   {
-   "id": "F010",
-   "field_id": "F010",
+   "id": "F022",
+   "field_id": "F022",
    "alert_date": "2026-10-05"
   },
   {
-   "id": "F019",
-   "field_id": "F019",
+   "id": "F057",
+   "field_id": "F057",
    "alert_date": "2026-10-05"
   },
   {
-   "id": "F001",
-   "field_id": "F001",
-   "alert_date": "2026-10-10"
+   "id": "F061",
+   "field_id": "F061",
+   "alert_date": "2026-10-05"
   },
   {
-   "id": "F003",
-   "field_id": "F003",
-   "alert_date": "2026-10-10"
+   "id": "F064",
+   "field_id": "F064",
+   "alert_date": "2026-10-05"
   },
   {
-   "id": "F005",
-   "field_id": "F005",
-   "alert_date": "2026-10-10"
+   "id": "F065",
+   "field_id": "F065",
+   "alert_date": "2026-10-05"
   },
   {
-   "id": "F011",
-   "field_id": "F011",
-   "alert_date": "2026-10-10"
+   "id": "F071",
+   "field_id": "F071",
+   "alert_date": "2026-10-05"
   },
   {
-   "id": "F013",
-   "field_id": "F013",
-   "alert_date": "2026-10-10"
+   "id": "F107",
+   "field_id": "F107",
+   "alert_date": "2026-10-05"
   },
   {
-   "id": "F015",
-   "field_id": "F015",
-   "alert_date": "2026-10-10"
+   "id": "F126",
+   "field_id": "F126",
+   "alert_date": "2026-10-05"
   },
   {
-   "id": "F017",
-   "field_id": "F017",
-   "alert_date": "2026-10-10"
+   "id": "F128",
+   "field_id": "F128",
+   "alert_date": "2026-10-05"
+  },
+  {
+   "id": "F139",
+   "field_id": "F139",
+   "alert_date": "2026-10-05"
   },
   {
    "id": "F018",
@@ -120,28 +215,133 @@
    "alert_date": "2026-10-10"
   },
   {
-   "id": "F025",
-   "field_id": "F025",
+   "id": "F026",
+   "field_id": "F026",
    "alert_date": "2026-10-10"
   },
   {
-   "id": "F041",
-   "field_id": "F041",
+   "id": "F027",
+   "field_id": "F027",
    "alert_date": "2026-10-10"
   },
   {
-   "id": "F046",
-   "field_id": "F046",
+   "id": "F028",
+   "field_id": "F028",
    "alert_date": "2026-10-10"
   },
   {
-   "id": "F047",
-   "field_id": "F047",
+   "id": "F031",
+   "field_id": "F031",
    "alert_date": "2026-10-10"
   },
   {
-   "id": "F050",
-   "field_id": "F050",
+   "id": "F034",
+   "field_id": "F034",
+   "alert_date": "2026-10-10"
+  },
+  {
+   "id": "F037",
+   "field_id": "F037",
+   "alert_date": "2026-10-10"
+  },
+  {
+   "id": "F038",
+   "field_id": "F038",
+   "alert_date": "2026-10-10"
+  },
+  {
+   "id": "F039",
+   "field_id": "F039",
+   "alert_date": "2026-10-10"
+  },
+  {
+   "id": "F040",
+   "field_id": "F040",
+   "alert_date": "2026-10-10"
+  },
+  {
+   "id": "F051",
+   "field_id": "F051",
+   "alert_date": "2026-10-10"
+  },
+  {
+   "id": "F055",
+   "field_id": "F055",
+   "alert_date": "2026-10-10"
+  },
+  {
+   "id": "F058",
+   "field_id": "F058",
+   "alert_date": "2026-10-10"
+  },
+  {
+   "id": "F059",
+   "field_id": "F059",
+   "alert_date": "2026-10-10"
+  },
+  {
+   "id": "F070",
+   "field_id": "F070",
+   "alert_date": "2026-10-10"
+  },
+  {
+   "id": "F084",
+   "field_id": "F084",
+   "alert_date": "2026-10-10"
+  },
+  {
+   "id": "F086",
+   "field_id": "F086",
+   "alert_date": "2026-10-10"
+  },
+  {
+   "id": "F098",
+   "field_id": "F098",
+   "alert_date": "2026-10-10"
+  },
+  {
+   "id": "F099",
+   "field_id": "F099",
+   "alert_date": "2026-10-10"
+  },
+  {
+   "id": "F108",
+   "field_id": "F108",
+   "alert_date": "2026-10-10"
+  },
+  {
+   "id": "F110",
+   "field_id": "F110",
+   "alert_date": "2026-10-10"
+  },
+  {
+   "id": "F116",
+   "field_id": "F116",
+   "alert_date": "2026-10-10"
+  },
+  {
+   "id": "F118",
+   "field_id": "F118",
+   "alert_date": "2026-10-10"
+  },
+  {
+   "id": "F123",
+   "field_id": "F123",
+   "alert_date": "2026-10-10"
+  },
+  {
+   "id": "F124",
+   "field_id": "F124",
+   "alert_date": "2026-10-10"
+  },
+  {
+   "id": "F127",
+   "field_id": "F127",
+   "alert_date": "2026-10-10"
+  },
+  {
+   "id": "F138",
+   "field_id": "F138",
    "alert_date": "2026-10-10"
   }
  ]
