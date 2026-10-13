@@ -105,7 +105,7 @@ export default function CasePage() {
           {running && (
             <div className="progress" role="status">
               <div className="progress-bar"><span style={{ width: `${(done / STEPS.length) * 100}%` }} /></div>
-              <p><Spinner size={12} /> {current ? `${current.running}…` : "Starting"} <span className="muted">{done} of {STEPS.length}</span></p>
+              <p><Spinner size={12} /> {current ? `${current.running}…` : done === STEPS.length ? "Writing the case file" : "Starting"} <span className="muted">{done} of {STEPS.length}</span></p>
             </div>
           )}
           <div className="tabs" role="tablist" aria-label="Case sections">
