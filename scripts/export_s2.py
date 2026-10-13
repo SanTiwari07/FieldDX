@@ -71,7 +71,8 @@ def day_image(day: str, region):
     sr = s2.mosaic()
     ndvi = sr.select("B8").subtract(sr.select("B4")).divide(sr.select("B8").add(sr.select("B4"))).rename("ndvi")
     scl = sr.select("SCL").rename("scl")
-    csb = cs.select("cs_cdf").mosaic().rename("cs")
+    # some passes have no Cloud Score+ image yet; an empty band then masks every pixel rather than trusting it
+    csb = ee.Image(ee.Algorithms.If(cs.size().gt(0), cs.select("cs_cdf").mosaic(), ee.Image.constant(-9999))).rename("cs")
     return ndvi.addBands(scl).addBands(csb).unmask(-9999).toFloat()
 
 

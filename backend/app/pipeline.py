@@ -26,6 +26,13 @@ STEP_LABELS["next_check"] = ("Choosing the next best check", "Next best check")
 
 
 def limits_text(f: data.FieldRec) -> str:
+    if f.mode == "whole":
+        return (
+            f"Each pixel is 10 m × 10 m. This field is {f.area_ha} ha, about {f.analysis_pixels} pixels, too small to split "
+            "into zones, so FieldDx reads it as one. It cannot tell an edge from a patch, and some of its pixels mix "
+            "with the land around it, so confidence is capped at medium. The field shape is a model prediction, not a "
+            "survey, and the crop is not known. Cloud gaps can hide days of change."
+        )
     return (
         f"Each pixel is 10 m × 10 m. This field has about {f.analysis_pixels} analysis pixels ({f.area_ha} ha), "
         "so FieldDx can see zones, not individual plants or rows. The field shape is a model prediction, not a survey. "
@@ -136,11 +143,17 @@ def iter_events(area: str, case_id: str) -> Iterator[tuple[str, dict]]:
         )
         affected = ctx.state.get("affected_zones") or ([] if primary == "__field__" else [primary])
         zone_px = ctx.field.zone_pixels
-        total = sum(zone_px[z] for z in data.ANALYSIS)
-        share = 1.0 if primary == "__field__" else sum(zone_px.get(z, 0) for z in affected if z in data.ANALYSIS) / total
+        zones = ctx.field.zones
+        total = sum(zone_px.get(z, 0) for z in zones)
+        share = 1.0 if primary == "__field__" else sum(zone_px.get(z, 0) for z in affected if z in zones) / total
         if diag.outcome in ("field_case", "unexplained"):
             severity = _severity(delta, share)
 
+    if ctx.field.mode == "whole":
+        # one reading of a small field: no stage-3 cause is ever stated with high confidence
+        for h in diag.hypotheses:
+            if h.stage == 3 and h.confidence == "high":
+                h.confidence = "medium"
     lead = next((h for h in diag.hypotheses if h.id == diag.lead_id), None)
     assign_stance(evidence, lead)
 
@@ -149,7 +162,7 @@ def iter_events(area: str, case_id: str) -> Iterator[tuple[str, dict]]:
         case_id=case_id,
         field=FieldInfo(
             id=f.id, name=f.name, klass=f.klass, class_label=data.CLASS_LABEL[f.klass],
-            area_ha=f.area_ha, analysis_pixels=f.analysis_pixels,
+            area_ha=f.area_ha, analysis_pixels=f.analysis_pixels, mode=f.mode,
         ),
         alert_date=alert, as_of=as_of, banner=cases["banner"],
         outcome=diag.outcome, severity=severity, headline=headline,

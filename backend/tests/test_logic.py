@@ -80,6 +80,9 @@ def build_all(tmp):
         "P3": {"class": "perennial", "ev": wave}, "P4": {"class": "perennial", "ev": wave},
         "WAIT": {"ev": single_pass}, "ODD": {"class": "unknown", "ev": scattered}, "PEST": {"ev": spreading},
         "WET": {"class": "unknown", "ev": flooded},
+        # small fields read as one zone, about 10 km from the rest so they are nobody's neighbour
+        "SMALL": {"mode": "whole", "class": "unknown", "lon": 74.20, "ev": hero},
+        "SMALLHAZE": {"mode": "whole", "class": "unknown", "lon": 74.21, "ev": haze},
     }
     cases = [
         {"id": "HERO", "field_id": "HERO", "alert_date": "2026-09-30"},
@@ -90,6 +93,8 @@ def build_all(tmp):
         {"id": "ODD", "field_id": "ODD", "alert_date": "2026-10-05"},
         {"id": "PEST", "field_id": "PEST", "alert_date": "2026-09-30"},
         {"id": "WET", "field_id": "WET", "alert_date": "2026-10-05"},
+        {"id": "SMALL", "field_id": "SMALL", "alert_date": "2026-09-30"},
+        {"id": "SMALLHAZE", "field_id": "SMALLHAZE", "alert_date": "2026-10-05"},
     ]
     fx.build(tmp, fields, weather={"rain": rain, "rh": humid}, cases=cases)
 
@@ -222,3 +227,26 @@ def test_baseline_never_reaches_back_into_the_monsoon(ds):
     ser = Series(f, D("2026-10-05"))
     a, b = ser.baseline_dates
     assert (D("2026-10-05") - a).days <= 75 and (D("2026-10-05") - b).days >= 20
+
+
+def test_a_small_field_is_read_as_one_zone_and_never_overclaims(ds):
+    r = case("SMALL")
+    skipped = {e.tool for e in r.evidence}
+    assert "boundary_check" not in skipped and "spatial_pattern" not in skipped  # skipped tools add no evidence
+    assert r.headline and r.headline.zone == "__field__" and r.headline.zone_label == "Whole field"
+    assert all(h.confidence != "high" for h in r.hypotheses if h.stage == 3)
+    assert r.outcome in ("unexplained", "field_case") and "reads it as one" in r.limits
+    c = signed_in(fx.AREA)
+    m = c.get("/api/cases/SMALL/map").json()
+    assert [z["id"] for z in m["zones"]] == ["whole"] and m["mode"] == "whole"
+    s = c.get("/api/cases/SMALL/series").json()
+    assert [z["id"] for z in s["zones"]] == ["whole"] and all(set(row["zones"]) == {"whole"} for row in s["scenes"])
+    assert c.get("/api/cases/SMALL/raster").status_code == 200
+    with c.stream("GET", "/api/cases/SMALL/investigate?pace=0") as resp:
+        text = "".join(resp.iter_text())
+    assert "too small to separate its edges" in text and "read as one zone" in text
+
+
+def test_a_small_field_still_has_its_cloud_artefacts_dismissed(ds):
+    r = case("SMALLHAZE")
+    assert r.outcome == "auto_dismissed" and r.stage_outcome.hypothesis_id == "H1"

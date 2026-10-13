@@ -42,3 +42,12 @@ def test_the_scene_mask_recipe_matches_pragya():
     # Cloud Score+ at 0.60 and SCL classes 3 (shadow), 8, 9 (cloud), 10 (cirrus) are masked, plus no-data and saturated
     assert bd.CS_MIN == 0.60
     assert {3, 8, 9, 10} <= bd.SCL_BAD and {0, 1} <= bd.SCL_BAD and 4 not in bd.SCL_BAD and 5 not in bd.SCL_BAD
+
+
+def test_a_small_field_gets_one_zone_of_core_pixels_and_no_edge_ring():
+    x, y = 400100, 2219600
+    small = Polygon([(x, y), (x + 50, y), (x + 50, y + 50), (x, y + 50)])  # 0.25 ha
+    g = bd.build_grid_whole(small, GRID)
+    inside, az, rz = g["inside"] == 1, g["az"], g["rz"]
+    assert ((az == bd.WHOLE_CODE) <= inside).all() and (az == bd.WHOLE_CODE).sum() >= 9
+    assert set(np.unique(az)) <= {-1, bd.WHOLE_CODE} and (rz == -1).all()

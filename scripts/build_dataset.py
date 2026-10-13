@@ -11,8 +11,10 @@ Outputs in the same folder:
   grids/<id>.json         the 10 m pixel grid of each field: which pixels are inside, and their zones
   scenes/<id>.json        per scene, NDVI of every pixel inside the field (x1000, null when masked)
 
-Selection: area 0.8 to 12 ha, compact shape, at least 60% ESA WorldCover cropland (no river, town or
-trees), far enough from the edge of the downloaded area, and every analysis zone has at least 2 pixels.
+Selection: at least 60% ESA WorldCover cropland (no river, town or trees), far enough from the edge of
+the downloaded area, and up to 12 ha. A field of 0.8 ha or more with a compact shape and every zone at
+least 2 pixels is read in eight zones ("zoned"). A smaller, thinner or irregular field of at least 0.2 ha
+is read as one zone ("whole"): its core pixels, the shape shrunk half a pixel, at least 10 of them.
 
 Zones follow idea.md section 4.2: the analysis area is the shape shrunk 10 m (drops boundary-mixed
 pixels), the interior is shrunk a further 20 m split into four quadrants, the edge ring between them is
@@ -39,6 +41,7 @@ from shapely.ops import transform as shp_transform
 ROOT = Path(__file__).resolve().parent.parent
 
 ZONES = ["in_nw", "in_ne", "in_sw", "in_se", "edge_n", "edge_e", "edge_s", "edge_w"]
+WHOLE = "whole"
 RAWZ = ["raw_edge_n", "raw_edge_e", "raw_edge_s", "raw_edge_w"]
 
 SCL_BAD = {0, 1, 3, 8, 9, 10, 11}  # no data, saturated, shadow, cloud (medium, high), cirrus, snow
@@ -46,9 +49,12 @@ CS_MIN = 0.60
 APP_FROM = "2026-06-10"  # default: scenes before this are used only to infer the crop class
 BOUNDARIES_B5 = "Fields of the World (FTW) PRUE EfficientNet-B5 CC-BY model, run on Sentinel-2 L2A scenes of 2025 (ftw-tools)"
 MIN_HA, MAX_HA = 0.8, 12.0
+MIN_WHOLE_HA = 0.2       # smallest field read as one zone
+MIN_WHOLE_PX = 10        # core pixels a whole-field reading needs
 CROP_FRACTION = 0.60
-MAX_FIELDS = 150
+MAX_FIELDS = 400
 MIN_ZONE_PX = 2
+WHOLE_CODE = len(ZONES)  # az code of a whole-field core pixel (data.ZONE_CODES in the app)
 
 
 def sector(dx: float, dy: float) -> str:
@@ -83,15 +89,15 @@ def read_band(path: Path, band: int) -> np.ndarray:
         return ds.read(band)
 
 
-SKIP_REASONS = {  # read after a count: "3 under 0.8 ha"
-    "small": f"under {MIN_HA} ha", "large": f"over {MAX_HA:.0f} ha", "irregular": "with an irregular outline",
-    "edge": "at the edge of the imagery", "narrow": "too narrow for 10 m zones", "cropland": "not mostly cropland",
-    "thin_zones": "with a zone under 2 pixels",
+SKIP_REASONS = {  # read after a count: "3 under 0.2 ha"
+    "small": f"under {MIN_WHOLE_HA} ha", "large": f"over {MAX_HA:.0f} ha",
+    "edge": "at the edge of the imagery", "cropland": "not mostly cropland",
+    "tiny_core": f"with under {MIN_WHOLE_PX} clear pixels inside the boundary",
 }
 
 
 def select_fields(g, grid, worldcover, skipped=None):
-    """Fields that can be diagnosed zone by zone; `skipped` counts why the others were left out."""
+    """Fields that can be watched, each marked zoned or whole; `skipped` counts why the others were left out."""
     skipped = skipped if skipped is not None else defaultdict(int)
     x0, ytop, nx, ny = grid["x0"], grid["y_top"], grid["nx"], grid["ny"]
     xmax, ymin = x0 + nx * 10, ytop - ny * 10
@@ -102,22 +108,17 @@ def select_fields(g, grid, worldcover, skipped=None):
             poly = max(poly.geoms, key=lambda p: p.area)
         poly = poly.buffer(0).simplify(2.0)
         area = poly.area / 1e4
-        if not (MIN_HA <= area <= MAX_HA):
-            skipped["small" if area < MIN_HA else "large"] += 1
+        if not (MIN_WHOLE_HA <= area <= MAX_HA):
+            skipped["small" if area < MIN_WHOLE_HA else "large"] += 1
             continue
         compact = 4 * np.pi * poly.area / poly.length ** 2
-        if compact < 0.35:
-            skipped["irregular"] += 1
-            continue
         minx, miny, maxx, maxy = poly.bounds
         if minx < x0 + 40 or maxx > xmax - 40 or miny < ymin + 40 or maxy > ytop - 40:
             skipped["edge"] += 1
             continue
-        analysis = poly.buffer(-10)
         interior = poly.buffer(-30)
-        if analysis.is_empty or interior.is_empty or interior.area < 400:
-            skipped["narrow"] += 1
-            continue
+        zoned = (area >= MIN_HA and compact >= 0.35 and not poly.buffer(-10).is_empty
+                 and not interior.is_empty and interior.area >= 400)
         # land cover inside the shape
         c0, c1 = int((minx - x0) // 10), int((maxx - x0) // 10) + 1
         r0, r1 = int((ytop - maxy) // 10), int((ytop - miny) // 10) + 1
@@ -125,7 +126,7 @@ def select_fields(g, grid, worldcover, skipped=None):
         px = x0 + (cc + 0.5) * 10
         py = ytop - (rr + 0.5) * 10
         inside = contains_xy(poly, px, py)
-        if inside.sum() < 40:
+        if inside.sum() < MIN_WHOLE_PX:
             skipped["small"] += 1
             continue
         lc = worldcover[r0:r1, c0:c1][inside]
@@ -133,7 +134,7 @@ def select_fields(g, grid, worldcover, skipped=None):
         if crop < CROP_FRACTION:
             skipped["cropland"] += 1
             continue
-        picked.append((i, poly, area, compact, crop))
+        picked.append((i, poly, area, compact, crop, zoned))
     return picked
 
 
@@ -168,13 +169,30 @@ def build_grid(poly, grid):
             "inside": ins.astype(np.int8), "az": az, "rz": rz}
 
 
-def zone_polygons(poly, grid_info, grid, to_ll):
+def build_grid_whole(poly, grid):
+    """Pixel grid of a field read as one zone: its core pixels are those whose centre lies at least half a
+    pixel inside the boundary. There is no edge ring, so no boundary check."""
+    x0, ytop = grid["x0"], grid["y_top"]
+    minx, miny, maxx, maxy = poly.bounds
+    c0, c1 = int((minx - x0) // 10) - 1, int((maxx - x0) // 10) + 2
+    r0, r1 = int((ytop - maxy) // 10) - 1, int((ytop - miny) // 10) + 2
+    rr, cc = np.mgrid[r0:r1, c0:c1]
+    px = x0 + (cc + 0.5) * 10
+    py = ytop - (rr + 0.5) * 10
+    ins = contains_xy(poly, px, py)
+    core = contains_xy(poly.buffer(-5), px, py) & ins
+    az = np.where(core, WHOLE_CODE, -1).astype(np.int8)
+    rz = np.full(px.shape, -1, dtype=np.int8)
+    return {"r0": r0, "c0": c0, "nr": r1 - r0, "nc": c1 - c0, "inside": ins.astype(np.int8), "az": az, "rz": rz}
+
+
+def zone_polygons(poly, grid_info, grid, to_ll, zones=None):
     """Zone shapes for the map outline layer: the union of the pixels of each analysis zone, smoothed."""
     from shapely.geometry import box
     from shapely.ops import unary_union
     x0, ytop = grid["x0"], grid["y_top"]
     out = {}
-    for k, z in enumerate(ZONES):
+    for k, z in (zones or list(enumerate(ZONES))):
         cells = []
         for (r, c), v in np.ndenumerate(grid_info["az"]):
             if v == k:
@@ -209,27 +227,39 @@ def main():
     picked = select_fields(g, grid, wc, skipped)
     print(f"{len(picked)} pass area, shape, cropland and edge filters", file=sys.stderr)
 
-    # build zone grids; drop fields whose zones are too thin to measure
+    # build zone grids: eight zones where they all hold pixels, otherwise one whole-field zone
     fields = []
-    for i, poly, area, compact, crop in picked:
-        gi = build_grid(poly, grid)
-        counts = {z: int((gi["az"] == k).sum()) for k, z in enumerate(ZONES)}
-        if min(counts.values()) < MIN_ZONE_PX:
-            skipped["thin_zones"] += 1
+    for i, poly, area, compact, crop, zoned in picked:
+        if zoned:
+            gi = build_grid(poly, grid)
+            counts = {z: int((gi["az"] == k).sum()) for k, z in enumerate(ZONES)}
+            if min(counts.values()) >= MIN_ZONE_PX:
+                counts[WHOLE] = sum(counts.values())
+                fields.append({"src": int(i), "poly": poly, "area": area, "compact": compact, "crop": crop,
+                               "gi": gi, "counts": counts, "mode": "zoned"})
+                continue
+        gi = build_grid_whole(poly, grid)
+        n_core = int((gi["az"] == WHOLE_CODE).sum())
+        if n_core < MIN_WHOLE_PX:
+            skipped["tiny_core"] += 1
             continue
-        fields.append({"src": int(i), "poly": poly, "area": area, "compact": compact, "crop": crop, "gi": gi, "counts": counts})
-    print(f"{len(fields)} fields have at least {MIN_ZONE_PX} pixels in every zone", file=sys.stderr)
+        fields.append({"src": int(i), "poly": poly, "area": area, "compact": compact, "crop": crop,
+                       "gi": gi, "counts": {WHOLE: n_core}, "mode": "whole"})
+    n_zoned = sum(1 for f in fields if f["mode"] == "zoned")
+    print(f"{len(fields)} fields can be watched: {n_zoned} in eight zones, {len(fields) - n_zoned} as a whole field",
+          file=sys.stderr)
     why = ", ".join(f"{n} {SKIP_REASONS[k]}" for k, n in sorted(skipped.items(), key=lambda kv: -kv[1]))
     if why:
         print(f"skipped: {why}", file=sys.stderr)
     if not fields:
         print(f"None of the {len(g)} field shape{'s' if len(g) != 1 else ''} can be monitored ({why}). "
-              "Choose fields of at least 1 ha with some width to them, or mark a wider area.", file=sys.stderr)
+              f"Choose fields of at least {MIN_WHOLE_HA} ha, or mark a wider area.", file=sys.stderr)
         sys.exit(3)
 
-    # keep the most compact, largest fields if there are very many
+    # if there are very many, keep the zoned fields first (most compact and largest), then the biggest whole ones
     if len(fields) > MAX_FIELDS:
-        fields.sort(key=lambda f: -(f["compact"] * min(f["area"], 4)))
+        fields.sort(key=lambda f: (f["mode"] != "zoned", -(f["compact"] * min(f["area"], 4)) if f["mode"] == "zoned" else -f["area"]))
+        print(f"keeping {MAX_FIELDS} of {len(fields)} fields", file=sys.stderr)
         fields = fields[:MAX_FIELDS]
     fields.sort(key=lambda f: (-f["poly"].centroid.y // 400, f["poly"].centroid.x))  # north to south, west to east
     for n, f in enumerate(fields, 1):
@@ -240,9 +270,15 @@ def main():
     first_month, last_month = year_window(max(dates))
     series = {f["id"]: {} for f in fields}
     aoi_quality = {}
+    no_cs = 0
     for d in dates:
         with rasterio.open(S2 / f"{d}.tif") as ds:
-            ndvi, scl, cs = ds.read(1), ds.read(2), ds.read(3)
+            ndvi, scl = ds.read(1), ds.read(2)
+            if ds.count >= 3:
+                cs = ds.read(3)
+            else:  # no Cloud Score+ for this pass: nothing can be called clear, so every pixel stays masked
+                cs = np.full(ndvi.shape, -9999.0, dtype=ndvi.dtype)
+                no_cs += 1
         have = scl > -9000
         aoi_quality[d] = {"data": float(have.mean())}
         for f in fields:
@@ -260,6 +296,9 @@ def main():
                 "shadow": int(round(100 * (sc == 3).sum() / n)),
                 "cirrus": int(round(100 * (sc == 10).sum() / n)),
             }
+
+    if no_cs:
+        print(f"{no_cs} pass{'es' if no_cs != 1 else ''} had no Cloud Score+ and stay fully masked", file=sys.stderr)
 
     # ---- crop class from a year of NDVI: a perennial canopy never goes to bare soil
     monthly_all = {}
@@ -284,7 +323,8 @@ def main():
         vals = [v for m, v in monthly.items() if first_month <= m <= last_month]
         low = min(vals) if vals else None
         klass = "unknown" if len(vals) < 7 else ("perennial" if low >= 0.30 else "seasonal")
-        zp = zone_polygons(f["poly"], gi, grid, to_ll)
+        zp = zone_polygons(f["poly"], gi, grid, to_ll,
+                           None if f["mode"] == "zoned" else [(WHOLE_CODE, WHOLE)])
         cen = shp_transform(to_ll, f["poly"].centroid)
         feats.append({
             "type": "Feature",
@@ -292,7 +332,7 @@ def main():
             "properties": {
                 "id": fid, "name": f"Field {fid[1:]}", "area_ha": round(f["area"], 2),
                 "compactness": round(float(f["compact"]), 2), "cropland_fraction": round(f["crop"], 2),
-                "class": klass, "ndvi_monthly": monthly,
+                "class": klass, "mode": f["mode"], "ndvi_monthly": monthly,
                 "centroid": [round(cen.x, 6), round(cen.y, 6)],
                 "zone_pixels": f["counts"],
                 "zones": {z: mapping(g) for z, g in zp.items()},

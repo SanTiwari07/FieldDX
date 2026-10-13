@@ -127,6 +127,7 @@ class FieldInfo(BaseModel):
     class_label: str
     area_ha: float
     analysis_pixels: int
+    mode: str = "zoned"
 
 
 class CaseResult(BaseModel):

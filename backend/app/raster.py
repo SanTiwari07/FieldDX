@@ -12,7 +12,7 @@ from datetime import date
 import numpy as np
 
 from . import data
-from .data import ANALYSIS, FieldRec
+from .data import ZONE_CODES, FieldRec
 from .tools.common import Series
 
 OUTSIDE, VALID, MASKED = 0, 1, 2
@@ -53,7 +53,7 @@ def raster(field: FieldRec, series: Series, day: date) -> dict | None:
     if valid.size and cls != "cloudy":
         stats = {"mean": round(float(valid.mean()), 3), "p10": round(float(np.percentile(valid, 10)), 3),
                  "p90": round(float(np.percentile(valid, 90)), 3)}
-    zone_names = np.where(g.az >= 0, np.array(ANALYSIS)[np.clip(g.az, 0, 7)], "")
+    zone_names = np.where(g.az >= 0, np.array(ZONE_CODES)[np.clip(g.az, 0, len(ZONE_CODES) - 1)], "")
     return {
         "date": day.isoformat(), "w": g.nc, "h": g.nr, "pixel_m": data.CELL_M, "bounds": g.bounds_lonlat(),
         "quality": cls, "visible": round(float(valid.size / max(1, g.inside.sum())), 2) if cls != "cloudy" else 0.0,

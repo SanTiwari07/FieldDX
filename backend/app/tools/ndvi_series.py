@@ -8,12 +8,15 @@ import numpy as np
 
 from .. import config
 from .. import data
-from ..data import ALL_ZONES, ANALYSIS, ZONE_LABEL
+from ..data import ZONE_CODES, ZONE_LABEL
 from .common import Ctx, ToolResult, fmt_date, fmt_delta
 
 
 def run(ctx: Ctx) -> ToolResult:
     s = ctx.series
+    ANALYSIS = ctx.field.zones  # the eight zones, or the one zone of a small field
+    ALL_ZONES = ANALYSIS + ctx.field.raw_zones
+    whole_mode = ctx.field.mode == "whole"
     alert_scene = s.scene_at(ctx.alert)
     alert_deltas = s.deltas(alert_scene, ALL_ZONES)
     usable_since = s.usable(ctx.alert, ctx.as_of)
@@ -51,8 +54,9 @@ def run(ctx: Ctx) -> ToolResult:
     pool = in_watch or raw_watch or candidates
     primary = min(pool, key=pool.get) if pool else None
     primary_delta = pool.get(primary) if primary else None
-    whole_field = bool(candidates) and (max(candidates.values()) - min(candidates.values()) <= config.UNIFORM_SPREAD
-                                         and statistics.mean(candidates.values()) <= config.ANOMALOUS_ZONE)
+    whole_field = whole_mode and primary is not None or (
+        bool(candidates) and (max(candidates.values()) - min(candidates.values()) <= config.UNIFORM_SPREAD
+                              and statistics.mean(candidates.values()) <= config.ANOMALOUS_ZONE))
     if whole_field:
         primary = "__field__"
         primary_delta = s.weighted_delta(ref_scene, ANALYSIS)
@@ -87,7 +91,7 @@ def run(ctx: Ctx) -> ToolResult:
 
     # open water reads as NDVI below zero: flooded or ponded ground, not a failing crop. Measured over
     # the zones that dropped, so a pond in one corner of an otherwise bare field is still seen.
-    zone_ids = [ANALYSIS.index(z) for z in watch if z in ANALYSIS] or list(range(len(ANALYSIS)))
+    zone_ids = [ZONE_CODES.index(z) for z in watch if z in ANALYSIS] or [ZONE_CODES.index(z) for z in ANALYSIS]
     g = data.grid(ctx.field.area, ctx.field.id)
     az = g.az.ravel()[g.cells]
 
@@ -145,7 +149,7 @@ def run(ctx: Ctx) -> ToolResult:
             "date": sc.date.isoformat(),
             "quality": cls,
             "zone": primary_delta_at(sc) if primary else None,
-            "interior": s.weighted_delta(sc, ["in_nw", "in_ne", "in_sw", "in_se"]),
+            "interior": None if whole_mode else s.weighted_delta(sc, ["in_nw", "in_ne", "in_sw", "in_se"]),
         })
 
     per_zone = {z: v for z, v in (latest_deltas if now_zones else alert_deltas).items()}

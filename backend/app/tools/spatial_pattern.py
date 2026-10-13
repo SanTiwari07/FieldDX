@@ -37,6 +37,13 @@ def run(ctx: Ctx) -> ToolResult:
     if ref is None:
         return ToolResult(tool="spatial_pattern", title="Spatial pattern", skipped=True,
                           skip_reason="No clear scene to read a pattern from.", facts=quiet, quality="none")
+    if ctx.field.mode == "whole":
+        # a small field is one reading: whether the loss is an edge, a patch or the whole field is unknown
+        return ToolResult(
+            tool="spatial_pattern", title="Spatial pattern", skipped=True,
+            skip_reason="The field is read as one zone, so there is no pattern within it to read.",
+            as_of=ref.date, quality="n/a",
+        )
 
     deltas = s.deltas(ref, ANALYSIS)
     vals = {z: v for z, v in deltas.items() if v is not None}

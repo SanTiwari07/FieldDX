@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 from .. import config, data
-from ..data import ANALYSIS
 from .common import Ctx, Series, ToolResult, fmt_date
 
 
@@ -11,7 +10,7 @@ def run(ctx: Ctx) -> ToolResult:
     for nb in ctx.neighbours:
         ser = Series(nb, ctx.alert)
         sc = ser.latest_usable(ctx.as_of)
-        d = ser.weighted_delta(sc, ANALYSIS)
+        d = ser.weighted_delta(sc, nb.zones)
         if d is None:
             continue
         rows.append({

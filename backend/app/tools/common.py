@@ -43,13 +43,12 @@ class Series:
     def scene_class(self, scene: Scene | None) -> str:
         if scene is None:
             return "none"
-        total = sum(scene.zones[z].pixels for z in ANALYSIS)
-        valid = sum(scene.zones[z].pixels * scene.zones[z].valid for z in ANALYSIS) / total
-        return quality_of(valid)
+        return quality_of(self.scene_valid(scene))
 
     def scene_valid(self, scene: Scene) -> float:
-        total = sum(scene.zones[z].pixels for z in ANALYSIS)
-        return sum(scene.zones[z].pixels * scene.zones[z].valid for z in ANALYSIS) / total
+        zones = self.field.zones
+        total = sum(scene.zones[z].pixels for z in zones)
+        return sum(scene.zones[z].pixels * scene.zones[z].valid for z in zones) / total if total else 0.0
 
     def usable(self, start: date | None = None, end: date | None = None) -> list[Scene]:
         return [
@@ -71,7 +70,7 @@ class Series:
             return {}, None
         self.baseline_scenes = picks
         base = {}
-        for z in data.ALL_ZONES:
+        for z in data.ALL_ZONES + [data.WHOLE]:
             vals = [s.zones[z].ndvi for s in picks if s.zones[z].ndvi is not None]
             if vals:
                 base[z] = statistics.median(vals)

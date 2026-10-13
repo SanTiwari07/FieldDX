@@ -52,7 +52,7 @@ def ring(lon0, lat0, w=0.0020, h=0.0015):
 
 
 def build(root: Path, fields: dict[str, dict], weather: dict | None = None, cases: list | None = None) -> Path:
-    """fields: id -> {class, lon, ev(date, r, c) -> delta or None to mask, skip(date) -> bool}"""
+    """fields: id -> {class, lon, mode, ev(date, r, c) -> delta or None to mask, skip(date) -> bool}"""
     real = Path(config.ROOT) / "data"
     tmp = root / "areas" / AREA
     for sub in ("grids", "scenes"):
@@ -66,16 +66,23 @@ def build(root: Path, fields: dict[str, dict], weather: dict | None = None, case
     for k, (fid, spec) in enumerate(fields.items()):
         lon0, lat0 = spec.get("lon", 74.10 + 0.0025 * k), spec.get("lat", 20.07)
         cells = [(r, c) for r in range(NR) for c in range(NC)]
-        az = [zones_for(r, c)[0] for r, c in cells]
-        rz = [zones_for(r, c)[1] for r, c in cells]
-        counts = {z: az.count(i) for i, z in enumerate(ZONES)}
-        counts.update({z: rz.count(i) for i, z in enumerate(RAWZ)})
-        zp = {z: {"type": "Polygon", "coordinates": [ring(lon0, lat0)]} for z in ZONES}
+        whole = spec.get("mode") == "whole"
+        if whole:  # one zone: every pixel but the outermost ring is a core pixel (az code 8)
+            az = [8 if min(r, NR - 1 - r, c, NC - 1 - c) >= 1 else -1 for r, c in cells]
+            rz = [-1] * len(cells)
+            counts = {"whole": az.count(8)}
+            zp = {"whole": {"type": "Polygon", "coordinates": [ring(lon0, lat0)]}}
+        else:
+            az = [zones_for(r, c)[0] for r, c in cells]
+            rz = [zones_for(r, c)[1] for r, c in cells]
+            counts = {z: az.count(i) for i, z in enumerate(ZONES)}
+            counts.update({z: rz.count(i) for i, z in enumerate(RAWZ)})
+            zp = {z: {"type": "Polygon", "coordinates": [ring(lon0, lat0)]} for z in ZONES}
         feats.append({
             "type": "Feature", "geometry": {"type": "Polygon", "coordinates": [ring(lon0, lat0)]},
             "properties": {
                 "id": fid, "name": f"Fixture {fid}", "area_ha": 2.0, "compactness": 0.8, "cropland_fraction": 1.0,
-                "class": spec.get("class", "seasonal"), "ndvi_monthly": {}, "centroid": [lon0 + 0.001, lat0 + 0.00075],
+                "class": spec.get("class", "seasonal"), "mode": spec.get("mode", "zoned"), "ndvi_monthly": {}, "centroid": [lon0 + 0.001, lat0 + 0.00075],
                 "zone_pixels": counts, "zones": zp,
             },
         })

@@ -35,7 +35,7 @@ def detect(area: str, field_id: str, as_of):
         ser = Series(f, sc.date)
         if ser.scene_class(sc) not in ("usable", "partial") or not ser.baseline:
             continue
-        for z in data.ALL_ZONES:
+        for z in f.zones + f.raw_zones:
             obs = sc.zones[z]
             d = ser.delta(sc, z)
             if d is not None and d <= config.SIGNIFICANT_DROP and obs.valid * obs.pixels >= MIN_VALID_PIXELS:

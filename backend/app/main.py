@@ -411,15 +411,17 @@ def case_map(case_id: str, area: str = Depends(current_area)):
     for e in r.evidence:
         if e.tool == "spatial_pattern":
             affected = e.data.get("affected_zones", [])
-    if not affected and r.headline and r.headline.zone in data.ANALYSIS:
+    if not affected and r.headline and r.headline.zone in f.zones:
         affected = [r.headline.zone]
+    if r.headline and r.headline.zone == "__field__" and f.mode == "whole":
+        affected = [data.WHOLE]
 
     zones = []
-    for z in data.ANALYSIS:
+    for z in f.zones:
         obs = ref.zones[z] if ref else None
         zones.append({
             "id": z, "label": data.ZONE_LABEL[z], "polygon": _latlon(f.zone_polygons.get(z, [])),
-            "pixels": f.zone_pixels[z], "delta": ctx.series.delta(ref, z) if ref else None,
+            "pixels": f.zone_pixels.get(z, 0), "delta": ctx.series.delta(ref, z) if ref else None,
             "quality": quality_of(obs.valid) if obs else "none", "affected": z in affected,
         })
     outline = _latlon(f.outline)
@@ -429,7 +431,7 @@ def case_map(case_id: str, area: str = Depends(current_area)):
         "field_id": f.id, "name": f.name, "outline": outline, "zones": zones,
         "bounds": [[min(lats), min(lons)], [max(lats), max(lons)]],
         "scene_date": ref.date.isoformat() if ref else None,
-        "baseline": ctx.series.baseline_label(), "analysis_pixels": f.analysis_pixels,
+        "baseline": ctx.series.baseline_label(), "analysis_pixels": f.analysis_pixels, "mode": f.mode,
     }
 
 
@@ -443,7 +445,7 @@ def case_series(case_id: str, area: str = Depends(current_area)):
         if e.tool == "spatial_pattern":
             affected = e.data.get("affected_zones", [])
     if r.headline and r.headline.zone == "__field__":
-        affected = list(data.ANALYSIS)
+        affected = list(f.zones)
     elif not affected and r.headline:
         affected = [r.headline.zone]
 
@@ -452,7 +454,7 @@ def case_series(case_id: str, area: str = Depends(current_area)):
         if sc.date > r.as_of:
             continue
         zones = {}
-        for z in data.ANALYSIS:
+        for z in f.zones:
             obs = sc.zones[z]
             q = quality_of(obs.valid)
             zones[z] = {"ndvi": obs.ndvi if (obs.ndvi is not None and q != "cloudy") else None, "quality": q}
@@ -466,7 +468,7 @@ def case_series(case_id: str, area: str = Depends(current_area)):
         windows.append({"id": w["id"], "label": w["label"], "start": date(year, sm, sd).isoformat(),
                         "end": date(year, em, ed).isoformat(), "verified": w.get("verified", False)})
     return {
-        "zones": [{"id": z, "label": data.ZONE_LABEL[z], "affected": z in affected} for z in data.ANALYSIS],
+        "zones": [{"id": z, "label": data.ZONE_LABEL[z], "affected": z in affected} for z in f.zones],
         "scenes": rows, "windows": windows,
         "alert_date": r.alert_date.isoformat(), "as_of": r.as_of.isoformat(),
         "baseline": ctx.series.baseline_label(),
@@ -519,7 +521,7 @@ def fields_geojson(area: str = Depends(current_area)):
         ring = f.outline[0] if f.outline else []
         feats.append({
             "type": "Feature", "geometry": {"type": "Polygon", "coordinates": [ring]},
-            "properties": {"id": f.id, "name": f.name, "class": f.klass, "area_ha": f.area_ha,
+            "properties": {"id": f.id, "name": f.name, "class": f.klass, "area_ha": f.area_ha, "mode": f.mode,
                            "case_outcome": outcome.get(f.id)},
         })
     meta = areas.load(area) or {}

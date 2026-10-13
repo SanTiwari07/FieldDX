@@ -9,6 +9,14 @@ from .common import Ctx, ToolResult, fmt_date, fmt_delta, interior_mean
 def run(ctx: Ctx) -> ToolResult:
     s = ctx.series
     ref = ctx.state.get("ref_scene")
+    if ctx.field.mode == "whole":
+        # no facts: whether the drop is mixed boundary pixels stays unknown, not "no"
+        return ToolResult(
+            tool="boundary_check", title="Boundary check", skipped=True,
+            skip_reason=(f"At {ctx.field.area_ha} ha this field is too small to separate its edges from its interior "
+                         "at 10 m, so mixing with the land around it cannot be ruled out."),
+            as_of=ref.date if ref else ctx.alert, quality="n/a",
+        )
     interior = interior_mean(s, ref)
     sides = []
     for side in "nesw":
