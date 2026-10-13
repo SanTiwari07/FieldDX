@@ -39,7 +39,7 @@ function Row({ row }: { row: InboxRow }) {
         <Thumb id={row.id} />
         <span className="c-field-text">
           <strong>{row.field.name}</strong>
-          <small>{row.field.class_label}, {row.field.area_ha} ha</small>
+          <small>{row.field.class_label}, {row.field.area_ha} ha{row.field.mode === "whole" ? ", one zone" : ""}</small>
         </span>
       </span>
       <span role="cell" className="c-change">

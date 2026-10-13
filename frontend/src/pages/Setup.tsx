@@ -10,7 +10,7 @@ import { api, AreaSummary, FieldsSource, GeoPolygon, OverviewMap, OverviewSummar
 import { fmtDate } from "../lib/format";
 import { DELTA_STOPS } from "../lib/ramps";
 import { useSession } from "../session";
-import { FtwLayer, MIN_FIELD_HA, PickedField } from "../components/FtwLayer";
+import { FtwLayer, MIN_FIELD_HA, PickedField, ZONED_HA } from "../components/FtwLayer";
 import { Spinner } from "../components/ui";
 
 type Mode = "pick" | "draw" | "coords";
@@ -312,7 +312,7 @@ export default function Setup() {
 
   const km2 = ring ? ringKm2(ring.slice(0, -1)) : 0;
   const tooBig = km2 > maxKm2;
-  const smallPicks = picked.filter((p) => p.areaHa !== null && p.areaHa < 0.8).length;
+  const wholePicks = picked.filter((p) => p.areaHa !== null && p.areaHa < ZONED_HA).length;
   const canBuild = !!place && !!ring && !tooBig && km2 > 0.05 && name.trim().length >= 2 && !busy
     && (fieldSource === "ftw_model" ? !!source?.model_available : !!partition);
 
@@ -324,7 +324,7 @@ export default function Setup() {
       return;
     }
     if (f.areaHa !== null && f.areaHa < MIN_FIELD_HA) {
-      setPickNote(`That field is ${f.areaHa < 0.1 ? "under 0.1" : f.areaHa.toFixed(1)} ha. FieldDx needs about ${MIN_FIELD_HA} ha to split a field into zones at 10 m, so it cannot watch this one. Pick a yellow field.`);
+      setPickNote(`That field is ${f.areaHa < 0.1 ? "under 0.1" : f.areaHa.toFixed(2)} ha, about ${Math.max(1, Math.round(f.areaHa * 100))} pixels of 10 m. FieldDx needs at least ${MIN_FIELD_HA} ha to read a field, so it cannot watch this one. Pick a yellow field.`);
       return;
     }
     setPickNote("");
@@ -465,13 +465,13 @@ export default function Setup() {
             {mode === "pick" && (
               <div className="mode-help">
                 <p>Tap fields on the map to add them. These are the field shapes Fields of the World already published for {place.subdivision ? "this state" : "this region"} ({partition?.layers[0]}).</p>
-                <p className="muted small">FieldDx reads each field as four interior quarters and four edges of 10 m pixels, so pick fields of at least 1 ha with some width to them. Thin strips and small plots cannot be split that way.</p>
+                <p className="muted small">Fields of {ZONED_HA} ha or more are read in eight zones, four interior quarters and four edges, which lets FieldDx tell an edge problem from a patch. Smaller fields down to {MIN_FIELD_HA} ha are read as one zone: the drop, neighbours, weather and season still count, but not where in the field it is.</p>
                 {zoom < 13 && <p className="hint"><Hand size={14} aria-hidden /> Zoom in to see the fields.</p>}
                 <p className="stat"><strong>{picked.length}</strong> field{picked.length === 1 ? "" : "s"} picked
                   {picked.length > 0 && <button type="button" className="link-btn" onClick={() => setPicked([])}>Clear</button>}</p>
-                <p className="ftw-key"><span className="k-big" aria-hidden /> Big enough to watch <span className="k-small" aria-hidden /> Under {MIN_FIELD_HA} ha, too small at 10 m</p>
+                <p className="ftw-key"><span className="k-big" aria-hidden /> Eight zones <span className="k-whole" aria-hidden /> One zone <span className="k-small" aria-hidden /> Under {MIN_FIELD_HA} ha, too small</p>
                 {pickNote && <p className="hint warn" role="status">{pickNote}</p>}
-                {smallPicks > 0 && <p className="hint warn">{smallPicks} of them {smallPicks === 1 ? "is" : "are"} under {MIN_FIELD_HA} ha and will be skipped.</p>}
+                {wholePicks > 0 && <p className="muted small">{wholePicks} of them {wholePicks === 1 ? "is" : "are"} under {ZONED_HA} ha and will be read as one zone.</p>}
                 {picked.length > 0 && picked.length < 3 && <p className="muted small">Pick a few neighbouring fields too: FieldDx compares each field with similar ones within 2 km to tell an area-wide event from a field problem.</p>}
               </div>
             )}

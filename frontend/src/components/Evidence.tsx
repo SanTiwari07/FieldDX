@@ -22,6 +22,7 @@ interface SparkPoint { date: string; quality: string; zone: number | null; inter
 function Spark({ points, label }: { points: SparkPoint[]; label: string }) {
   const W = 300, H = 76, padX = 6, padY = 8;
   const vals = points.flatMap((p) => [p.zone, p.interior]).filter((v): v is number => v !== null);
+  const hasInterior = points.some((p) => p.interior !== null);
   const lo = Math.min(-0.05, ...vals), hi = Math.max(0.05, ...vals);
   const x = (i: number) => padX + (i * (W - 2 * padX)) / Math.max(1, points.length - 1);
   const y = (v: number) => padY + ((hi - v) * (H - 2 * padY)) / (hi - lo);
@@ -38,7 +39,7 @@ function Spark({ points, label }: { points: SparkPoint[]; label: string }) {
   };
   return (
     <figure className="mv-spark">
-      <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`ΔNDVI for ${label} against the interior`}>
+      <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={hasInterior ? `ΔNDVI for ${label} against the interior` : `ΔNDVI for ${label}`}>
         <line x1={0} x2={W} y1={y(0)} y2={y(0)} stroke="var(--border-strong)" strokeDasharray="3 3" />
         <path d={path("interior")} fill="none" stroke="var(--border-strong)" strokeWidth={2} strokeLinecap="round" />
         <path d={path("zone")} fill="none" stroke="var(--ink)" strokeWidth={2.25} strokeLinecap="round" strokeLinejoin="round" />
@@ -49,7 +50,7 @@ function Spark({ points, label }: { points: SparkPoint[]; label: string }) {
       </svg>
       <figcaption>
         <span className="key"><i className="k-ink" /> {label || "Affected zone"}</span>
-        <span className="key"><i className="k-grey" /> Interior</span>
+        {hasInterior && <span className="key"><i className="k-grey" /> Interior</span>}
         <span className="key muted">ΔNDVI vs baseline</span>
       </figcaption>
     </figure>

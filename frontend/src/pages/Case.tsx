@@ -22,7 +22,7 @@ function StageHead({ r }: { r: CaseResult }) {
         <Link to="/cases" className="back"><ArrowLeft size={14} aria-hidden /> Cases</Link>
         <h1>{r.field.name}</h1>
         <p className="meta">
-          {r.field.class_label}, {r.field.area_ha} ha. Alert raised {fmtDate(r.alert_date)}.
+          {r.field.class_label}, {r.field.area_ha} ha{r.field.mode === "whole" ? ", read as one zone" : ""}. Alert raised {fmtDate(r.alert_date)}.
         </p>
       </div>
       <div className="sh-status">

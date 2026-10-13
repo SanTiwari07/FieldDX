@@ -404,7 +404,12 @@ On the setup map, everything the officer marks is **white and ink**, so it reads
 - The point reached by "go to coordinates" is a white dot with an ink ring.
 - The region the map is locked to is a dashed white outline, and everything outside it is dimmed.
 
-Published Fields of the World shapes are drawn as thin yellow outlines with a faint yellow fill. Yellow appears nowhere else, so the shapes read as reference, not as a result.
+Published Fields of the World shapes are drawn in three tiers, by the size FieldDx can read them at:
+- **Eight zones** (0.8 ha and more): a yellow outline and a faint yellow fill.
+- **One zone** (0.2 to 0.8 ha): a thinner, fainter yellow outline.
+- **Too small** (under 0.2 ha): a faint grey hairline. A tap on one explains why it cannot be watched instead of adding it.
+
+A key under the pick help names the three tiers. Yellow appears nowhere else, so the shapes read as reference, not as a result.
 
 The **region overview** uses the same brown-to-teal change ramp as the case map, on cropland only, so "loss" looks the same at district scale and at field scale. Hotspots are dashed amber rectangles at district zoom.
 
@@ -588,7 +593,8 @@ Steps reveal one by one (`{motion.stagger}` apart, `{motion.base}` fade + 4px ri
 - Keep the next-check slip the only dark surface on the screen.
 - Make the field checklist work one-handed on a phone.
 - Lock the setup map to the officer's region, and say plainly when a typed point falls outside it.
-- Explain a failed build in the officer's terms ("too narrow for 10 m zones"), and offer only the action that can help.
+- Explain a failed build in the officer's terms ("22 under 0.2 ha"), and offer only the action that can help.
+- Say when a field is read as one zone, on the case header, the checklist and the case row, and let the skipped checks say why.
 
 ### Don't
 - Don't use green for buttons or links. Green on this product means vegetation.

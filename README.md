@@ -99,12 +99,12 @@ What is **assumed, and says so wherever it is used**:
 
 - **The crop is not known.** Each field is called *perennial canopy* or *seasonal crop* from a year of NDVI.
 - **Management windows are not known either.** In a new area the harvest season is inferred from the area's own NDVI: the months in which last year's median seasonal field fell by 0.10 or more. Niphad keeps its grape-pruning and kharif-harvest placeholders. None of these is verified with an agronomist.
-- **Small plots are left out.** Fields under about 0.8 ha, or too narrow to have an interior after a 30 m inset, cannot be split into zones at 10 m. The build reports how many shapes were left out and why.
+- **Small fields are read as one zone.** A field of 0.8 ha or more with some width to it is split into eight zones. A smaller, thinner or irregular field down to 0.2 ha is read as one zone, its core pixels. Its drop, neighbours, weather and season still count, but where in the field the loss sits does not, so the boundary and pattern checks are skipped, and no cause is stated with high confidence. Fields under 0.2 ha (about 20 pixels) are not watched. The build reports how many shapes were left out and why. Around Solapur, for example, most published field shapes are under 0.8 ha.
 
 ## How the diagnosis works
 
 - **Deterministic tools** (`backend/app/tools`) turn real pixels into cited evidence: scene quality, NDVI change per zone, a boundary check (re-run with a 10 m inner buffer), neighbour comparison, spatial pattern, weather and crop calendar.
-- **Zones follow the real shape.** Each field's 10 m pixels are split into an analysis area (the shape shrunk 10 m), four interior quadrants, four edges, and an unshrunk 20 m ring used only by the boundary check.
+- **Zones follow the real shape.** A field's 10 m pixels are split into an analysis area (the shape shrunk 10 m), four interior quadrants, four edges, and an unshrunk 20 m ring used only by the boundary check. A field too small or thin for that is read as one zone: its pixels at least half a pixel inside the boundary. The case says which, and the boundary and pattern checks say why they were skipped.
 - **A rule table** (`backend/app/engine/rules.py`) scores ten hypotheses in three stages. Stages 1 and 2 dismiss the case with a reason or raise an area alert; stage 3 ranks field-specific causes. A drop seen on only one clear pass is *watched*, not escalated. If nothing clears the bar, the answer is "ask or visit", never a forced guess.
 - **The next best check** (`backend/app/next_check.py`) is computed, not written by a model: how cleanly a result splits the top two causes, divided by the minutes it takes. The candidate table sits under "Why this check?".
 - **The language model never invents a cause.** Gemini, when configured, only writes the plain-language case file from the evidence list. Its output is validated: every line must cite known evidence IDs and follow the engine's order. One retry, then a template narrative. Without a key the app works the same.
@@ -121,7 +121,7 @@ The full hypothesis table and the reasoning behind it are in [idea.md](idea.md).
 | File | Holds |
 |---|---|
 | `area.json` | The polygon, how it was marked, the region it sits in |
-| `fields.geojson` | The monitored field shapes, their zones and inferred class |
+| `fields.geojson` | The monitored field shapes, their zones, whether each is read in eight zones or as one, and the inferred class |
 | `grids/`, `scenes/` | Each field's 10 m pixel grid, and its NDVI on every pass |
 | `weather.json` | Daily weather for the area centre |
 | `calendar.json` | Management windows (inferred, or placeholders for Niphad) |
@@ -215,7 +215,7 @@ The fixture exists only for tests. The product never reads it.
 
 ## Limits
 
-- **10 m pixels.** FieldDx sees zones of a field, not rows or plants, and plots smaller than about 0.8 ha are not monitored.
+- **10 m pixels.** FieldDx sees zones of a field, not rows or plants. Fields from 0.2 to 0.8 ha are read as one zone, so it cannot say where in them a loss sits, and some of their pixels mix with the land around them. Fields under 0.2 ha are not watched. An area keeps up to 400 fields.
 - **Cloud gaps.** In the monsoon, days can pass without a clear view. Those passes are shown as gaps, never as numbers.
 - **Not modelled yet:** red-edge (NDRE) evidence, elevation for waterlogging, and a real crop calendar. Storm damage and waterlogging are scored from weather only.
 - **The region overview is a screen.** It shows where greenness dropped, not why. The diagnosis comes from marking the land and building it.

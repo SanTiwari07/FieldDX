@@ -108,6 +108,7 @@ export interface FieldInfo {
   class_label: string;
   area_ha: number;
   analysis_pixels: number;
+  mode?: "zoned" | "whole";
 }
 
 export interface CaseResult {

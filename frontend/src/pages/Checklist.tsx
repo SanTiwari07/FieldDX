@@ -26,7 +26,7 @@ export default function Checklist() {
       <Link to={`/case/${r.case_id}`} className="back"><ArrowLeft size={15} aria-hidden /> Back to case</Link>
       <div className="eyebrow">Field checklist · {fmtDate(r.alert_date)}</div>
       <h1>{r.field.name}</h1>
-      <p className="meta">{r.field.class_label}, {r.field.area_ha} ha</p>
+      <p className="meta">{r.field.class_label}, {r.field.area_ha} ha{r.field.mode === "whole" ? ", read as one zone" : ""}</p>
 
       {r.outcome === "field_case" && nc && (
         <>

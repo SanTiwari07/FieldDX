@@ -17,7 +17,9 @@ function keyOf(f: Feature, layer: string): string {
 }
 
 /** Smallest field FieldDx can split into four interior quarters and four edges of 10 m pixels. */
-export const MIN_FIELD_HA = 0.8;
+export const ZONED_HA = 0.8;
+/** Smallest field FieldDx can watch at all: below this it is read as one zone of its core pixels. */
+export const MIN_FIELD_HA = 0.2;
 
 function haOf(f: Feature): number | null {
   const p = f.props as Record<string, unknown>;
@@ -42,17 +44,20 @@ export function FtwLayer({ url, layer = "2025", picking, picked, onPick }: {
 
   useEffect(() => {
     const isPicked = (_z: number, f: Feature) => pickedKeys.current.has(keyOf(f, layer));
-    // a field too small for 10 m zones is drawn faint and grey; only the ones FieldDx can watch are yellow
-    const big = (_z: number, f: Feature) => (haOf(f) ?? MIN_FIELD_HA) >= MIN_FIELD_HA;
-    const small = (z: number, f: Feature) => !big(z, f);
+    // yellow: watched in eight zones; faint yellow: watched as one zone; faint grey: too small to watch
+    const zoned = (_z: number, f: Feature) => (haOf(f) ?? ZONED_HA) >= ZONED_HA;
+    const whole = (_z: number, f: Feature) => { const ha = haOf(f); return ha !== null && ha >= MIN_FIELD_HA && ha < ZONED_HA; };
+    const small = (_z: number, f: Feature) => { const ha = haOf(f); return ha !== null && ha < MIN_FIELD_HA; };
     const l = leafletLayer({
       url,
       maxDataZoom: 13, // the FTW state tiles stop at z13; deeper zooms overzoom them
       attribution: "Fields: <a href='https://fieldsofthe.world'>Fields of the World</a> (CC-BY-4.0)",
       paintRules: [
         { dataLayer: layer, filter: small, symbolizer: new LineSymbolizer({ color: "#e5e7eb", width: 0.5, opacity: 0.45 }) },
-        { dataLayer: layer, filter: big, symbolizer: new PolygonSymbolizer({ fill: "#facc15", opacity: 0.18 }) },
-        { dataLayer: layer, filter: big, symbolizer: new LineSymbolizer({ color: "#fde047", width: (z: number) => (z >= 15 ? 0.9 : 1.1), opacity: 0.95 }) },
+        { dataLayer: layer, filter: whole, symbolizer: new PolygonSymbolizer({ fill: "#facc15", opacity: 0.08 }) },
+        { dataLayer: layer, filter: whole, symbolizer: new LineSymbolizer({ color: "#fde047", width: 0.6, opacity: 0.6 }) },
+        { dataLayer: layer, filter: zoned, symbolizer: new PolygonSymbolizer({ fill: "#facc15", opacity: 0.2 }) },
+        { dataLayer: layer, filter: zoned, symbolizer: new LineSymbolizer({ color: "#fde047", width: (z: number) => (z >= 15 ? 1 : 1.2), opacity: 0.95 }) },
         { dataLayer: layer, filter: isPicked, symbolizer: new PolygonSymbolizer({ fill: "#101c16", opacity: 0.5 }) },
         { dataLayer: layer, filter: isPicked, symbolizer: new LineSymbolizer({ color: "#ffffff", width: 2 }) },
       ],
