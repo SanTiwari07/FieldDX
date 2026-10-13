@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { ChevronRight, List, Map as MapIcon } from "lucide-react";
 import { api, InboxRow, Provenance } from "../api";
 import { fmtDate, fmtDelta } from "../lib/format";
-import { ConfidenceMeter, DataNote, SeverityBadge, StatusBadge } from "../components/ui";
+import { ConfidenceMeter, SeverityBadge, StatusBadge } from "../components/ui";
 import { paintRaster } from "../components/RasterOverlay";
 
 const FieldsMap = lazy(() => import("../components/FieldsMap"));
@@ -126,7 +126,6 @@ export default function Inbox() {
 
   return (
     <main className="page">
-      <DataNote text={data.banner} />
       <header className="page-head">
         <div>
           <h1>Inbox</h1>

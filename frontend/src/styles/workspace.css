@@ -89,7 +89,7 @@
 .sb-item.on i { background: #fff; }
 .sb-item:disabled { color: var(--text-disabled); text-decoration: line-through; text-decoration-color: var(--border-strong); cursor: not-allowed; }
 .sb-item.is-alert::after { content: ""; position: absolute; left: 50%; bottom: 0; width: 18px; height: 3px; margin-left: -9px; border-radius: 2px; background: var(--sev-high); }
-.sb-item.on 
+
 /* ---------- side panel ---------- */
 .panel { display: flex; flex-direction: column; min-height: 0; background: var(--canvas); border-left: 1px solid var(--border); }
 .tabs { flex: none; display: flex; gap: 4px; padding: 0 12px; border-bottom: 1px solid var(--border); background: var(--canvas); }
@@ -223,4 +223,13 @@ dialog.sheet::backdrop { background: rgba(16, 28, 22, 0.5); }
   .tally { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .tally div { min-width: 0; }
   .tally dt { white-space: normal; }
+}
+
+/* short windows: keep the slip compact so the panel keeps room to scroll */
+@media (min-width: 1024px) and (max-height: 820px) {
+  .dock { padding: 12px 20px; }
+  .dock-slip { gap: 8px; }
+  .dock-instruction { font-size: 15px; }
+  .dock-slip .dock-cost, .dock-slip .dock-ask { display: none; }
+  .dock-actions .btn { min-height: 40px; }
 }

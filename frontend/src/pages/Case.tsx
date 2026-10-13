@@ -10,7 +10,7 @@ import { InvestigationRail } from "../components/Investigation";
 import { MapWorkspace } from "../components/MapWorkspace";
 import { CandidatesTable } from "../components/NextCheck";
 import { Timeline } from "../components/Timeline";
-import { DataNote, LimitsNote, SeverityBadge, Spinner, StatusBadge } from "../components/ui";
+import { LimitsNote, SeverityBadge, Spinner, StatusBadge } from "../components/ui";
 
 type Tab = "findings" | "evidence" | "trend";
 
@@ -88,7 +88,6 @@ export default function CasePage() {
 
   return (
     <div className="case-shell">
-      <DataNote text={r.banner} />
       <div className="workspace">
         <section className="stage" aria-label="Field map">
           <StageHead r={r} />

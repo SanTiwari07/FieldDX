@@ -4,7 +4,6 @@ import { ArrowLeft, ArrowRight, Clock } from "lucide-react";
 import { api, CaseResult } from "../api";
 import { fmtDate } from "../lib/format";
 import { CloseCaseForm, ResolutionCard, VisitChecklist } from "../components/NextCheck";
-import { DataNote } from "../components/ui";
 
 /** Phone-first: one column, large tap targets, the instruction and the close form together. */
 export default function Checklist() {
@@ -28,7 +27,6 @@ export default function Checklist() {
       <div className="eyebrow">Field checklist · {fmtDate(r.alert_date)}</div>
       <h1>{r.field.name}</h1>
       <p className="meta">{r.field.class_label}, {r.field.area_ha} ha</p>
-      <DataNote text={r.banner} />
 
       {r.outcome === "field_case" && nc && (
         <>
