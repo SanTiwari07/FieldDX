@@ -1,144 +1,247 @@
 # FieldDx
 
-**Differential diagnosis for farm fields.** Satellites can tell you *that* a field changed. FieldDx tells a field officer *what probably happened, what it definitely wasn't, and the one cheapest check that settles it.*
+**Differential diagnosis for farm fields.** Satellites can tell a field officer *that* a field changed. FieldDx tells them *what probably happened, what it definitely wasn't, and the one cheapest check that settles it.*
 
-It runs after a satellite alert, the way an agronomist would:
+A field officer at a farmer producer organisation looks after hundreds of smallholder plots and can visit perhaps fifteen a day. Free Sentinel-2 imagery already shows where vegetation dropped, but a red patch on a map does not say whether it is a cloud, a harvest, the whole village, or a real problem on one farm. So the alerts get ignored.
 
-1. Is the signal real? (cloud, shadow, mixed boundary pixels, a single odd pass)
-2. Is it expected, or shared with the area? (harvest or pruning season, neighbours, weather)
-3. If it is this field only, which causes fit the evidence, and what is the cheapest thing to ask or check?
+FieldDx runs the investigation that should follow every alert, the way an agronomist would:
 
-The officer gets a **case file**, not a heatmap: ranked hypotheses where every line cites evidence (`E1`, `E4`), the false alarms thrown out with their reasons, and a next-step slip. When she reports back, the finding becomes new evidence and the ranking updates.
+1. **Is the signal real?** Cloud, shadow, haze, mixed boundary pixels, a single odd pass.
+2. **Is it expected, or shared with the area?** Harvest or pruning season, neighbouring fields, weather.
+3. **If it is this field alone, which causes fit the evidence**, and what is the cheapest thing to ask or check that tells them apart?
 
-## The flow
+The officer gets a **case file**, not a heatmap: ranked causes where every line cites its evidence (`E1`, `E4`), the false alarms thrown out with their reasons, and one next check. When the officer reports back, the finding becomes new evidence and the ranking updates.
+
+## Contents
+
+- [The officer's flow](#the-officers-flow)
+- [Quick start](#quick-start)
+- [Real data, and what is assumed](#real-data-and-what-is-assumed)
+- [How the diagnosis works](#how-the-diagnosis-works)
+- [Areas, accounts and builds](#areas-accounts-and-builds)
+- [Building an area by hand](#building-an-area-by-hand)
+- [Configuration](#configuration)
+- [Tests](#tests)
+- [Limits](#limits)
+- [Project layout](#project-layout)
+- [Sources and licences](#sources-and-licences)
+
+## The officer's flow
 
 ```
-Sign in ─► Region overview ─► Go to the land, mark it ─► FieldDx builds it ─► Today's briefing ─► Cases ─► Investigation ─► Next check ─► Visit and close
+Sign in
+  -> Find your region          the map locks to the district and shows what changed there this fortnight
+  -> Go to the land, mark it   coordinates or a hotspot take you there; draw a polygon or pick fields
+  -> FieldDx builds it         real field shapes, a year of Sentinel-2, weather, then the alerts
+  -> Today's briefing          what was thrown out, what is area-wide, which fields need you
+  -> Case                      the investigation replays, then the diagnosis and the next check
+  -> Visit and close           the finding becomes evidence and the ranking updates
 ```
 
-1. **Sign in.** An officer creates an account (username and a 4 to 8 digit PIN) or signs in. *Explore the demo area* opens the shipped Niphad area without an account.
-2. **Find your region and see what is changing.** Search a district, taluka or village (OpenStreetMap). The map locks to that region's real boundary and paints this fortnight's change in cropland NDVI across all of it, computed live in Google Earth Engine from cloud-masked Sentinel-2. A summary gives the share of cropland that lost or gained greenness and the places where most of it dropped ("around Karambali, 64% of cropland"). Tap one to fly there. This is a screen, not a diagnosis: harvest shows up here too.
-3. **Go to the land and mark it.** Type a farm's coordinates to fly to it, or zoom in, then:
-   - **draw a polygon** around the land, or
-   - **pick fields** on the published Fields of the World map for that state (the shapes stream in as PMTiles), or
+1. **Sign in.** Create an account with a username and a 4 to 8 digit PIN, or sign in. *Explore the demo area* opens the shipped Niphad area (Nashik) without an account.
+2. **Find your region.** Search a district, taluka or village. The map locks to the region's real boundary from OpenStreetMap, and paints this fortnight's change in cropland NDVI across the whole region, computed live in Google Earth Engine from cloud-masked Sentinel-2. A summary gives the share of cropland that lost or gained greenness and the places where most of it dropped, named after the nearest village ("around Karambali, 64% of cropland dropped"). This is a screen, not a diagnosis: a harvested field drops just like a failing one.
+3. **Go to the land and mark it.** Type a farm's coordinates to fly to it, tap a hotspot, or zoom in. Then mark the land to examine:
+   - **draw a polygon** around it (the default),
+   - **pick fields** on the published Fields of the World map, whose shapes stream onto the map for the region's state, or
    - **type corners**: one point for a square of 2 to 12 km, or three or more corners.
 
-   A colleague's area can also be joined as it is.
-4. **FieldDx builds it** from real sources, for that polygon only, with live progress: field shapes, about 13 months of Sentinel-2, weather, 10 m pixel zones, the harvest season, then the alerts. A small area takes a few minutes; you can leave the page.
-5. **Today's briefing** shows what happened to this week's passes: fields watched, alerts raised, how many were dismissed and why, area-wide events, and the few fields that need a call or a visit, with where to start.
-6. **Cases, investigation, next check, close** work as before, and every route reads only the officer's own area. Another area's case IDs answer 404.
+   An area a colleague has already set up can be joined instead.
+4. **FieldDx builds it.** For that polygon only, from real sources, with progress shown step by step: field shapes, about 13 months of Sentinel-2 passes, weather, 10 m pixel zones per field, the harvest season, then the alerts. A few square kilometres take five to ten minutes, and the officer can leave the page while it runs.
+5. **Today's briefing.** Fields watched, alerts raised, how many were dismissed and why, area-wide events, fields waiting for another clear pass, and the few that need a call or a visit, with where to start.
+6. **Cases.** Each case replays its investigation step by step, then shows the ranked diagnosis and the next best check on a phone-friendly checklist. Recording what was found closes the case and re-ranks the causes.
 
-## Everything is real data
+Every route reads only the signed-in officer's area. A case ID from another area answers "not found".
 
-Nothing in the app is simulated. Every number traces back to a real source:
+## Quick start
 
-| What | Source |
-|---|---|
-| Field shapes | **Fields of the World** (FTW). Either the published **FTW Global** map (PRUE model, 2024 and 2025, about 3.2 billion fields, read per state from Source Cooperative), or the FTW model (PRUE EfficientNet-B5, CC-BY weights) run on fresh Sentinel-2 scenes of the area, as for the Niphad demo. A shape is a model prediction (a remote-sensing field unit), not a legal parcel. |
-| Places | **OpenStreetMap** Nominatim: the region's name and real boundary, which the map locks to. |
-| Imagery | Copernicus **Sentinel-2 L2A** at 10 m through Google Earth Engine. Clouds, shadow and cirrus are masked per pixel with **Cloud Score+** (0.60) and the scene classification layer. |
-| Cropland | ESA WorldCover 2021 keeps only cropland (no river, town or trees). |
-| Weather | **Open-Meteo** archive (ERA5 / ERA5-Land reanalysis): rain, heat, humidity and soil moisture. |
-| Alerts | Detected from the data (`scripts/build_cases.py`): a zone at least 0.10 NDVI below the field's own baseline on a clear pass in the last 21 days. No case is hand-picked. |
-
-What is **assumed and says so**: the crop is not known, so each field is called *perennial canopy* or *seasonal crop* from a year of NDVI. Management windows are not known either. In a new area the harvest season is **inferred from the area's own NDVI**: the months in which last year's median seasonal field fell by 0.10 or more. Niphad keeps its grape-pruning and kharif-harvest placeholders. None of these is verified with an agronomist, and every case says when it relies on one.
-
-Smallholder plots are small. Fields under about 0.8 ha cannot be split into zones at 10 m, so they are not monitored, and the build says how many shapes passed.
-
-## How it works
-
-- **Deterministic tools** (`backend/app/tools`) turn real pixels into cited evidence: scene quality, NDVI change per zone, boundary check (re-run with a 10 m inner buffer), neighbour comparison, spatial pattern, weather, crop calendar.
-- **Zones follow the real shape.** Each field's 10 m pixels are split into an analysis area (shape shrunk 10 m), four interior quadrants, four edges and an unshrunk 20 m ring used only for the boundary check.
-- **A rule table** (`backend/app/engine/rules.py`) scores ten hypotheses in three stages. Stage 1 and 2 gates dismiss the case with a reason, or raise an area alert; stage 3 ranks field-specific causes. A drop seen on only one clear pass is *watched*, not escalated. If nothing clears the bar the answer is **"ask or visit"**, never a forced guess.
-- **Next best check** (`backend/app/next_check.py`) is computed, not written by a model: `score = how cleanly a result splits the top two ÷ minutes`. The candidate table is under "Why this check?".
-- **The LLM never invents a cause.** Gemini (optional) only writes the plain-language case file from the evidence list. Its output is validated: every line must cite known evidence IDs, hypotheses must be in the engine's order. One retry, then a template narrative. With no key the app works the same.
-- **A real map at pixel level.** Leaflet on Esri satellite imagery (or OpenStreetMap), the field painted as its real 10 m NDVI pixels. Switch between NDVI, Change against the pixel's own baseline, and plain satellite; pick any real pass from the scene bar; compare two dates; hover a pixel. Cloudy passes stay in the scene bar but disabled, and never show a number.
-- **Honest about resolution.** Each case carries a limits note, and the inbox has a map of every monitored field coloured by outcome.
-
-Not modelled yet: red-edge (NDRE) evidence, elevation for waterlogging, a real crop calendar. Storm damage and waterlogging are scored from weather only.
-
-## Accounts and areas
-
-- Officers and sessions live in SQLite (`backend/fielddx.db`). PINs are stored as PBKDF2 hashes, and the session is an HttpOnly cookie whose token is stored hashed.
-- Every case, map, timeline, raster and close route is resolved inside the signed-in officer's area. Findings and stored narratives are keyed by area.
-- An area is a folder, `data/areas/<id>/`: `area.json` (the polygon and how it was marked), `fields.geojson`, `grids/`, `scenes/`, `weather.json`, `calendar.json` and `cases.json`, plus `build.json` and `build.log` while it builds. Only `data/areas/niphad` is in git. Areas built at runtime stay on the machine that built them.
-- The build runs `scripts/build_area.py` in a subprocess, one area at a time. If the server stops mid-build, the build resumes when the server starts again, and the imagery already downloaded is kept.
-- The state's FTW PMTiles reach the browser through `/api/ftw/<state>.pmtiles`, a small byte-range proxy with a cache, because many networks drop the HTTP/3 connections Source Cooperative offers.
-
-## Run it
-
-Requires Python 3.11+ and Node 20+. The repository ships the dataset in `data/`, so the app runs offline.
+Requires Python 3.11 or newer and Node 20 or newer. The Niphad demo area ships in `data/`, so the app runs offline once installed.
 
 ```bash
-# backend
 cd backend
 pip install -e ".[dev]"
 python -m uvicorn app.main:app --port 8000
-
-# frontend (second terminal)
-cd frontend
-npm install
-npm run dev        # http://localhost:5173, proxies /api to port 8000
 ```
 
-Open the app and create an account, or choose *Explore the demo area* to go straight to Niphad. `FIELDDX_API` points the dev proxy at another API address.
+In a second terminal:
 
-For a single process, run `npm run build` in `frontend/` and the API serves the built app at `http://localhost:8000`.
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
-**Gemini (optional).** Copy `.env.example` to `.env` and set `GEMINI_API_KEY` (and `GEMINI_MODEL` if you want another model). Set `FIELDDX_LLM=off` to force the template narrative. Narratives are stored in SQLite so a replay never depends on a live call.
+Open <http://localhost:5173> and choose **Explore the demo area**, or create an account and set up an area of your own. The dev server proxies `/api` to port 8000. For a single process, run `npm run build` in `frontend/` and the API serves the built app at <http://localhost:8000>.
 
-**Starting a clean take.** *Reset closed cases* in the officer menu (or `POST /api/admin/reset`) clears closed cases and stored narratives in the signed-in officer's area. `DEMO_PACING` (milliseconds, default 550) sets the pause between investigation steps.
+The API does not reload itself. Restart it after pulling new code.
 
-**Tests.** `cd backend && python -m pytest`. The engine logic is tested on a tiny hand-built fixture with known answers (an edge drop, a hazy pass, a boundary artefact, a pruning wave, a spreading patch...), and the real dataset is tested for invariants: real polygons, grids and scenes line up, cloudy passes carry no values, every case cites only evidence it has, and the API serves a whole case.
+Setting up new areas and the region overview also need the pipeline packages and Earth Engine on the server:
 
-## Building areas
+```bash
+pip install -r scripts/requirements.txt
+earthengine authenticate
+```
 
-Building an area needs network access and the pipeline's packages on the server: `pip install -r scripts/requirements.txt`, and `earthengine authenticate` once. The app runs `scripts/build_area.py` for you. It can also be run by hand on any folder holding an `area.json`:
+## Real data, and what is assumed
+
+Nothing in the app is simulated. Every number traces back to a real source.
+
+| What | Source |
+|---|---|
+| Field shapes | **Fields of the World** (FTW). Either the published FTW Global map (PRUE model, 2024 and 2025, about 3.2 billion fields, read per state from Source Cooperative), or the FTW model (PRUE EfficientNet-B5, CC-BY weights) run on fresh Sentinel-2 scenes of the area, as for the Niphad demo. A shape is a remote-sensing field unit, not a legal parcel. |
+| Places | **OpenStreetMap** through Nominatim: the region's name and real boundary. |
+| Imagery | Copernicus **Sentinel-2 L2A** at 10 m through Google Earth Engine. Cloud, shadow and cirrus are masked per pixel with **Cloud Score+** (0.60) and the scene classification layer. |
+| Cropland | **ESA WorldCover 2021** keeps only cropland: no river, town or trees. |
+| Weather | **Open-Meteo** archive (ERA5 and ERA5-Land reanalysis): rain, heat, humidity and soil moisture. |
+| Alerts | Detected from the data by `scripts/build_cases.py`: a zone at least 0.10 NDVI below the field's own baseline on a clear pass in the last 21 days. No case is hand-picked. |
+| Region overview | The same Sentinel-2 and Cloud Score+ masks, computed live over the whole region: median NDVI of the last 16 days against 25 to 50 days ago, cropland only. |
+
+What is **assumed, and says so wherever it is used**:
+
+- **The crop is not known.** Each field is called *perennial canopy* or *seasonal crop* from a year of NDVI.
+- **Management windows are not known either.** In a new area the harvest season is inferred from the area's own NDVI: the months in which last year's median seasonal field fell by 0.10 or more. Niphad keeps its grape-pruning and kharif-harvest placeholders. None of these is verified with an agronomist.
+- **Small plots are left out.** Fields under about 0.8 ha, or too narrow to have an interior after a 30 m inset, cannot be split into zones at 10 m. The build reports how many shapes were left out and why.
+
+## How the diagnosis works
+
+- **Deterministic tools** (`backend/app/tools`) turn real pixels into cited evidence: scene quality, NDVI change per zone, a boundary check (re-run with a 10 m inner buffer), neighbour comparison, spatial pattern, weather and crop calendar.
+- **Zones follow the real shape.** Each field's 10 m pixels are split into an analysis area (the shape shrunk 10 m), four interior quadrants, four edges, and an unshrunk 20 m ring used only by the boundary check.
+- **A rule table** (`backend/app/engine/rules.py`) scores ten hypotheses in three stages. Stages 1 and 2 dismiss the case with a reason or raise an area alert; stage 3 ranks field-specific causes. A drop seen on only one clear pass is *watched*, not escalated. If nothing clears the bar, the answer is "ask or visit", never a forced guess.
+- **The next best check** (`backend/app/next_check.py`) is computed, not written by a model: how cleanly a result splits the top two causes, divided by the minutes it takes. The candidate table sits under "Why this check?".
+- **The language model never invents a cause.** Gemini, when configured, only writes the plain-language case file from the evidence list. Its output is validated: every line must cite known evidence IDs and follow the engine's order. One retry, then a template narrative. Without a key the app works the same.
+- **A map at pixel level.** The field is painted as its real 10 m pixels on satellite imagery: NDVI, change against each pixel's own baseline, or plain satellite. Any pass can be picked from the scene bar, two dates compared side by side, and a pixel inspected under the pointer. Cloudy passes stay in the scene bar, disabled, and never show a number.
+
+The full hypothesis table and the reasoning behind it are in [idea.md](idea.md). The visual language is in [DESIGN.md](DESIGN.md).
+
+## Areas, accounts and builds
+
+**Accounts.** Officers and sessions live in SQLite (`backend/fielddx.db`). PINs are stored as PBKDF2 hashes, and the session is an HttpOnly cookie whose token is stored hashed. The demo officer can only work in the demo area.
+
+**Areas.** An area is a folder, `data/areas/<id>/`:
+
+| File | Holds |
+|---|---|
+| `area.json` | The polygon, how it was marked, the region it sits in |
+| `fields.geojson` | The monitored field shapes, their zones and inferred class |
+| `grids/`, `scenes/` | Each field's 10 m pixel grid, and its NDVI on every pass |
+| `weather.json` | Daily weather for the area centre |
+| `calendar.json` | Management windows (inferred, or placeholders for Niphad) |
+| `cases.json` | The alerts the detector found |
+| `build.json`, `build.log` | Build progress and output, while and after it builds |
+| `raw/` | Downloaded imagery and field shapes, reused on a rebuild |
+
+Only `data/areas/niphad` is in git. Areas built at runtime stay on the machine that built them. Findings and stored narratives are keyed by area, so areas never share or overwrite each other's cases.
+
+**Builds.** The API runs `scripts/build_area.py` in a subprocess, one area at a time. Progress is written to `build.json` and shown on the officer's home screen. If the server stops mid-build, the build resumes when it starts again, and imagery already downloaded is kept. A build that cannot help on a retry, such as an area with no fields big enough to monitor, says so and asks for the area to be marked again.
+
+**Map data through the API.** The state's FTW field tiles (`/api/ftw/<state>.pmtiles`) and the region overview tiles (`/api/overview/tiles/...`) are served through the API with a small cache, because many networks drop the HTTP/3 connections the upstream hosts offer.
+
+**API.** All routes except sign-in and health need a session.
+
+| Route | Purpose |
+|---|---|
+| `POST /api/auth/register`, `/login`, `/demo`, `/logout`; `GET /api/me` | Accounts and the session |
+| `GET /api/places`, `/api/places/fields-source` | Place search, and where a state's field shapes are published |
+| `POST /api/overview/map`, `/api/overview/summary` | This fortnight's change across a region |
+| `GET /api/areas`; `POST /api/areas`; `POST /api/me/area` | List, create and join areas |
+| `GET /api/area/build`; `POST /api/area/retry` | Build progress, and retrying a stopped build |
+| `GET /api/home` | Today's briefing for the officer's area |
+| `GET /api/cases`, `/api/cases/{id}` and `/investigate`, `/map`, `/series`, `/raster` | Cases, the live investigation stream, map and timeline data |
+| `POST /api/cases/{id}/close`; `POST /api/admin/reset` | Record a finding; reopen closed cases in the area |
+
+## Building an area by hand
+
+The app runs the build, but `scripts/build_area.py` also works on any folder holding an `area.json`:
 
 ```bash
 python scripts/build_area.py --area data/areas/<id>
 ```
 
-It runs these steps, which also work on their own:
+Each step can also be run on its own:
 
 ```bash
-# field shapes: the published FTW Global map for the area's state ...
+# field shapes: the published FTW Global map for the area's state
 python scripts/ftw_global.py --area data/areas/<id>
-# ... or the FTW model on fresh imagery (needs the ftw CLI, see scripts/ftw_fields.py; FIELDDX_FTW points at it)
+
+# or the FTW model on fresh imagery (needs the ftw CLI; FIELDDX_FTW points at it)
 python scripts/ftw_fields.py --bbox 74.07 20.04 74.16 20.12 --year 2025 --out data/areas/niphad/raw/ftw_b5
 
-# Sentinel-2 pixels, Cloud Score+ and SCL, plus WorldCover, on a 10 m grid in the area's UTM zone
+# Sentinel-2 pixels with Cloud Score+ and SCL, plus WorldCover, on a 10 m grid in the area's UTM zone
 python scripts/export_s2.py --bbox 74.07 20.04 74.16 20.12 --start 2025-10-01 --end 2026-10-13 --out data/areas/niphad/raw/s2
 
 # weather
 python scripts/fetch_weather.py --lat 20.0775 --lon 74.115 --start 2026-06-01 --end 2026-10-12 --out data/areas/niphad/weather.json
 
-# select fields, build the pixel zones, cut every field out of every scene
+# pick the fields, build the pixel zones, cut every field out of every pass
 python scripts/build_dataset.py --area data/areas/niphad
 
 # detect the alerts
 python scripts/build_cases.py --area data/areas/niphad
 ```
 
-## Layout
+## Configuration
+
+Set these in the environment or in a `.env` file at the repository root (see `.env.example`). All are optional.
+
+| Variable | Default | Effect |
+|---|---|---|
+| `GEMINI_API_KEY` | none | Lets Gemini write the case file. Without it, a template narrative is used. |
+| `GEMINI_MODEL` | `gemini-3.8-flash` | The Gemini model. |
+| `FIELDDX_LLM` | `auto` | `off` always uses the template narrative. |
+| `FIELDDX_LLM_TIMEOUT` | `25` | Seconds to wait for the model. |
+| `DEMO_PACING` | `550` | Milliseconds between investigation steps, so a viewer can follow. |
+| `FIELDDX_DATA` | `data/` | Where the areas live. |
+| `FIELDDX_DB` | `backend/fielddx.db` | The SQLite database. |
+| `FIELDDX_EE_PROJECT` | none | Earth Engine cloud project, if your account needs one. |
+| `FIELDDX_FTW` | found on `PATH` | Path to the `ftw` CLI, for running the model on fresh imagery. |
+| `FIELDDX_PYTHON` | the API's Python | The interpreter that runs the build scripts. |
+| `FIELDDX_NOMINATIM` | OpenStreetMap | A Nominatim search endpoint. |
+| `FIELDDX_FTW_GLOBAL` | Source Cooperative | Base URL of the FTW Global partitions. |
+| `FIELDDX_API` | `http://127.0.0.1:8000` | Frontend only: where the dev server proxies `/api`. |
+
+*Reset closed cases* in the officer menu clears closed cases and stored narratives in the signed-in officer's area, so a demo can start clean.
+
+## Tests
+
+```bash
+cd backend
+python -m pytest
+```
+
+- **Engine logic** is tested on a small hand-built fixture with known answers: an edge drop, a hazy pass, a boundary artefact, a pruning wave, a spreading patch, standing water.
+- **The real Niphad data** is tested for invariants: polygons, grids and scenes line up, cloudy passes carry no values, every case cites only evidence it has, and the API serves a whole case.
+- **Accounts and areas** are tested for sign-in, area scoping (one officer never sees another area's cases or findings), area validation, the inferred harvest season, and input checks on the tile and overview routes.
+
+The fixture exists only for tests. The product never reads it.
+
+## Limits
+
+- **10 m pixels.** FieldDx sees zones of a field, not rows or plants, and plots smaller than about 0.8 ha are not monitored.
+- **Cloud gaps.** In the monsoon, days can pass without a clear view. Those passes are shown as gaps, never as numbers.
+- **Not modelled yet:** red-edge (NDRE) evidence, elevation for waterlogging, and a real crop calendar. Storm damage and waterlogging are scored from weather only.
+- **The region overview is a screen.** It shows where greenness dropped, not why. The diagnosis comes from marking the land and building it.
+- **Accounts are deliberately simple:** a username and PIN, with no password reset or roles.
+
+## Project layout
 
 ```
-backend/app   tools/ engine/ next_check.py pipeline.py raster.py narrative.py llm.py resolve.py data.py
-              areas.py (areas and builds) places.py (place search, FTW partitions) db.py main.py
-backend/tests logic tests on a fixture, invariants on the real data, sign-in and area scoping
-frontend/src  pages/ (SignIn, Setup, Home, Inbox, Case, Checklist) components/ styles/ session.tsx
-data/         checks.json, areas/niphad/ (the shipped demo area), areas/<id>/ built at runtime
-scripts/      build_area.py ftw_global.py ftw_fields.py export_s2.py fetch_weather.py build_dataset.py build_cases.py
-DESIGN.md     the visual language
-idea.md       the concept and the hypothesis table
+backend/app      main.py (API), areas.py (areas and builds), places.py (place search, FTW partitions),
+                 overview.py (region change), pipeline.py, engine/, tools/, next_check.py, resolve.py,
+                 narrative.py, llm.py, raster.py, data.py, db.py, config.py
+backend/tests    engine logic on a fixture, invariants on the real data, accounts and areas
+frontend/src     pages/ (SignIn, Setup, Home, Inbox, Case, Checklist), components/, styles/, session.tsx, api.ts
+data/            checks.json, areas/niphad/ (the shipped demo area), areas/<id>/ built at runtime
+scripts/         build_area.py, ftw_global.py, ftw_fields.py, export_s2.py, fetch_weather.py,
+                 build_dataset.py, build_cases.py
+DESIGN.md        the visual language
+idea.md          the concept, the hypothesis table and the reasoning behind it
 ```
 
 ## Sources and licences
 
-- Field boundaries: Fields of the World, Robinson et al., <https://fieldsofthe.world>; model weights CC-BY-4.0; code MIT. FTW Global map: Robinson et al. 2026, "The first global agricultural field boundary map at 10 m resolution" (arXiv:2605.11055), CC-BY-4.0, on Source Cooperative.
-- Places and boundaries: OpenStreetMap contributors (ODbL), through Nominatim.
-- Imagery: contains modified Copernicus Sentinel data, via Google Earth Engine and Cloud Score+ (Google).
-- Land cover: ESA WorldCover 2021 (CC-BY-4.0).
-- Weather: Open-Meteo, ERA5 and ERA5-Land reanalysis (CC-BY-4.0).
-- Basemaps: Esri World Imagery and OpenStreetMap contributors, through Leaflet.
+- **Field boundaries:** Fields of the World, Kerner et al. and Robinson et al., <https://fieldsofthe.world>. Model weights CC-BY-4.0, code MIT. FTW Global map: Robinson et al. 2026, "The first global agricultural field boundary map at 10 m resolution" (arXiv:2605.11055), CC-BY-4.0, on Source Cooperative.
+- **Places and boundaries:** OpenStreetMap contributors (ODbL), through Nominatim.
+- **Imagery:** contains modified Copernicus Sentinel data, through Google Earth Engine, with Cloud Score+ (Google).
+- **Land cover:** ESA WorldCover 2021 (CC-BY-4.0).
+- **Weather:** Open-Meteo, ERA5 and ERA5-Land reanalysis (CC-BY-4.0).
+- **Basemaps:** Esri World Imagery, and OpenStreetMap contributors, through Leaflet.
 - The NDVI colour scale, its interpretation bins and the map interaction pattern come from the author's earlier project, Pragya.

@@ -6,6 +6,8 @@
 
 **Hackathon:** Devpost — Build With AI: Basics · Category: Agriculture · Deadline: Oct 26, 2026, 5:00 pm EDT (Oct 27, 2:30 am IST)
 
+> **Status.** This is the concept the project started from. The [README](README.md) describes what is built. The main change since: FieldDx is no longer one fixed cluster near Nashik. An officer signs in, picks their region anywhere, sees what is changing across it, marks the land they look after, and FieldDx builds that area from real data on demand. Sections 4, 8 and 10 are updated to match.
+
 ---
 
 ## 1. The problem
@@ -44,12 +46,17 @@ Why this user: one person, one clear job (decide where to go today), and a natur
 ## 4. The product (what the user actually sees)
 
 ```
-Inbox ──► Case ──► Investigation ──► Field-visit checklist ──► Close case
+Sign in ──► Region overview ──► Mark the land ──► Build ──► Today's briefing ──► Case ──► Investigation ──► Field-visit checklist ──► Close case
 ```
 
 | Screen | What it does |
 |---|---|
-| **Inbox** | Flagged fields ranked by severity × confidence. Dismissed false alarms shown greyed out with the reason ("cloud on Oct 4 scene"). |
+| **Sign in** | An officer account, or the demo area without one. |
+| **Region overview** | Search a district; the map locks to it and shows where cropland greenness dropped this fortnight, with the places where most of it dropped. A screen, not a diagnosis. |
+| **Mark the land** | Go to a farm by its coordinates or a hotspot, then draw a polygon, pick Fields of the World fields, or type corners. |
+| **Build** | Real field shapes, a year of Sentinel-2, weather and the alerts for that polygon, with progress step by step. |
+| **Today's briefing** | What happened to this week's passes: dismissed, area-wide, waiting, and the few fields that need a visit. |
+| **Cases** | Flagged fields ranked by severity × confidence. Dismissed false alarms shown greyed out with the reason ("cloud on Oct 4 scene"). |
 | **Case** | Map with the field split into zones, NDVI timeline, the anomalous zone highlighted, before/after imagery. |
 | **Investigation** | The agent's checks, run live, each producing a piece of **evidence** with an ID (E1, E2…). |
 | **Diagnosis** | Ranked hypotheses. Each one lists the evidence for it, against it, and what's still unknown. |
@@ -117,19 +124,23 @@ The LLM's job: run the tools, apply this table, write the case file in plain lan
 | Time | Shot |
 |---|---|
 | 0:00–0:20 | Problem: 300 fields, 15 visits a day, and a map full of red that nobody trusts. |
-| 0:20–0:45 | Inbox: 4 flagged fields. Two are already greyed out — "cloud artefact," "grape fruit pruning (expected)." |
-| 0:45–1:45 | Open the top case. The agent runs live: scene quality ✓, neighbours fine, edge-concentrated pattern, no rain for 12 days. Evidence cards appear one by one. |
+| 0:20–0:45 | Sign in, search the district: the map locks to it and shows where cropland dropped this fortnight. Today's briefing: of 150 fields, most alerts are already dismissed with a reason ("cloud", "harvest, expected"), a few are area-wide, and a handful need a visit. |
+| 0:45–1:45 | Open the top case. The agent runs live: scene quality usable, neighbours fine, edge-concentrated pattern, no rain for 12 days. Evidence cards appear one by one. |
 | 1:45–2:20 | Diagnosis: irrigation failure (high), pest spread (low). Every line cites evidence. Next best check: "inspect the east-edge drip line." |
 | 2:20–2:40 | Officer closes the case: "Drip line clogged." Case marked resolved. |
 | 2:40–3:00 | Who it's for, what it can't do (10 m pixels, cloud gaps), what's next. |
 
-## 8. Data plan (keep it real, keep it cached)
+## 8. Data plan (keep it real)
 
-- **12–20 real fields** in one Nashik-area cluster (onion or grape), drawn as polygons.
-- **Sentinel-2 L2A** NDVI per zone + scene classification layer, exported once via Google Earth Engine or Microsoft Planetary Computer to JSON. A small export script lives in the repo.
-- **One real anomaly** you can point to. Find an actual documented event (unseasonal rain, hail, or a heat spell) and **verify the date before using it.** If you can't find a clean real one, label the demo case as "replayed scenario" in the UI — don't pass it off as live.
-- **Weather** fetched live from Open-Meteo's historical API.
-- The app reads cached JSON. No live satellite pipeline.
+What was planned: 12 to 20 hand-drawn fields in one Nashik cluster, exported once to JSON, with one documented anomaly.
+
+What was built, all from real sources and nothing simulated:
+
+- **Field shapes from Fields of the World**, not hand-drawn: the FTW model run on Sentinel-2 for the Niphad demo (150 fields), and the published FTW Global map for areas set up by officers.
+- **Sentinel-2 L2A** pixels at 10 m through Google Earth Engine, masked per pixel with Cloud Score+ and the scene classification layer, kept as each field's pixels on every pass, not just zone averages.
+- **Alerts detected from the data**, never hand-picked: any zone 0.10 NDVI below its own baseline on a clear pass in the last 21 days. The real season decides what the demo shows; in October most drops are post-monsoon harvest, and the app says so.
+- **Weather** from the Open-Meteo archive (ERA5 and ERA5-Land).
+- **Areas built on demand.** The Niphad area ships with the repo so the demo runs offline. Any other area is built from the same sources when an officer marks it.
 
 ## 9. Stack
 
@@ -140,7 +151,9 @@ The LLM's job: run the tools, apply this table, write the case file in plain lan
 
 ## 10. Explicitly out of scope
 
-Live satellite ingestion · training any model · multiple regions · farmer-facing app · login/auth · vernacular languages · yield prediction. Each is a reasonable v2; none helps the video.
+Training any model · farmer-facing app · vernacular languages · yield prediction · scheduled re-builds as new passes arrive. Each is a reasonable next step; none helps the video.
+
+Moved into scope since the first draft: officer sign-in, and areas anywhere (a region overview, then land the officer marks, built from real data on demand).
 
 ## 11. Risks and mitigations
 

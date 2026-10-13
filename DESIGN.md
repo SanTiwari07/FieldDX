@@ -328,7 +328,9 @@ components:
 
 ## Overview
 
-FieldDx is a case file, not a dashboard. The officer opens it to decide where to go today and what to check when they get there, so the design favours **reading and trusting** over browsing. The metaphor is a clinician's chart: a ranked list of patients (the inbox), a chart per patient (the case), test results (evidence cards), a differential (ranked hypotheses), and an order for one test (the next best check).
+FieldDx is a case file, not a dashboard. The officer opens it to decide where to go today and what to check when they get there, so the design favours **reading and trusting** over browsing. The metaphor is a clinician's chart: the ward the officer is responsible for (their area), the morning round (today's briefing), a ranked list of patients (the cases), a chart per patient (the case), test results (evidence cards), a differential (ranked hypotheses), and an order for one test (the next best check).
+
+The screens follow the order of the officer's work: sign in, find the region and see what is changing in it, go to the land and mark it, watch it being built, then read today's briefing and work the cases. Each screen has one job and one obvious next step.
 
 Three rules shape everything:
 
@@ -395,6 +397,17 @@ The case map is a **10 m pixel raster** on a real basemap, with three views: **N
 
 This is a brown-to-teal diverging ramp. It avoids red (reserved for severity) and avoids the red/green pairing that colour-blind officers can't separate. Bins are fixed and listed in the legend with their ΔNDVI values, e.g. "≤ −0.15".
 
+### Map: marking land and field shapes
+On the setup map, everything the officer marks is **white and ink**, so it reads on any imagery and never borrows a data colour:
+- A drawn polygon is a 3px white line with a pale ink fill; while drawing it is dashed, and the first corner is a white dot with an ink ring that closes the shape.
+- A picked field is filled ink at 50% with a white outline.
+- The point reached by "go to coordinates" is a white dot with an ink ring.
+- The region the map is locked to is a dashed white outline, and everything outside it is dimmed.
+
+Published Fields of the World shapes are drawn as thin yellow outlines with a faint yellow fill. Yellow appears nowhere else, so the shapes read as reference, not as a result.
+
+The **region overview** uses the same brown-to-teal change ramp as the case map, on cropland only, so "loss" looks the same at district scale and at field scale. Hotspots are dashed amber rectangles at district zoom.
+
 ### Timeline: absolute NDVI
 Raw NDVI appears only in the timeline axis band and legend: `#8a6a3b → #c9b57a → #e4e7b8 → #a9cf8e → #5da66a → #1f6f4a` (bare soil → dense canopy). Values are never clipped to the legend range.
 
@@ -428,13 +441,26 @@ Hierarchy comes from weight and size together. Uppercase is only for `eyebrow` l
 
 ### Screens
 
-**Inbox** (desktop-first, works on tablet)
+**Sign in**
+Two columns on desktop: the sign-in card (sign in, create account, or explore the demo area) and, beside it, one sentence on what FieldDx does and the four steps of the flow. On phones the card comes first.
+
+**Area setup** (a panel beside a full-height map)
+The panel is numbered in the order of the work: 1 find your region, 2 what is changing in it, 3 go to the land and mark it, 4 build it. Each step appears only once the one before it is done. The map locks to the chosen region, so the officer cannot wander across the country. On phones the map sits above the panel.
+
+**Building**
+One narrow column: the area's name, a progress bar, and the six build steps (field shapes, Sentinel-2 passes, weather, fields and pixel zones, harvest season, alerts), each with a state icon, a one-line detail and its elapsed time. A stopped build says why. A retry is offered only when it can help; otherwise the action is "Mark the area again".
+
+**Today's briefing** (home, once the area is built)
+A greeting with the area and the date of the last satellite pass, then two cards: a funnel from fields watched to fields that need a visit, showing what was dismissed, what is area-wide and what is waiting for another pass; and "Start here", the top cases with one line each. The fields map of the area sits below. The one primary action is "Open today's cases".
+
+**Cases** (desktop-first, works on tablet)
 A single table, not cards. Columns: severity, field + village, crop, what changed (ΔNDVI + date), leading hypothesis, confidence, status. Open cases sit on top in severity × confidence order. Dismissed cases sit below a "Dismissed automatically (2)" divider, muted, each with its reason. Area alerts appear as one grouped row, not as one row per field.
 
-**Case** (two columns at ≥1024px)
-- Left (about 60%): `map-frame` with the field, its zones, the ΔNDVI overlay and the 10 m pixel-grid toggle; below it, `timeline-chart` per zone.
-- Right (about 40%): the investigation rail. Agent steps run top to bottom, then the diagnosis, then the next-check slip.
-- Under 1024px the columns stack: map, then investigation, then timeline.
+**Case** (two columns at 1024px and wider)
+- Left: the map fills the space under a slim case header.
+- Right: a fixed panel with three tabs, Findings, Evidence and Trend, and the next-check slip docked at its foot.
+- The page never scrolls; only the panel does, and its scrollbar shows only under the pointer.
+- Under 1024px the columns stack: map, then the panel, with the slip sticking to the bottom of the screen.
 
 **Next best check / field checklist** (must work at 375px)
 This is what the officer opens on their phone at the field. It needs one column, large tap targets (44px minimum), the instruction in `body-lg`, a "what each result means" list, and the close-case form directly under it.
@@ -443,7 +469,7 @@ This is what the officer opens on their phone at the field. It needs one column,
 A short form: what you found (free text), photo (optional), result chips that map to the candidate check's outcomes ("Drip line dry", "Drip line wet"). After saving, the finding appears as a new evidence card (`E7`) and the hypothesis ranking re-orders with a short animation.
 
 ### Grid
-Content max width 1200px, 24px gutters on desktop, 16px on mobile. No horizontal scroll at 375px; the inbox table turns into stacked rows on mobile, with severity and field name on the first line.
+Content max width 1200px, 24px gutters on desktop, 16px on mobile. The case page and the area setup are full-bleed, because the map is the content there; the app bar spans the full width on the case page so it lines up with the map. No horizontal scroll at 375px; the inbox table turns into stacked rows on mobile, with severity and field name on the first line.
 
 ## Elevation & Depth
 
@@ -468,7 +494,29 @@ Depth comes from the sunken/subtle fills and the one dark slip, not from shadows
 
 ## Components
 
-### Inbox
+### Sign in and area setup
+**`signin-card`**: segmented control (Sign in, Create account), the form, and below an "or" rule a full-width outline button, "Explore the demo area", with the area's name underneath. Errors appear under the fields in severity-high text.
+
+**`region-search`**: a search input with a magnifier; results list the place, its kind (District, Taluka, Village) as an eyebrow word, and its context. A chosen region becomes a neutral chip with a close button to choose again.
+
+**`region-overview`**: three stat tiles (lost greenness, greened up, seen clearly), each a big number with a one-line definition, then "Where most of it dropped": a list of hotspots, each the nearest village, the share of its cropland that dropped and a small bar. Tapping a hotspot flies the map there. A muted line underneath says this is a screen, not a diagnosis.
+
+**`goto-input`**: one input for "latitude, longitude" with a Go button. A point outside the region is refused with a sentence that names the region and the expected order of the numbers.
+
+**`mark-modes`**: a segmented control, Draw a polygon (the default), Pick fields, Type corners. Under it, one or two lines of help for the chosen mode and a live count ("4 corners, closed", "3 fields picked") and area ("13 ha marked"). Warnings, such as fields too small for 10 m zones, use medium-severity text.
+
+**`map-toggles`**: stacked buttons at the top right of the setup map, "Change this fortnight" and "Fields of the World shapes". On is ink, off is white.
+
+**`build-steps`**: a bordered list, one row per step: a state icon (queued dashed circle, running spinner, done ink check, failed red cross), the step name, its elapsed time, and its detail line. A running download shows a thin progress bar.
+
+### Briefing
+**`briefing-funnel`**: one row per stage, each an icon, a label, a bar scaled to the number of fields watched, the count, and a one-line note. Bars are grey except where the colour means something: area-wide in area blue, waiting in amber, needs a visit in ink.
+
+**`start-list`**: up to three open cases, each a severity badge, the field, the leading cause and the change, and a confidence meter. It ends with a link to all alerts, including the dismissed ones, and a three-step reminder of how a case is worked.
+
+**`area-chip`** and **`officer-menu`**: in the app bar, the area's name and field count, and the officer's initial and name. The menu holds Change area, Reset closed cases and Sign out.
+
+### Cases
 **`inbox-row`**: one line per case on a hairline. The leading hypothesis is in `heading-3` and confidence is a small `confidence-meter`. The whole row is clickable, with a hover fill of `{colors.canvas-subtle}`.
 
 **`inbox-row-dismissed`**: muted text plus a reason chip. It is never hidden, because showing the dismissals is what makes the open cases believable.
@@ -512,7 +560,9 @@ Steps reveal one by one (`{motion.stagger}` apart, `{motion.base}` fade + 4px ri
 ### Honesty components
 **`limits-note`**: a small panel on every case, e.g. "Each pixel is 10 m × 10 m. This field is about 40 pixels. FieldDx can see zones, not individual vines or rows."
 
-**`data-note`**: a quiet one-line strip under the app bar naming the data behind every screen: "Real data: Sentinel-2 imagery via Earth Engine with Cloud Score+ masking, field shapes from the Fields of the World model, weather from Open-Meteo." It is neutral, not a warning, because nothing in FieldDx is simulated. Anything that *is* an assumption (a harvest or pruning window, the perennial or seasonal class) is labelled "assumed" on the evidence that uses it.
+**Provenance in place**: the sources are named where the data is used rather than on a banner: "Where the data comes from" under the cases, the source line on every evidence card, the footnote of the build page, and the date windows on the region overview. Nothing in FieldDx is simulated, so none of this is styled as a warning. Anything that *is* an assumption (a harvest or pruning window, inferred or placeholder, and the perennial or seasonal class) is labelled "assumed, not yet verified" on the evidence that uses it.
+
+**Screen, not diagnosis**: the region overview always carries the line that a harvested field drops like a failing one. Only a built area produces a diagnosis.
 
 ### Forms
 **`text-input`**: white, 1px strong border, `{rounded.sm}`, focus ring `{colors.focus}` 2px with a 2px offset. Labels sit above in `eyebrow`. Errors appear below in severity-high text with an icon.
@@ -523,6 +573,8 @@ Steps reveal one by one (`{motion.stagger}` apart, `{motion.base}` fade + 4px ri
 - Keyboard focus is always visible (2px `{colors.focus}` outline). Mouse clicks don't show the ring.
 - The map has a text equivalent: the evidence cards state what the map shows ("Loss concentrated on the east edge, 9 of 40 pixels").
 - Honour `prefers-reduced-motion` for the agent-step reveal and the re-ranking animation.
+- A hidden scrollbar never hides scrolling: panels still scroll with the wheel, touch and keyboard, and the bar appears under the pointer.
+- Every map action has a non-map path: a region is found by search, a place is reached by typed coordinates, and an area can be typed as corners.
 
 ## Do's and Don'ts
 
@@ -535,6 +587,8 @@ Steps reveal one by one (`{motion.stagger}` apart, `{motion.base}` fade + 4px ri
 - Write "unknown" when evidence is missing, and say what would resolve it.
 - Keep the next-check slip the only dark surface on the screen.
 - Make the field checklist work one-handed on a phone.
+- Lock the setup map to the officer's region, and say plainly when a typed point falls outside it.
+- Explain a failed build in the officer's terms ("too narrow for 10 m zones"), and offer only the action that can help.
 
 ### Don't
 - Don't use green for buttons or links. Green on this product means vegetation.
@@ -544,6 +598,9 @@ Steps reveal one by one (`{motion.stagger}` apart, `{motion.base}` fade + 4px ri
 - Don't stack shadows or round corners beyond `{rounded.md}` on working surfaces.
 - Don't hide the 10 m resolution limit or that field shapes are model predictions, not parcels; it's part of why judges and officers trust the result.
 - Don't present an assumption as a fact: the crop class and the management windows say "assumed, not yet verified" wherever they are used.
+- Don't present the region overview as a diagnosis, and don't colour it with severity colours.
+- Don't use brand green for marking land, progress or selection; marking is white and ink.
+- Don't use emoji anywhere in the product or its documents. Icons come from one line icon set (Lucide) and always sit next to a word.
 
 ## Provenance
 - This replaces an earlier draft that copied NerdWallet's brand language. Nothing here comes from NerdWallet.
