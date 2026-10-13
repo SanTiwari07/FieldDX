@@ -4,7 +4,10 @@ from __future__ import annotations
 import statistics
 from datetime import timedelta
 
+import numpy as np
+
 from .. import config
+from .. import data
 from ..data import ALL_ZONES, ANALYSIS, ZONE_LABEL
 from .common import Ctx, ToolResult, fmt_date, fmt_delta
 
@@ -81,6 +84,22 @@ def run(ctx: Ctx) -> ToolResult:
     gradual = days_to_drop is not None and days_to_drop > config.SUDDEN_DAYS
 
     significant = bool(watch)
+
+    # open water reads as NDVI below zero: flooded or ponded ground, not a failing crop. Measured over
+    # the zones that dropped, so a pond in one corner of an otherwise bare field is still seen.
+    zone_ids = [ANALYSIS.index(z) for z in watch if z in ANALYSIS] or list(range(len(ANALYSIS)))
+    g = data.grid(ctx.field.id)
+    az = g.az.ravel()[g.cells]
+
+    def water_share(sc):
+        if sc is None:
+            return None
+        ok = ~np.isnan(sc.px) & np.isin(az, zone_ids)
+        return float((sc.px[ok] < 0.0).mean()) if ok.any() else None
+
+    now_w = water_share(ref_scene) if ref_quality in ("usable", "partial") else None
+    base_w = water_share(s.baseline_scenes[-1]) if s.baseline_scenes else None
+    standing = bool(now_w is not None and now_w >= 0.40 and (base_w or 0.0) < 0.25)
     ctx.state.update(
         latest_scene=latest, ref_scene=latest, primary_zone=primary,
         onset_date=onset, alert_zones=alert_zones, confirmed=confirmed,
@@ -115,6 +134,8 @@ def run(ctx: Ctx) -> ToolResult:
             else:
                 speed = f" {'Sudden' if sudden else 'Gradual'}: {days_to_drop} days from first dip to {limit}."
         finding = head + tail + speed
+        if standing:
+            finding += f" {now_w:.0%} of the pixels in the affected zones now read as open water (NDVI below zero)."
 
     # sparkline: affected zone against the interior mean, last 10 scenes
     spark = []
@@ -139,11 +160,13 @@ def run(ctx: Ctx) -> ToolResult:
             "recovered_next": recovered,
             "drop_sudden": sudden if significant else None,
             "drop_gradual": gradual if significant else None,
+            "standing_water": standing if significant else None,
         },
         vars={
             "zone": primary_label,
             "delta": fmt_delta(primary_delta) if primary_delta is not None else "",
             "n_confirming": str(len(confirming)),
+            "water_pct": f"{now_w:.0%}" if now_w is not None else "",
         },
         data={
             "baseline": {"dates": [d.isoformat() for d in s.baseline_dates] if s.baseline_dates else None,

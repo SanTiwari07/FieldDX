@@ -124,7 +124,7 @@ class ToolResult:
     data: dict[str, Any] = field(default_factory=dict)
     as_of: date | None = None
     quality: str = "usable"
-    source: str = "Sentinel-2 L2A (simulated)"
+    source: str = "Sentinel-2 L2A, Cloud Score+ masked (via Earth Engine)"
     visual: dict[str, Any] | None = None
     skipped: bool = False
     skip_reason: str = ""

@@ -51,7 +51,7 @@ def test_every_field_grid_and_scene_line_up():
         for sc in data.scenes(fid):
             assert sc.px.shape == (g.cells.size,)
             ok = ~np.isnan(sc.px)
-            assert ((sc.px[ok] >= -0.2) & (sc.px[ok] <= 1.0)).all()
+            assert ((sc.px[ok] >= -1.0) & (sc.px[ok] <= 1.0)).all()  # open water on a field is a real, strongly negative NDVI
 
 
 def test_every_case_investigates_and_cites_only_real_evidence():
@@ -124,3 +124,9 @@ def test_an_open_case_can_be_closed_with_a_finding(client):
     assert j["outcome"] == "resolved" and j["evidence"][-1]["source"] == "Officer field visit"
     assert client.post("/api/admin/reset").json() == {"ok": True}
     assert client.get(f"/api/cases/{open_case['id']}").json()["outcome"] != "resolved"
+
+
+def test_no_evidence_is_labelled_as_simulated():
+    for c in data.case_specs():
+        for e in build_case(c["id"]).evidence:
+            assert "simulat" not in (e.source + e.finding).lower()

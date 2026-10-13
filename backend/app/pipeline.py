@@ -107,7 +107,7 @@ def iter_events(case_id: str) -> Iterator[tuple[str, dict]]:
         next_check = NextCheck(
             check_id="visit", label=v["label"], cost_min=v["cost_min"], hypotheses=[], candidates=[],
             outcomes=[CheckOutcome(key=k, label=o["label"], then=o["then"], supports=o["supports"], against=o["against"])
-                      for k, o in v["outcomes"].items()],
+                      for k, o in v["outcomes"].items() if not (k == "pruned" and ctx.field.klass != "perennial")],
         )
     if next_check and diag.outcome == "unexplained":
         yield "step", {"tool": "next_check", "state": "skipped", "label": STEP_LABELS["next_check"][0],

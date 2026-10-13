@@ -33,6 +33,7 @@ FACT_SOURCE = {
     "alert_scene_poor": "scene_quality", "clear_scenes_since": "scene_quality",
     "drop_significant": "ndvi_series", "drop_confirmed": "ndvi_series", "drop_single_date": "ndvi_series",
     "recovered_next": "ndvi_series", "drop_sudden": "ndvi_series", "drop_gradual": "ndvi_series",
+    "standing_water": "ndvi_series",
     "raw_edge_drop": "boundary_check", "edge_survives_buffer": "boundary_check",
     "edge_vanishes_in_buffer": "boundary_check", "edge_next_to_bare": "boundary_check",
     "interior_fine": "boundary_check", "interior_dropped": "boundary_check",
@@ -48,7 +49,6 @@ FACT_SOURCE = {
 }
 
 NDRE_UNKNOWN = "Red-edge (NDRE) needs 20 m bands and is not computed in this build; a leaf check would settle it."
-NDMI_UNKNOWN = "Wetness (NDMI) is not computed in this build; a look for standing water would settle it."
 
 RULES: tuple[Rule, ...] = (
     # ---- Stage 1: is the signal real?
@@ -175,14 +175,13 @@ RULES: tuple[Rule, ...] = (
         short="Nutrient deficiency",
     ),
     Rule(
-        "H10", "Waterlogging", 3,
+        "H10", "Standing water (waterlogging or flooding)", 3,
         supports=(
-            Cond("heavy_rain", "A heavy rain day fell inside the window", 0.50),
-            Cond("pattern_patch", "The loss sits in a patch, possibly low ground", 0.30),
-            Cond("ndmi_high", "Wetness index is high in the affected zone", 0.20, unknown=NDMI_UNKNOWN),
+            Cond("standing_water", "{water_pct} of the affected zones now read as open water (NDVI below zero)", 0.60),
+            Cond("heavy_rain", "A heavy rain day fell inside the window", 0.20),
+            Cond("pattern_patch", "The loss sits in a patch, possibly low ground", 0.20),
         ),
-        against=(Cond("heavy_rain", "No heavy rain day in the window", 0.70, want=False),),
-        short="Waterlogging",
+        short="Standing water",
     ),
 )
 

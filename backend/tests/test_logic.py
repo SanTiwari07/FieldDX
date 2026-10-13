@@ -68,6 +68,10 @@ def spreading(d, r, c):
     return v[0] if nw else v[1] if ne else v[2] if sw else 0.0
 
 
+def flooded(d, r, c):
+    return -1.0 if d >= date(2026, 10, 5) else 0.0  # NDVI of about -0.25: open water
+
+
 def build_all(tmp):
     fields = {
         "HERO": {"ev": hero}, "N1": {}, "N2": {}, "N3": {},
@@ -75,6 +79,7 @@ def build_all(tmp):
         "P1": {"class": "perennial", "ev": wave}, "P2": {"class": "perennial", "ev": wave},
         "P3": {"class": "perennial", "ev": wave}, "P4": {"class": "perennial", "ev": wave},
         "WAIT": {"ev": single_pass}, "ODD": {"class": "unknown", "ev": scattered}, "PEST": {"ev": spreading},
+        "WET": {"class": "unknown", "ev": flooded},
     }
     cases = [
         {"id": "HERO", "field_id": "HERO", "alert_date": "2026-09-30"},
@@ -84,6 +89,7 @@ def build_all(tmp):
         {"id": "WAIT", "field_id": "WAIT", "alert_date": "2026-10-10"},
         {"id": "ODD", "field_id": "ODD", "alert_date": "2026-10-05"},
         {"id": "PEST", "field_id": "PEST", "alert_date": "2026-09-30"},
+        {"id": "WET", "field_id": "WET", "alert_date": "2026-10-05"},
     ]
     fx.build(tmp, fields, weather={"rain": rain, "rh": humid}, cases=cases)
 
@@ -151,7 +157,14 @@ def test_spreading_patch_points_to_pests_and_asks_for_the_leaves(ds):
     assert "drip_line" not in {c.check_id for c in r.next_check.candidates}
 
 
-@pytest.mark.parametrize("cid", ["HERO", "HAZE", "EDGE", "P1", "WAIT", "ODD", "PEST"])
+def test_open_water_on_a_field_is_standing_water_not_a_failing_crop(ds):
+    r = case("WET")
+    assert r.outcome == "field_case" and r.hypotheses[0].id == "H10"
+    assert any("open water" in ln.text for ln in r.hypotheses[0].for_lines)
+    assert r.next_check.check_id == "water_look"
+
+
+@pytest.mark.parametrize("cid", ["HERO", "HAZE", "EDGE", "P1", "WAIT", "ODD", "PEST", "WET"])
 def test_every_line_cites_evidence_and_the_template_narrative_validates(ds, cid):
     from app.narrative import template_narrative, validate_narrative
     r = case(cid)
