@@ -2,11 +2,11 @@
 from datetime import date, timedelta
 
 import pytest
-from fastapi.testclient import TestClient
 from pytest import approx as pytest_approx
 
 from app import config, data, db
 from tests import fixture_data as fx
+from tests.conftest import signed_in
 
 D = date.fromisoformat
 
@@ -109,7 +109,7 @@ def ds(tmp_path, monkeypatch):
 
 def case(cid):
     from app.pipeline import build_case
-    return build_case(cid)
+    return build_case(fx.AREA, cid)
 
 
 def test_edge_drop_in_a_harvest_window_is_still_a_field_case(ds):
@@ -177,7 +177,7 @@ def test_every_line_cites_evidence_and_the_template_narrative_validates(ds, cid)
 
 def test_closing_a_field_case_adds_evidence_and_reranks(ds):
     from app.main import app
-    c = TestClient(app)
+    c = signed_in(fx.AREA)
     j = c.post("/api/cases/HERO/close", json={"check_id": "drip_line", "outcome": "dry", "note": "Valve blocked"}).json()
     assert j["outcome"] == "resolved" and j["evidence"][-1]["source"] == "Officer field visit"
     assert j["resolution"]["confirmed_id"] == "H7"
@@ -192,7 +192,7 @@ def test_closing_a_field_case_adds_evidence_and_reranks(ds):
 
 def test_an_unexplained_case_can_be_closed_with_what_the_officer_found(ds):
     from app.main import app
-    c = TestClient(app)
+    c = signed_in(fx.AREA)
     j = c.post("/api/cases/ODD/close", json={"check_id": "visit", "outcome": "harvested", "note": "Cut last week"}).json()
     assert j["outcome"] == "resolved" and j["resolution"]["confirmed_id"] == "H3"
     none = c.post("/api/cases/ODD/close", json={"check_id": "visit", "outcome": "other"})
@@ -201,13 +201,13 @@ def test_an_unexplained_case_can_be_closed_with_what_the_officer_found(ds):
 
 def test_a_watch_case_cannot_be_closed(ds):
     from app.main import app
-    c = TestClient(app)
+    c = signed_in(fx.AREA)
     assert c.post("/api/cases/WAIT/close", json={"check_id": "visit", "outcome": "harvested"}).status_code == 422
 
 
 def test_cloudy_scenes_never_carry_a_number(ds):
     from app.main import app
-    c = TestClient(app)
+    c = signed_in(fx.AREA)
     s = c.get("/api/cases/HAZE/series").json()
     assert all(isinstance(row["zones"]["in_nw"]["ndvi"], (float, type(None))) for row in s["scenes"])
     r = c.get("/api/cases/HAZE/raster?scene=2026-10-05").json()
@@ -218,7 +218,7 @@ def test_cloudy_scenes_never_carry_a_number(ds):
 
 def test_baseline_never_reaches_back_into_the_monsoon(ds):
     from app.tools.common import Series
-    f = data.fields()["HERO"]
+    f = data.fields(fx.AREA)["HERO"]
     ser = Series(f, D("2026-10-05"))
     a, b = ser.baseline_dates
     assert (D("2026-10-05") - a).days <= 75 and (D("2026-10-05") - b).days >= 20

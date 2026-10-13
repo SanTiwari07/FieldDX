@@ -12,29 +12,30 @@ from app import config, data
 from app.narrative import template_narrative, validate_narrative
 from app.pipeline import build_case
 
+AREA = "niphad"
 ALLOWED = {"auto_dismissed", "area_alert", "field_case", "unexplained", "watch"}
 
 
 @pytest.fixture(scope="module", autouse=True)
 def real_data():
     data.clear_caches()
-    assert config.DATA_DIR.name == "data", "these tests read the real dataset in data/"
+    assert config.DATA_DIR.name == "data", "these tests read the real dataset in data/areas/niphad"
     yield
 
 
 def test_the_dataset_is_real_and_complete():
-    fields = data.fields()
+    fields = data.fields(AREA)
     assert len(fields) >= 30
-    prov = data.provenance()
+    prov = data.provenance(AREA)
     assert "Fields of the World" in prov["boundaries"] and "Sentinel-2" in prov["imagery"]
-    meta = data.weather_meta()
+    meta = data.weather_meta(AREA)
     assert "Open-Meteo" in meta["source"]
-    assert data.weather()[-1].date >= date(2026, 10, 10)
-    assert "simulat" not in json.dumps(prov).lower() and "fixture" not in data.cases_file()["banner"].lower()
+    assert data.weather(AREA)[-1].date >= date(2026, 10, 10)
+    assert "simulat" not in json.dumps(prov).lower() and "fixture" not in data.cases_file(AREA)["banner"].lower()
 
 
 def test_field_shapes_are_real_polygons_not_squares():
-    raw = json.loads((config.DATA_DIR / "fields.geojson").read_text(encoding="utf-8"))
+    raw = json.loads((data.area_dir(AREA) / "fields.geojson").read_text(encoding="utf-8"))
     verts = []
     for ft in raw["features"]:
         g = shape(ft["geometry"])
@@ -44,21 +45,21 @@ def test_field_shapes_are_real_polygons_not_squares():
 
 
 def test_every_field_grid_and_scene_line_up():
-    for fid in data.fields():
-        g = data.grid(fid)
+    for fid in data.fields(AREA):
+        g = data.grid(AREA, fid)
         assert g.cells.size == int(g.inside.sum()) >= 40
         assert (g.az[g.inside] >= -1).all() and g.az.max() <= 7
-        for sc in data.scenes(fid):
+        for sc in data.scenes(AREA, fid):
             assert sc.px.shape == (g.cells.size,)
             ok = ~np.isnan(sc.px)
             assert ((sc.px[ok] >= -1.0) & (sc.px[ok] <= 1.0)).all()  # open water on a field is a real, strongly negative NDVI
 
 
 def test_every_case_investigates_and_cites_only_real_evidence():
-    specs = data.case_specs()
+    specs = data.case_specs(AREA)
     assert specs, "build_cases.py found no alerts"
     for c in specs:
-        r = build_case(c["id"])
+        r = build_case(AREA, c["id"])
         assert r.outcome in ALLOWED
         ids = {e.id for e in r.evidence}
         assert len(ids) >= 4
@@ -74,21 +75,21 @@ def test_every_case_investigates_and_cites_only_real_evidence():
 
 def test_alerts_are_detected_not_hand_picked():
     from app.tools.common import Series
-    for c in data.case_specs()[:10]:
-        f = data.fields()[c["field_id"]]
+    for c in data.case_specs(AREA)[:10]:
+        f = data.fields(AREA)[c["field_id"]]
         d = date.fromisoformat(c["alert_date"])
-        sc = next(s for s in data.scenes(f.id) if s.date == d)
+        sc = next(s for s in data.scenes(AREA, f.id) if s.date == d)
         ser = Series(f, d)
         worst = min((ser.delta(sc, z) for z in data.ALL_ZONES if ser.delta(sc, z) is not None), default=0)
         assert worst <= config.SIGNIFICANT_DROP
 
 
 def test_cloudy_passes_carry_no_pixel_values(client):
-    for fid in list(data.fields())[:12]:
-        ctx_case = next((c for c in data.case_specs() if c["field_id"] == fid), None)
+    for fid in list(data.fields(AREA))[:12]:
+        ctx_case = next((c for c in data.case_specs(AREA) if c["field_id"] == fid), None)
         if not ctx_case:
             continue
-        cloudy = [s for s in data.scenes(fid) if np.isnan(s.px).mean() > 0.5]
+        cloudy = [s for s in data.scenes(AREA, fid) if np.isnan(s.px).mean() > 0.5]
         if not cloudy:
             continue
         r = client.get(f"/api/cases/{ctx_case['id']}/raster?scene={cloudy[0].date}")
@@ -112,7 +113,7 @@ def test_api_serves_the_whole_workspace(client):
         text = "".join(resp.iter_text())
     assert "event: evidence" in text and "event: narrative" in text and text.rstrip().endswith("data: {}")
     gj = client.get("/api/fields.geojson").json()
-    assert len(gj["features"]) == len(data.fields())
+    assert len(gj["features"]) == len(data.fields(AREA))
 
 
 def test_an_open_case_can_be_closed_with_a_finding(client):
@@ -127,6 +128,6 @@ def test_an_open_case_can_be_closed_with_a_finding(client):
 
 
 def test_no_evidence_is_labelled_as_simulated():
-    for c in data.case_specs():
-        for e in build_case(c["id"]).evidence:
+    for c in data.case_specs(AREA):
+        for e in build_case(AREA, c["id"]).evidence:
             assert "simulat" not in (e.source + e.finding).lower()

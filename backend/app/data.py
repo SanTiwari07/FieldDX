@@ -1,6 +1,7 @@
-"""Load the real dataset built by scripts/build_dataset.py.
+"""Load the real dataset of each area, built by scripts/build_area.py.
 
-Fields are real shapes (Fields of the World), scenes are real Sentinel-2 L2A pixels masked with Cloud
+Every area lives in its own folder, data/areas/<area>/, so an officer only ever reads the area they
+work in. Fields are real shapes (Fields of the World), scenes are real Sentinel-2 L2A pixels masked with Cloud
 Score+ and SCL, weather is the Open-Meteo archive. Zone values are derived here from the pixels, so
 every number the tools report traces back to pixels.
 """
@@ -87,6 +88,7 @@ class Grid:
 
 @dataclass(frozen=True)
 class FieldRec:
+    area: str
     id: str
     name: str
     klass: str
@@ -106,6 +108,14 @@ def _read(path):
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def areas_root():
+    return config.DATA_DIR / "areas"
+
+
+def area_dir(area: str):
+    return areas_root() / area
+
+
 def _rings(geom: dict) -> list:
     """Exterior rings of a Polygon or MultiPolygon GeoJSON geometry."""
     if not geom or not geom.get("coordinates"):
@@ -117,20 +127,20 @@ def _rings(geom: dict) -> list:
     return []
 
 
-@lru_cache(maxsize=1)
-def provenance() -> dict:
-    return _read(config.DATA_DIR / "fields.geojson").get("provenance", {})
+@lru_cache(maxsize=None)
+def provenance(area: str) -> dict:
+    return _read(area_dir(area) / "fields.geojson").get("provenance", {})
 
 
-@lru_cache(maxsize=1)
-def fields() -> dict[str, FieldRec]:
-    raw = _read(config.DATA_DIR / "fields.geojson")
+@lru_cache(maxsize=None)
+def fields(area: str) -> dict[str, FieldRec]:
+    raw = _read(area_dir(area) / "fields.geojson")
     out: dict[str, FieldRec] = {}
     for feat in raw["features"]:
         p = feat["properties"]
         zp = p["zone_pixels"]
         out[p["id"]] = FieldRec(
-            id=p["id"], name=p["name"], klass=p.get("class", "unknown"), area_ha=p["area_ha"],
+            area=area, id=p["id"], name=p["name"], klass=p.get("class", "unknown"), area_ha=p["area_ha"],
             compactness=p.get("compactness", 0.0), analysis_pixels=sum(zp[z] for z in ANALYSIS),
             zone_pixels=zp, zone_polygons={z: _rings(g) for z, g in p["zones"].items()},
             outline=_rings(feat["geometry"]), lat=p["centroid"][1], lon=p["centroid"][0],
@@ -140,8 +150,8 @@ def fields() -> dict[str, FieldRec]:
 
 
 @lru_cache(maxsize=None)
-def grid(field_id: str) -> Grid:
-    g = _read(config.DATA_DIR / "grids" / f"{field_id}.json")
+def grid(area: str, field_id: str) -> Grid:
+    g = _read(area_dir(area) / "grids" / f"{field_id}.json")
     nr, nc = g["nr"], g["nc"]
     inside = np.array(g["inside"], dtype=bool).reshape(nr, nc)
     return Grid(
@@ -168,9 +178,9 @@ def _zone_obs(g: Grid, px: np.ndarray) -> dict[str, ZoneObs]:
 
 
 @lru_cache(maxsize=None)
-def scenes(field_id: str) -> tuple[Scene, ...]:
-    g = grid(field_id)
-    raw = _read(config.DATA_DIR / "scenes" / f"{field_id}.json")
+def scenes(area: str, field_id: str) -> tuple[Scene, ...]:
+    g = grid(area, field_id)
+    raw = _read(area_dir(area) / "scenes" / f"{field_id}.json")
     out = []
     for s in raw["scenes"]:
         px = np.array([np.nan if v is None else v / 1000.0 for v in s["ndvi"]], dtype=float)
@@ -191,24 +201,26 @@ class WeatherDay:
     soil_moisture: float
 
 
-@lru_cache(maxsize=1)
-def weather() -> tuple[WeatherDay, ...]:
-    raw = _read(config.DATA_DIR / "weather" / "niphad.json")
+@lru_cache(maxsize=None)
+def weather(area: str) -> tuple[WeatherDay, ...]:
+    raw = _read(area_dir(area) / "weather.json")
     return tuple(
         WeatherDay(date.fromisoformat(d["date"]), d["rain_mm"], d["tmax_c"], d["rh_mean"], d["soil_moisture"])
         for d in raw["days"]
     )
 
 
-@lru_cache(maxsize=1)
-def weather_meta() -> dict:
-    raw = _read(config.DATA_DIR / "weather" / "niphad.json")
+@lru_cache(maxsize=None)
+def weather_meta(area: str) -> dict:
+    raw = _read(area_dir(area) / "weather.json")
     return {k: v for k, v in raw.items() if k != "days"}
 
 
-@lru_cache(maxsize=1)
-def calendar() -> dict:
-    return _read(config.DATA_DIR / "calendar.json")["classes"]
+@lru_cache(maxsize=None)
+def calendar(area: str) -> dict:
+    """Management windows per canopy class. An area without a calendar file has none."""
+    path = area_dir(area) / "calendar.json"
+    return _read(path)["classes"] if path.exists() else {}
 
 
 @lru_cache(maxsize=1)
@@ -216,17 +228,22 @@ def checks() -> dict:
     return _read(config.DATA_DIR / "checks.json")
 
 
-@lru_cache(maxsize=1)
-def cases_file() -> dict:
-    return _read(config.DATA_DIR / "cases.json")
+@lru_cache(maxsize=None)
+def cases_file(area: str) -> dict:
+    return _read(area_dir(area) / "cases.json")
 
 
-def case_specs() -> list[dict]:
-    return cases_file()["cases"]
+def case_specs(area: str) -> list[dict]:
+    return cases_file(area)["cases"]
 
 
-def case_spec(case_id: str) -> dict | None:
-    return next((c for c in case_specs() if c["id"] == case_id), None)
+def case_spec(area: str, case_id: str) -> dict | None:
+    return next((c for c in case_specs(area) if c["id"] == case_id), None)
+
+
+def is_ready(area: str) -> bool:
+    """An area can be read once its build has written the alerts, the last file of a build."""
+    return (area_dir(area) / "cases.json").exists() and (area_dir(area) / "fields.geojson").exists()
 
 
 def clear_caches() -> None:

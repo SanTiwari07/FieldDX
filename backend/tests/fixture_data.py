@@ -1,8 +1,8 @@
 """A tiny hand-made dataset in the exact file format the real pipeline writes.
 
 It exists only so the engine's logic can be tested with known answers (an edge drop, a hazy scene, a
-boundary artefact...). The product itself never reads it: it is built in a temp folder and the loader
-is pointed there for the duration of a test.
+boundary artefact...). The product itself never reads it: it is built as an area called "fixture" in a
+temp folder and the loader is pointed there for the duration of a test.
 """
 from __future__ import annotations
 
@@ -17,6 +17,7 @@ ROOT = Path(config.ROOT)
 NR, NC = 14, 20
 ZONES = ["in_nw", "in_ne", "in_sw", "in_se", "edge_n", "edge_e", "edge_s", "edge_w"]
 RAWZ = ["raw_edge_n", "raw_edge_e", "raw_edge_s", "raw_edge_w"]
+AREA = "fixture"
 START = date(2026, 8, 1)
 END = date(2026, 10, 10)
 
@@ -50,12 +51,16 @@ def ring(lon0, lat0, w=0.0020, h=0.0015):
     return [[lon0, lat0], [lon0 + w, lat0], [lon0 + w, lat0 + h], [lon0, lat0 + h], [lon0, lat0]]
 
 
-def build(tmp: Path, fields: dict[str, dict], weather: dict | None = None, cases: list | None = None) -> Path:
+def build(root: Path, fields: dict[str, dict], weather: dict | None = None, cases: list | None = None) -> Path:
     """fields: id -> {class, lon, ev(date, r, c) -> delta or None to mask, skip(date) -> bool}"""
-    for sub in ("grids", "scenes", "weather"):
+    real = Path(config.ROOT) / "data"
+    tmp = root / "areas" / AREA
+    for sub in ("grids", "scenes"):
         (tmp / sub).mkdir(parents=True, exist_ok=True)
-    for name in ("calendar.json", "checks.json"):
-        shutil.copy(config.DATA_DIR / name, tmp / name)
+    shutil.copy(real / "checks.json", root / "checks.json")
+    shutil.copy(real / "areas" / "niphad" / "calendar.json", tmp / "calendar.json")
+    (tmp / "area.json").write_text(json.dumps({"id": AREA, "name": "Fixture", "region": "test", "status": "ready"}),
+                                   encoding="utf-8")
 
     feats = []
     for k, (fid, spec) in enumerate(fields.items()):
@@ -113,7 +118,7 @@ def build(tmp: Path, fields: dict[str, dict], weather: dict | None = None, cases
         days.append({"date": d.isoformat(), "rain_mm": rain, "tmax_c": 31.0, "rh_mean": w.get("rh", lambda d: 55)(d),
                      "soil_moisture": w.get("soil", lambda d: 0.28)(d)})
         d += timedelta(days=1)
-    (tmp / "weather" / "niphad.json").write_text(json.dumps({"source": "test fixture", "days": days}), encoding="utf-8")
+    (tmp / "weather.json").write_text(json.dumps({"source": "test fixture", "days": days}), encoding="utf-8")
 
     (tmp / "cases.json").write_text(json.dumps({
         "as_of": END.isoformat(), "banner": "Test fixture data.",

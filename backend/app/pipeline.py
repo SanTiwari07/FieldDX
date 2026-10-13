@@ -64,14 +64,14 @@ def assign_stance(evidence: list[Evidence], lead: HypothesisResult | None) -> No
             e.stance = "against"
 
 
-def iter_events(case_id: str) -> Iterator[tuple[str, dict]]:
-    spec = data.case_spec(case_id)
+def iter_events(area: str, case_id: str) -> Iterator[tuple[str, dict]]:
+    spec = data.case_spec(area, case_id)
     if spec is None:
         raise KeyError(case_id)
-    cases = data.cases_file()
+    cases = data.cases_file(area)
     as_of = date.fromisoformat(cases["as_of"])
     alert = date.fromisoformat(spec["alert_date"])
-    ctx = build_ctx(spec["field_id"], alert, as_of)
+    ctx = build_ctx(area, spec["field_id"], alert, as_of)
 
     evidence: list[Evidence] = []
     facts: dict = {}
@@ -181,17 +181,17 @@ def _engine_summary(diag) -> str:
 
 
 @lru_cache(maxsize=None)
-def _cached(case_id: str) -> CaseResult:
+def _cached(area: str, case_id: str) -> CaseResult:
     last = None
-    for kind, payload in iter_events(case_id):
+    for kind, payload in iter_events(area, case_id):
         if kind == "diagnosis":
             last = payload
     return CaseResult.model_validate(last)
 
 
-def build_case(case_id: str) -> CaseResult:
+def build_case(area: str, case_id: str) -> CaseResult:
     """The deterministic result for a case, before any officer finding is applied."""
-    return _cached(case_id).model_copy(deep=True)
+    return _cached(area, case_id).model_copy(deep=True)
 
 
 def inbox_sort_key(r: CaseResult) -> tuple:

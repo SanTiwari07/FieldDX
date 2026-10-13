@@ -32,7 +32,7 @@ def raster(field: FieldRec, series: Series, day: date) -> dict | None:
     scene = series.scene_at(day)
     if scene is None:
         return None
-    g = data.grid(field.id)
+    g = data.grid(field.area, field.id)
     cls = series.scene_class(scene)
     ndvi = _full(g, scene.px)
     base = None

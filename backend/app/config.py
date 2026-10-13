@@ -6,6 +6,7 @@ tuned against real exports and written into the spec; nothing else in the code h
 from __future__ import annotations
 
 import os
+import sys
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -23,6 +24,35 @@ LLM_MODE = os.environ.get("FIELDDX_LLM", "auto").lower()
 LLM_TIMEOUT_S = float(os.environ.get("FIELDDX_LLM_TIMEOUT", "25"))
 # Pause between investigation steps so a viewer can follow along (milliseconds)
 DEMO_PACING_MS = int(os.environ.get("DEMO_PACING", "550"))
+
+# ---- sign-in
+SESSION_COOKIE = "fdx_session"
+SESSION_DAYS = 30
+DEMO_AREA = "niphad"        # the area the "explore the demo" officer works in
+
+# ---- areas: where an officer works, built on demand from real sources
+SCRIPTS_DIR = ROOT / "scripts"
+PYTHON = os.environ.get("FIELDDX_PYTHON") or sys.executable  # runs the build scripts
+AREA_MAX_KM2 = 150.0        # a bigger area means hundreds of MB of imagery per year
+AREA_MIN_KM2 = 0.05
+# Place search (OpenStreetMap Nominatim, 1 request per second, identify the app)
+NOMINATIM_URL = os.environ.get("FIELDDX_NOMINATIM", "https://nominatim.openstreetmap.org/search")
+HTTP_USER_AGENT = "FieldDx/0.3 (field officer triage; https://github.com/SanTiwari07/FieldDX)"
+# Fields of the World global field boundaries (2024 and 2025), GeoParquet and PMTiles per state
+FTW_GLOBAL_BASE = os.environ.get(
+    "FIELDDX_FTW_GLOBAL",
+    "https://data.source.coop/ftw/global-data/predictions/vectors/alpha/results-by-admin-conf",
+)
+
+
+def ftw_cli() -> str | None:
+    """The Fields of the World CLI, if it is installed: FIELDDX_FTW, then PATH, then the usual venv."""
+    import shutil
+    for cand in (os.environ.get("FIELDDX_FTW"), shutil.which("ftw"),
+                 str(Path(os.environ.get("TEMP", "/tmp")) / "ftwenv" / "Scripts" / "ftw.exe")):
+        if cand and Path(cand).exists():
+            return cand
+    return None
 
 
 # ---- scene quality (share of pixels left after masking SCL 0, 1, 3, 8, 9, 10, 11)

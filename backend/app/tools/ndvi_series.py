@@ -88,7 +88,7 @@ def run(ctx: Ctx) -> ToolResult:
     # open water reads as NDVI below zero: flooded or ponded ground, not a failing crop. Measured over
     # the zones that dropped, so a pond in one corner of an otherwise bare field is still seen.
     zone_ids = [ANALYSIS.index(z) for z in watch if z in ANALYSIS] or list(range(len(ANALYSIS)))
-    g = data.grid(ctx.field.id)
+    g = data.grid(ctx.field.area, ctx.field.id)
     az = g.az.ravel()[g.cells]
 
     def water_share(sc):

@@ -31,7 +31,7 @@ class Series:
 
     def __init__(self, field_rec: FieldRec, alert: date):
         self.field = field_rec
-        self.scenes = list(data.scenes(field_rec.id))
+        self.scenes = list(data.scenes(field_rec.area, field_rec.id))
         self.alert = alert
         self.baseline_scenes: list[Scene] = []
         self.baseline, self.baseline_dates = self._baseline()
@@ -140,10 +140,10 @@ class Ctx:
     state: dict[str, Any] = field(default_factory=dict)  # values handed from one tool to the next
 
 
-def build_ctx(field_id: str, alert: date, as_of: date) -> Ctx:
-    f = data.fields()[field_id]
+def build_ctx(area: str, field_id: str, alert: date, as_of: date) -> Ctx:
+    f = data.fields(area)[field_id]
     others = [
-        o for o in data.fields().values()
+        o for o in data.fields(area).values()
         if o.id != f.id and f.klass != "unknown" and o.klass == f.klass
         and data.distance_km(f, o) <= config.NEIGHBOUR_RADIUS_KM
     ]

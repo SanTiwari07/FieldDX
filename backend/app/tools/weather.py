@@ -9,7 +9,7 @@ from .common import Ctx, ToolResult, fmt_date
 
 
 def run(ctx: Ctx) -> ToolResult:
-    days = data.weather()
+    days = data.weather(ctx.field.area)
     by_date = {d.date: d for d in days}
     end = ctx.as_of
     win = [by_date[end - timedelta(days=i)] for i in range(config.WINDOW_DAYS - 1, -1, -1) if (end - timedelta(days=i)) in by_date]
@@ -87,7 +87,7 @@ def run(ctx: Ctx) -> ToolResult:
             "pre_onset": pre or None,
         },
         as_of=end, quality="usable",
-        source=data.weather_meta().get("source", "Weather"),
+        source=data.weather_meta(ctx.field.area).get("source", "Weather"),
         visual={"type": "rain", "days": [
             {"date": d.date.isoformat(), "rain": d.rain_mm, "tmax": d.tmax_c} for d in win
         ]},

@@ -12,9 +12,15 @@ from .. import config, data
 from .common import Ctx, ToolResult, fmt_date
 
 
-def active_window(klass: str, day: date) -> dict | None:
+def year_before(day: date) -> str:
+    """First month (YYYY-MM) of the twelve full months before `day`'s month."""
+    y, m = (day.year - 1, day.month + 1) if day.month < 12 else (day.year, 1)
+    return f"{y}-{m:02d}"
+
+
+def active_window(area: str, klass: str, day: date) -> dict | None:
     slack = timedelta(days=config.MANAGEMENT_SLACK_DAYS)
-    for w in data.calendar().get(klass, {}).get("windows", []):
+    for w in data.calendar(area).get(klass, {}).get("windows", []):
         sm, sd = map(int, w["start"].split("-"))
         em, ed = map(int, w["end"].split("-"))
         start, end = date(day.year, sm, sd), date(day.year, em, ed)
@@ -26,9 +32,9 @@ def active_window(klass: str, day: date) -> dict | None:
 def run(ctx: Ctx) -> ToolResult:
     f = ctx.field
     onset = ctx.state.get("onset_date") or ctx.alert
-    window = active_window(f.klass, onset)
+    window = active_window(f.area, f.klass, onset)
     monthly = f.monthly
-    lows = [v for m, v in monthly.items() if "2025-11" <= m <= "2026-09"]
+    lows = [v for m, v in monthly.items() if year_before(onset) <= m < f"{onset:%Y-%m}"]
     low = min(lows) if lows else None
 
     if low is None:
@@ -43,7 +49,7 @@ def run(ctx: Ctx) -> ToolResult:
     if window:
         verified = window.get("verified", False)
         finding = (
-            f"The drop began {fmt_date(onset)}, inside the {window['label'].lower()} window "
+            f"The drop began {fmt_date(onset)}, inside the {window['label'][:1].lower() + window['label'][1:]} window "
             f"({fmt_date(date.fromisoformat(window['start_date']))} to {fmt_date(date.fromisoformat(window['end_date']))}, "
             f"{'verified' if verified else 'assumed, not yet verified with an agronomist'}). {kind}"
         )
