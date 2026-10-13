@@ -17,6 +17,13 @@ select.input { padding-right: 28px; }
 .link-btn:hover { color: var(--text); }
 .center-spin { display: grid; place-items: center; min-height: 40vh; }
 
+/* ---------- quiet scrollbars: panels still scroll, the bar shows only while the pointer is over them ---------- */
+.panel-body, .setup-panel { scrollbar-width: thin; scrollbar-color: transparent transparent; }
+.panel-body:hover, .setup-panel:hover { scrollbar-color: var(--border-strong) transparent; }
+body:has(.case-shell) { overflow: hidden; }
+body:has(.case-shell) .appbar-inner { max-width: none; }
+@media (max-width: 1023px) { body:has(.case-shell) { overflow: auto; } }
+
 /* ---------- app bar additions ---------- */
 .appnav { display: flex; gap: 4px; padding-left: 12px; border-left: 1px solid var(--border); }
 .appnav a { padding: 6px 10px; border-radius: var(--r-sm); font-size: 13px; font-weight: 600; color: var(--text-2); }
