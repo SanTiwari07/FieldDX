@@ -145,6 +145,21 @@ def _search(q: str) -> tuple[dict, ...]:
     return tuple(out)
 
 
+@lru_cache(maxsize=2048)
+def nearest_name(lat: float, lon: float) -> str:
+    """The village or town nearest a point, for naming a hotspot ("around Korochi")."""
+    params = {"lat": round(lat, 4), "lon": round(lon, 4), "format": "jsonv2", "zoom": 14, "addressdetails": 1}
+    try:
+        r = json.loads(_polite_get(f"{config.NOMINATIM_URL.rsplit('/', 1)[0]}/reverse?{urllib.parse.urlencode(params)}"))
+    except (OSError, ValueError):
+        return ""
+    a = r.get("address", {})
+    for k in ("village", "hamlet", "suburb", "town", "city", "municipality", "county"):
+        if a.get(k):
+            return a[k]
+    return r.get("name") or ""
+
+
 def search(q: str) -> list[dict]:
     q = " ".join(q.split())[:120]
     if len(q) < 2:

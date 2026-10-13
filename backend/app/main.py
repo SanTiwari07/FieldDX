@@ -15,7 +15,7 @@ from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from . import areas, config, data, db, llm, places, service
+from . import areas, config, data, db, llm, overview, places, service
 from .models import CaseResult, CloseRequest
 from .pipeline import build_case, iter_events
 from .raster import raster as build_raster
@@ -194,6 +194,57 @@ def ftw_tiles(code: str, request: Request, _o: dict = Depends(current_officer)):
     if etag:
         headers["ETag"] = etag
     return Response(body, status_code=206, media_type="application/octet-stream", headers=headers)
+
+
+class Region(BaseModel):
+    name: str = ""
+    bounds: list[list[float]] = Field(min_length=2, max_length=2)
+    boundary: dict | None = None
+
+
+def _region(body: Region) -> dict:
+    (s, w), (n, e) = body.bounds
+    if not (-90 <= s < n <= 90 and -180 <= w < e <= 180):
+        raise HTTPException(422, "The region's bounds are not valid")
+    return {"bounds": [[s, w], [n, e]], "boundary": body.boundary}
+
+
+@app.post("/api/overview/map")
+def overview_map(body: Region, _o: dict = Depends(current_officer)):
+    """This fortnight's NDVI change over the region's cropland, as map tiles."""
+    region = _region(body)
+    try:
+        out = overview.tile_url(region)
+    except overview.OverviewError as e:
+        raise HTTPException(422, str(e))
+    except Exception:  # noqa: BLE001  Earth Engine errors arrive as many types
+        raise HTTPException(502, "Earth Engine could not build the change map right now")
+    return {**out, "tiles": f"/api/overview/tiles/{out['key']}/{{z}}/{{x}}/{{y}}.png"}
+
+
+@app.post("/api/overview/summary")
+def overview_summary(body: Region, _o: dict = Depends(current_officer)):
+    """How much of the region's cropland lost or gained greenness, and where most of it dropped."""
+    region = _region(body)
+    try:
+        return overview.summary(region, body.name)
+    except overview.OverviewError as e:
+        raise HTTPException(422, str(e))
+    except Exception:  # noqa: BLE001
+        raise HTTPException(502, "Earth Engine could not summarise the region right now")
+
+
+@app.get("/api/overview/tiles/{key}/{z}/{x}/{y}.png")
+def overview_tile(key: str, z: int, x: int, y: int, _o: dict = Depends(current_officer)):
+    if not re.fullmatch(r"[0-9a-f]{16}", key) or not (0 <= z <= 20):
+        raise HTTPException(400, "Unknown tile")
+    try:
+        body = overview.tile(key, z, x, y)
+    except OSError:
+        raise HTTPException(502, "Earth Engine is not reachable right now")
+    if body is None:
+        raise HTTPException(404, "This change map has expired; reload the region")
+    return Response(body, media_type="image/png", headers={"Cache-Control": "private, max-age=3600"})
 
 
 @app.get("/api/areas")

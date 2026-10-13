@@ -141,3 +141,16 @@ def test_the_tile_proxy_only_serves_byte_ranges_of_a_state_partition():
     c.post("/api/auth/demo")
     for code, rng in (("IN%2FMH", "bytes=0-10"), ("IN_M-H", "bytes=0-10"), ("in_mh", "bytes=0-10"), ("IN_MH", ""), ("IN_MH", "bytes=0-")):
         assert c.get(f"/api/ftw/{code}.pmtiles", headers={"Range": rng} if rng else {}).status_code in (400, 404), (code, rng)
+
+
+def test_the_region_overview_checks_its_input_before_asking_earth_engine():
+    c = TestClient(app)
+    body = {"name": "Kolhapur", "bounds": [[16.0, 73.6], [17.2, 74.7]], "boundary": None}
+    assert c.post("/api/overview/summary", json=body).status_code == 401
+    c.post("/api/auth/demo")
+    assert c.post("/api/overview/map", json={**body, "bounds": [[17.2, 73.6], [16.0, 74.7]]}).status_code == 422
+    huge = {**body, "bounds": [[8.0, 68.0], [35.0, 97.0]]}
+    r = c.post("/api/overview/summary", json=huge)
+    assert r.status_code == 422 and "district" in r.json()["detail"]
+    assert c.get("/api/overview/tiles/not-a-key/5/1/1.png").status_code == 400
+    assert c.get("/api/overview/tiles/0123456789abcdef/5/1/1.png").status_code == 404
