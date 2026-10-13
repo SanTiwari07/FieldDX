@@ -10,7 +10,7 @@ import { api, AreaSummary, FieldsSource, GeoPolygon, OverviewMap, OverviewSummar
 import { fmtDate } from "../lib/format";
 import { DELTA_STOPS } from "../lib/ramps";
 import { useSession } from "../session";
-import { FtwLayer, PickedField } from "../components/FtwLayer";
+import { FtwLayer, MIN_FIELD_HA, PickedField } from "../components/FtwLayer";
 import { Spinner } from "../components/ui";
 
 type Mode = "pick" | "draw" | "coords";
@@ -316,8 +316,20 @@ export default function Setup() {
   const canBuild = !!place && !!ring && !tooBig && km2 > 0.05 && name.trim().length >= 2 && !busy
     && (fieldSource === "ftw_model" ? !!source?.model_available : !!partition);
 
-  const togglePick = (f: PickedField) =>
-    setPicked((list) => (list.some((p) => p.key === f.key) ? list.filter((p) => p.key !== f.key) : [...list, f]));
+  const [pickNote, setPickNote] = useState("");
+  const togglePick = (f: PickedField) => {
+    if (picked.some((p) => p.key === f.key)) {
+      setPicked((list) => list.filter((p) => p.key !== f.key));
+      setPickNote("");
+      return;
+    }
+    if (f.areaHa !== null && f.areaHa < MIN_FIELD_HA) {
+      setPickNote(`That field is ${f.areaHa < 0.1 ? "under 0.1" : f.areaHa.toFixed(1)} ha. FieldDx needs about ${MIN_FIELD_HA} ha to split a field into zones at 10 m, so it cannot watch this one. Pick a yellow field.`);
+      return;
+    }
+    setPickNote("");
+    setPicked((list) => [...list, f]);
+  };
 
   const addVertex = (p: LngLat) => {
     if (closed) return;
@@ -457,7 +469,9 @@ export default function Setup() {
                 {zoom < 13 && <p className="hint"><Hand size={14} aria-hidden /> Zoom in to see the fields.</p>}
                 <p className="stat"><strong>{picked.length}</strong> field{picked.length === 1 ? "" : "s"} picked
                   {picked.length > 0 && <button type="button" className="link-btn" onClick={() => setPicked([])}>Clear</button>}</p>
-                {smallPicks > 0 && <p className="hint warn">{smallPicks} of them {smallPicks === 1 ? "is" : "are"} under 0.8 ha, too small to diagnose zone by zone at 10 m. {smallPicks === 1 ? "It" : "They"} will be skipped.</p>}
+                <p className="ftw-key"><span className="k-big" aria-hidden /> Big enough to watch <span className="k-small" aria-hidden /> Under {MIN_FIELD_HA} ha, too small at 10 m</p>
+                {pickNote && <p className="hint warn" role="status">{pickNote}</p>}
+                {smallPicks > 0 && <p className="hint warn">{smallPicks} of them {smallPicks === 1 ? "is" : "are"} under {MIN_FIELD_HA} ha and will be skipped.</p>}
                 {picked.length > 0 && picked.length < 3 && <p className="muted small">Pick a few neighbouring fields too: FieldDx compares each field with similar ones within 2 km to tell an area-wide event from a field problem.</p>}
               </div>
             )}

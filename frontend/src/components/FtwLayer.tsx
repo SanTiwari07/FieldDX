@@ -16,6 +16,9 @@ function keyOf(f: Feature, layer: string): string {
   return `${layer}:${f.bbox.minX | 0},${f.bbox.minY | 0},${f.bbox.maxX | 0},${f.bbox.maxY | 0}`;
 }
 
+/** Smallest field FieldDx can split into four interior quarters and four edges of 10 m pixels. */
+export const MIN_FIELD_HA = 0.8;
+
 function haOf(f: Feature): number | null {
   const p = f.props as Record<string, unknown>;
   const a = Number(p["metrics:area"] ?? p.area ?? NaN);
@@ -39,13 +42,17 @@ export function FtwLayer({ url, layer = "2025", picking, picked, onPick }: {
 
   useEffect(() => {
     const isPicked = (_z: number, f: Feature) => pickedKeys.current.has(keyOf(f, layer));
+    // a field too small for 10 m zones is drawn faint and grey; only the ones FieldDx can watch are yellow
+    const big = (_z: number, f: Feature) => (haOf(f) ?? MIN_FIELD_HA) >= MIN_FIELD_HA;
+    const small = (z: number, f: Feature) => !big(z, f);
     const l = leafletLayer({
       url,
       maxDataZoom: 13, // the FTW state tiles stop at z13; deeper zooms overzoom them
       attribution: "Fields: <a href='https://fieldsofthe.world'>Fields of the World</a> (CC-BY-4.0)",
       paintRules: [
-        { dataLayer: layer, symbolizer: new PolygonSymbolizer({ fill: "#facc15", opacity: 0.12 }) },
-        { dataLayer: layer, symbolizer: new LineSymbolizer({ color: "#fde047", width: (z: number) => (z >= 15 ? 0.6 : 0.9), opacity: 0.8 }) },
+        { dataLayer: layer, filter: small, symbolizer: new LineSymbolizer({ color: "#e5e7eb", width: 0.5, opacity: 0.45 }) },
+        { dataLayer: layer, filter: big, symbolizer: new PolygonSymbolizer({ fill: "#facc15", opacity: 0.18 }) },
+        { dataLayer: layer, filter: big, symbolizer: new LineSymbolizer({ color: "#fde047", width: (z: number) => (z >= 15 ? 0.9 : 1.1), opacity: 0.95 }) },
         { dataLayer: layer, filter: isPicked, symbolizer: new PolygonSymbolizer({ fill: "#101c16", opacity: 0.5 }) },
         { dataLayer: layer, filter: isPicked, symbolizer: new LineSymbolizer({ color: "#ffffff", width: 2 }) },
       ],
