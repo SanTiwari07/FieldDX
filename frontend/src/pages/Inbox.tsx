@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { ChevronRight, List, Map as MapIcon } from "lucide-react";
 import { api, InboxRow, Provenance } from "../api";
@@ -8,14 +8,23 @@ import { paintRaster } from "../components/RasterOverlay";
 
 const FieldsMap = lazy(() => import("../components/FieldsMap"));
 
+/** A small picture of the field's real pixels. Loads only when the row scrolls into view. */
 function Thumb({ id }: { id: string }) {
   const [url, setUrl] = useState("");
+  const box = useRef<HTMLSpanElement>(null);
   useEffect(() => {
+    const el = box.current;
+    if (!el) return;
     let live = true;
-    api.raster(id).then((r) => live && setUrl(paintRaster(r, "ndvi", false, 6))).catch(() => undefined);
-    return () => { live = false; };
+    const io = new IntersectionObserver((entries) => {
+      if (!entries.some((e) => e.isIntersecting)) return;
+      io.disconnect();
+      api.raster(id).then((r) => live && setUrl(paintRaster(r, "ndvi", false, 6))).catch(() => undefined);
+    }, { rootMargin: "200px" });
+    io.observe(el);
+    return () => { live = false; io.disconnect(); };
   }, [id]);
-  return <span className="thumb" aria-hidden>{url && <img src={url} alt="" />}</span>;
+  return <span className="thumb" ref={box} aria-hidden>{url && <img src={url} alt="" />}</span>;
 }
 
 function Row({ row }: { row: InboxRow }) {

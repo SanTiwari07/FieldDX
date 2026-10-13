@@ -163,7 +163,7 @@ dialog.sheet::backdrop { background: rgba(16, 28, 22, 0.5); }
   .panel-body { overflow: visible; padding: 16px 16px 24px; }
   .tabs { position: sticky; top: 56px; z-index: 1000; }
   .dock { position: sticky; bottom: 0; z-index: 1000; box-shadow: 0 -6px 18px rgba(16, 28, 22, 0.14); }
-  .dock-slip .dock-results, .dock-slip .dock-cost { display: none; }
+  .dock-slip .dock-results, .dock-slip .dock-cost, .dock-slip .dock-ask { display: none; }
   .dock-instruction { font-size: 16px; }
     .ws-legend { right: 12px; left: auto; bottom: 68px; width: 232px; }
   .ws-scenes { right: 12px; }
@@ -218,4 +218,9 @@ dialog.sheet::backdrop { background: rgba(16, 28, 22, 0.5); }
 .mv-month-bar { width: 100%; background: #5da66a; border-radius: 2px 2px 0 0; }
 .mv-month small { font-size: 10px; color: var(--text-3); line-height: 1; }
 .mv-months figcaption { font-size: 11px; margin-top: 3px; }
-@media (max-width: 760px) { .about { padding: 16px; } }
+@media (max-width: 760px) {
+  .about { padding: 16px; }
+  .tally { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tally div { min-width: 0; }
+  .tally dt { white-space: normal; }
+}
