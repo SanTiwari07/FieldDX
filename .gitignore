@@ -18,6 +18,9 @@ venv/
 node_modules/
 dist/
 
+# knowledge graph build output (rebuild with /graphify)
+graphify-out/
+
 # os / editor
 .DS_Store
 Thumbs.db
