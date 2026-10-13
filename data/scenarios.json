@@ -1,0 +1,49 @@
+{
+  "_note": "Every case here is built from SIMULATED data (see scripts/build_scenarios.py). None of it is real Sentinel-2 imagery. The UI shows a scenario banner on every case.",
+  "banner": "Simulated scenario: synthetic Sentinel-2-style data, not real imagery.",
+  "as_of": "2026-10-10",
+  "cases": [
+    {
+      "id": "C1",
+      "field_id": "F07",
+      "alert_date": "2026-09-30",
+      "label": "Hero case: edge-concentrated drop, dry spell, neighbours fine",
+      "expected": {"outcome": "field_case", "top": "H7"}
+    },
+    {
+      "id": "C2",
+      "field_id": "F10",
+      "alert_date": "2026-10-05",
+      "label": "Single-date crash on a hazy scene",
+      "expected": {"outcome": "auto_dismissed", "top": "H1"}
+    },
+    {
+      "id": "C3",
+      "field_id": "F02",
+      "alert_date": "2026-10-05",
+      "label": "Grape plots drop uniformly inside the pruning window",
+      "expected": {"outcome": "auto_dismissed", "top": "H3"}
+    },
+    {
+      "id": "C4",
+      "field_id": "F09",
+      "alert_date": "2026-09-30",
+      "label": "Patch spreading across dates after a humid, wet spell",
+      "expected": {"outcome": "field_case", "top": "H8"}
+    },
+    {
+      "id": "C5",
+      "field_id": "F11",
+      "alert_date": "2026-10-05",
+      "label": "Edge drop that vanishes once boundary pixels are removed",
+      "expected": {"outcome": "auto_dismissed", "top": "H2"}
+    },
+    {
+      "id": "C6",
+      "field_id": "F12",
+      "alert_date": "2026-10-05",
+      "label": "Confirmed drop that fits no pattern",
+      "expected": {"outcome": "unexplained", "top": null}
+    }
+  ]
+}

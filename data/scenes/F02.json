@@ -1,0 +1,1386 @@
+{
+ "field_id": "F02",
+ "synthetic": true,
+ "scenes": [
+  {
+   "date": "2026-07-07",
+   "scene_id": "SIM-20260707",
+   "cloud_pct": 64,
+   "shadow_pct": 13,
+   "cirrus_pct": 9,
+   "zones": {
+    "in_nw": {
+     "ndvi": 0.548,
+     "valid_fraction": 0.13,
+     "pixels": 24
+    },
+    "in_ne": {
+     "ndvi": 0.564,
+     "valid_fraction": 0.14,
+     "pixels": 24
+    },
+    "in_sw": {
+     "ndvi": 0.661,
+     "valid_fraction": 0.18,
+     "pixels": 24
+    },
+    "in_se": {
+     "ndvi": 0.482,
+     "valid_fraction": 0.15,
+     "pixels": 24
+    },
+    "edge_n": {
+     "ndvi": 0.546,
+     "valid_fraction": 0.14,
+     "pixels": 32
+    },
+    "edge_e": {
+     "ndvi": 0.538,
+     "valid_fraction": 0.11,
+     "pixels": 18
+    },
+    "edge_s": {
+     "ndvi": 0.392,
+     "valid_fraction": 0.15,
+     "pixels": 32
+    },
+    "edge_w": {
+     "ndvi": 0.495,
+     "valid_fraction": 0.12,
+     "pixels": 18
+    },
+    "raw_edge_n": {
+     "ndvi": 0.467,
+     "valid_fraction": 0.12,
+     "pixels": 36
+    },
+    "raw_edge_e": {
+     "ndvi": 0.406,
+     "valid_fraction": 0.12,
+     "pixels": 22
+    },
+    "raw_edge_s": {
+     "ndvi": 0.438,
+     "valid_fraction": 0.11,
+     "pixels": 36
+    },
+    "raw_edge_w": {
+     "ndvi": 0.532,
+     "valid_fraction": 0.11,
+     "pixels": 22
+    }
+   }
+  },
+  {
+   "date": "2026-07-12",
+   "scene_id": "SIM-20260712",
+   "cloud_pct": 32,
+   "shadow_pct": 6,
+   "cirrus_pct": 4,
+   "zones": {
+    "in_nw": {
+     "ndvi": 0.68,
+     "valid_fraction": 0.56,
+     "pixels": 24
+    },
+    "in_ne": {
+     "ndvi": 0.689,
+     "valid_fraction": 0.61,
+     "pixels": 24
+    },
+    "in_sw": {
+     "ndvi": 0.727,
+     "valid_fraction": 0.6,
+     "pixels": 24
+    },
+    "in_se": {
+     "ndvi": 0.723,
+     "valid_fraction": 0.59,
+     "pixels": 24
+    },
+    "edge_n": {
+     "ndvi": 0.701,
+     "valid_fraction": 0.6,
+     "pixels": 32
+    },
+    "edge_e": {
+     "ndvi": 0.72,
+     "valid_fraction": 0.58,
+     "pixels": 18
+    },
+    "edge_s": {
+     "ndvi": 0.713,
+     "valid_fraction": 0.59,
+     "pixels": 32
+    },
+    "edge_w": {
+     "ndvi": 0.704,
+     "valid_fraction": 0.57,
+     "pixels": 18
+    },
+    "raw_edge_n": {
+     "ndvi": 0.717,
+     "valid_fraction": 0.57,
+     "pixels": 36
+    },
+    "raw_edge_e": {
+     "ndvi": 0.7,
+     "valid_fraction": 0.56,
+     "pixels": 22
+    },
+    "raw_edge_s": {
+     "ndvi": 0.703,
+     "valid_fraction": 0.55,
+     "pixels": 36
+    },
+    "raw_edge_w": {
+     "ndvi": 0.704,
+     "valid_fraction": 0.58,
+     "pixels": 22
+    }
+   }
+  },
+  {
+   "date": "2026-07-17",
+   "scene_id": "SIM-20260717",
+   "cloud_pct": 65,
+   "shadow_pct": 13,
+   "cirrus_pct": 9,
+   "zones": {
+    "in_nw": {
+     "ndvi": 0.534,
+     "valid_fraction": 0.11,
+     "pixels": 24
+    },
+    "in_ne": {
+     "ndvi": 0.511,
+     "valid_fraction": 0.17,
+     "pixels": 24
+    },
+    "in_sw": {
+     "ndvi": 0.653,
+     "valid_fraction": 0.11,
+     "pixels": 24
+    },
+    "in_se": {
+     "ndvi": 0.549,
+     "valid_fraction": 0.1,
+     "pixels": 24
+    },
+    "edge_n": {
+     "ndvi": 0.502,
+     "valid_fraction": 0.14,
+     "pixels": 32
+    },
+    "edge_e": {
+     "ndvi": 0.448,
+     "valid_fraction": 0.15,
+     "pixels": 18
+    },
+    "edge_s": {
+     "ndvi": 0.577,
+     "valid_fraction": 0.17,
+     "pixels": 32
+    },
+    "edge_w": {
+     "ndvi": 0.384,
+     "valid_fraction": 0.16,
+     "pixels": 18
+    },
+    "raw_edge_n": {
+     "ndvi": 0.59,
+     "valid_fraction": 0.17,
+     "pixels": 36
+    },
+    "raw_edge_e": {
+     "ndvi": 0.609,
+     "valid_fraction": 0.09,
+     "pixels": 22
+    },
+    "raw_edge_s": {
+     "ndvi": 0.317,
+     "valid_fraction": 0.14,
+     "pixels": 36
+    },
+    "raw_edge_w": {
+     "ndvi": 0.58,
+     "valid_fraction": 0.15,
+     "pixels": 22
+    }
+   }
+  },
+  {
+   "date": "2026-07-22",
+   "scene_id": "SIM-20260722",
+   "cloud_pct": 19,
+   "shadow_pct": 4,
+   "cirrus_pct": 3,
+   "zones": {
+    "in_nw": {
+     "ndvi": 0.727,
+     "valid_fraction": 0.72,
+     "pixels": 24
+    },
+    "in_ne": {
+     "ndvi": 0.748,
+     "valid_fraction": 0.78,
+     "pixels": 24
+    },
+    "in_sw": {
+     "ndvi": 0.765,
+     "valid_fraction": 0.73,
+     "pixels": 24
+    },
+    "in_se": {
+     "ndvi": 0.748,
+     "valid_fraction": 0.78,
+     "pixels": 24
+    },
+    "edge_n": {
+     "ndvi": 0.722,
+     "valid_fraction": 0.78,
+     "pixels": 32
+    },
+    "edge_e": {
+     "ndvi": 0.751,
+     "valid_fraction": 0.78,
+     "pixels": 18
+    },
+    "edge_s": {
+     "ndvi": 0.749,
+     "valid_fraction": 0.71,
+     "pixels": 32
+    },
+    "edge_w": {
+     "ndvi": 0.728,
+     "valid_fraction": 0.7,
+     "pixels": 18
+    },
+    "raw_edge_n": {
+     "ndvi": 0.694,
+     "valid_fraction": 0.76,
+     "pixels": 36
+    },
+    "raw_edge_e": {
+     "ndvi": 0.718,
+     "valid_fraction": 0.74,
+     "pixels": 22
+    },
+    "raw_edge_s": {
+     "ndvi": 0.708,
+     "valid_fraction": 0.76,
+     "pixels": 36
+    },
+    "raw_edge_w": {
+     "ndvi": 0.701,
+     "valid_fraction": 0.73,
+     "pixels": 22
+    }
+   }
+  },
+  {
+   "date": "2026-07-27",
+   "scene_id": "SIM-20260727",
+   "cloud_pct": 44,
+   "shadow_pct": 9,
+   "cirrus_pct": 6,
+   "zones": {
+    "in_nw": {
+     "ndvi": 0.603,
+     "valid_fraction": 0.43,
+     "pixels": 24
+    },
+    "in_ne": {
+     "ndvi": 0.436,
+     "valid_fraction": 0.42,
+     "pixels": 24
+    },
+    "in_sw": {
+     "ndvi": 0.556,
+     "valid_fraction": 0.42,
+     "pixels": 24
+    },
+    "in_se": {
+     "ndvi": 0.574,
+     "valid_fraction": 0.42,
+     "pixels": 24
+    },
+    "edge_n": {
+     "ndvi": 0.462,
+     "valid_fraction": 0.41,
+     "pixels": 32
+    },
+    "edge_e": {
+     "ndvi": 0.444,
+     "valid_fraction": 0.4,
+     "pixels": 18
+    },
+    "edge_s": {
+     "ndvi": 0.445,
+     "valid_fraction": 0.43,
+     "pixels": 32
+    },
+    "edge_w": {
+     "ndvi": 0.372,
+     "valid_fraction": 0.42,
+     "pixels": 18
+    },
+    "raw_edge_n": {
+     "ndvi": 0.35,
+     "valid_fraction": 0.45,
+     "pixels": 36
+    },
+    "raw_edge_e": {
+     "ndvi": 0.623,
+     "valid_fraction": 0.44,
+     "pixels": 22
+    },
+    "raw_edge_s": {
+     "ndvi": 0.421,
+     "valid_fraction": 0.44,
+     "pixels": 36
+    },
+    "raw_edge_w": {
+     "ndvi": 0.372,
+     "valid_fraction": 0.42,
+     "pixels": 22
+    }
+   }
+  },
+  {
+   "date": "2026-08-01",
+   "scene_id": "SIM-20260801",
+   "cloud_pct": 70,
+   "shadow_pct": 14,
+   "cirrus_pct": 9,
+   "zones": {
+    "in_nw": {
+     "ndvi": 0.378,
+     "valid_fraction": 0.06,
+     "pixels": 24
+    },
+    "in_ne": {
+     "ndvi": 0.388,
+     "valid_fraction": 0.07,
+     "pixels": 24
+    },
+    "in_sw": {
+     "ndvi": 0.433,
+     "valid_fraction": 0.06,
+     "pixels": 24
+    },
+    "in_se": {
+     "ndvi": 0.357,
+     "valid_fraction": 0.03,
+     "pixels": 24
+    },
+    "edge_n": {
+     "ndvi": 0.473,
+     "valid_fraction": 0.03,
+     "pixels": 32
+    },
+    "edge_e": {
+     "ndvi": 0.588,
+     "valid_fraction": 0.09,
+     "pixels": 18
+    },
+    "edge_s": {
+     "ndvi": 0.401,
+     "valid_fraction": 0.09,
+     "pixels": 32
+    },
+    "edge_w": {
+     "ndvi": 0.446,
+     "valid_fraction": 0.09,
+     "pixels": 18
+    },
+    "raw_edge_n": {
+     "ndvi": 0.448,
+     "valid_fraction": 0.1,
+     "pixels": 36
+    },
+    "raw_edge_e": {
+     "ndvi": 0.395,
+     "valid_fraction": 0.05,
+     "pixels": 22
+    },
+    "raw_edge_s": {
+     "ndvi": 0.4,
+     "valid_fraction": 0.02,
+     "pixels": 36
+    },
+    "raw_edge_w": {
+     "ndvi": 0.517,
+     "valid_fraction": 0.07,
+     "pixels": 22
+    }
+   }
+  },
+  {
+   "date": "2026-08-06",
+   "scene_id": "SIM-20260806",
+   "cloud_pct": 35,
+   "shadow_pct": 7,
+   "cirrus_pct": 5,
+   "zones": {
+    "in_nw": {
+     "ndvi": 0.704,
+     "valid_fraction": 0.51,
+     "pixels": 24
+    },
+    "in_ne": {
+     "ndvi": 0.69,
+     "valid_fraction": 0.5,
+     "pixels": 24
+    },
+    "in_sw": {
+     "ndvi": 0.713,
+     "valid_fraction": 0.53,
+     "pixels": 24
+    },
+    "in_se": {
+     "ndvi": 0.712,
+     "valid_fraction": 0.52,
+     "pixels": 24
+    },
+    "edge_n": {
+     "ndvi": 0.692,
+     "valid_fraction": 0.56,
+     "pixels": 32
+    },
+    "edge_e": {
+     "ndvi": 0.43,
+     "valid_fraction": 0.5,
+     "pixels": 18
+    },
+    "edge_s": {
+     "ndvi": 0.606,
+     "valid_fraction": 0.49,
+     "pixels": 32
+    },
+    "edge_w": {
+     "ndvi": 0.667,
+     "valid_fraction": 0.56,
+     "pixels": 18
+    },
+    "raw_edge_n": {
+     "ndvi": 0.679,
+     "valid_fraction": 0.51,
+     "pixels": 36
+    },
+    "raw_edge_e": {
+     "ndvi": 0.668,
+     "valid_fraction": 0.56,
+     "pixels": 22
+    },
+    "raw_edge_s": {
+     "ndvi": 0.693,
+     "valid_fraction": 0.56,
+     "pixels": 36
+    },
+    "raw_edge_w": {
+     "ndvi": 0.321,
+     "valid_fraction": 0.5,
+     "pixels": 22
+    }
+   }
+  },
+  {
+   "date": "2026-08-11",
+   "scene_id": "SIM-20260811",
+   "cloud_pct": 10,
+   "shadow_pct": 2,
+   "cirrus_pct": 1,
+   "zones": {
+    "in_nw": {
+     "ndvi": 0.76,
+     "valid_fraction": 0.87,
+     "pixels": 24
+    },
+    "in_ne": {
+     "ndvi": 0.766,
+     "valid_fraction": 0.83,
+     "pixels": 24
+    },
+    "in_sw": {
+     "ndvi": 0.773,
+     "valid_fraction": 0.84,
+     "pixels": 24
+    },
+    "in_se": {
+     "ndvi": 0.75,
+     "valid_fraction": 0.88,
+     "pixels": 24
+    },
+    "edge_n": {
+     "ndvi": 0.753,
+     "valid_fraction": 0.86,
+     "pixels": 32
+    },
+    "edge_e": {
+     "ndvi": 0.745,
+     "valid_fraction": 0.86,
+     "pixels": 18
+    },
+    "edge_s": {
+     "ndvi": 0.753,
+     "valid_fraction": 0.84,
+     "pixels": 32
+    },
+    "edge_w": {
+     "ndvi": 0.743,
+     "valid_fraction": 0.9,
+     "pixels": 18
+    },
+    "raw_edge_n": {
+     "ndvi": 0.708,
+     "valid_fraction": 0.84,
+     "pixels": 36
+    },
+    "raw_edge_e": {
+     "ndvi": 0.716,
+     "valid_fraction": 0.89,
+     "pixels": 22
+    },
+    "raw_edge_s": {
+     "ndvi": 0.711,
+     "valid_fraction": 0.89,
+     "pixels": 36
+    },
+    "raw_edge_w": {
+     "ndvi": 0.722,
+     "valid_fraction": 0.83,
+     "pixels": 22
+    }
+   }
+  },
+  {
+   "date": "2026-08-16",
+   "scene_id": "SIM-20260816",
+   "cloud_pct": 43,
+   "shadow_pct": 9,
+   "cirrus_pct": 6,
+   "zones": {
+    "in_nw": {
+     "ndvi": 0.606,
+     "valid_fraction": 0.45,
+     "pixels": 24
+    },
+    "in_ne": {
+     "ndvi": 0.477,
+     "valid_fraction": 0.38,
+     "pixels": 24
+    },
+    "in_sw": {
+     "ndvi": 0.545,
+     "valid_fraction": 0.41,
+     "pixels": 24
+    },
+    "in_se": {
+     "ndvi": 0.366,
+     "valid_fraction": 0.39,
+     "pixels": 24
+    },
+    "edge_n": {
+     "ndvi": 0.549,
+     "valid_fraction": 0.45,
+     "pixels": 32
+    },
+    "edge_e": {
+     "ndvi": 0.559,
+     "valid_fraction": 0.42,
+     "pixels": 18
+    },
+    "edge_s": {
+     "ndvi": 0.494,
+     "valid_fraction": 0.45,
+     "pixels": 32
+    },
+    "edge_w": {
+     "ndvi": 0.546,
+     "valid_fraction": 0.45,
+     "pixels": 18
+    },
+    "raw_edge_n": {
+     "ndvi": 0.503,
+     "valid_fraction": 0.46,
+     "pixels": 36
+    },
+    "raw_edge_e": {
+     "ndvi": 0.415,
+     "valid_fraction": 0.4,
+     "pixels": 22
+    },
+    "raw_edge_s": {
+     "ndvi": 0.339,
+     "valid_fraction": 0.44,
+     "pixels": 36
+    },
+    "raw_edge_w": {
+     "ndvi": 0.401,
+     "valid_fraction": 0.43,
+     "pixels": 22
+    }
+   }
+  },
+  {
+   "date": "2026-08-21",
+   "scene_id": "SIM-20260821",
+   "cloud_pct": 6,
+   "shadow_pct": 1,
+   "cirrus_pct": 1,
+   "zones": {
+    "in_nw": {
+     "ndvi": 0.748,
+     "valid_fraction": 0.93,
+     "pixels": 24
+    },
+    "in_ne": {
+     "ndvi": 0.773,
+     "valid_fraction": 0.93,
+     "pixels": 24
+    },
+    "in_sw": {
+     "ndvi": 0.761,
+     "valid_fraction": 0.94,
+     "pixels": 24
+    },
+    "in_se": {
+     "ndvi": 0.755,
+     "valid_fraction": 0.9,
+     "pixels": 24
+    },
+    "edge_n": {
+     "ndvi": 0.759,
+     "valid_fraction": 0.9,
+     "pixels": 32
+    },
+    "edge_e": {
+     "ndvi": 0.75,
+     "valid_fraction": 0.95,
+     "pixels": 18
+    },
+    "edge_s": {
+     "ndvi": 0.761,
+     "valid_fraction": 0.92,
+     "pixels": 32
+    },
+    "edge_w": {
+     "ndvi": 0.744,
+     "valid_fraction": 0.94,
+     "pixels": 18
+    },
+    "raw_edge_n": {
+     "ndvi": 0.712,
+     "valid_fraction": 0.92,
+     "pixels": 36
+    },
+    "raw_edge_e": {
+     "ndvi": 0.736,
+     "valid_fraction": 0.93,
+     "pixels": 22
+    },
+    "raw_edge_s": {
+     "ndvi": 0.713,
+     "valid_fraction": 0.88,
+     "pixels": 36
+    },
+    "raw_edge_w": {
+     "ndvi": 0.719,
+     "valid_fraction": 0.89,
+     "pixels": 22
+    }
+   }
+  },
+  {
+   "date": "2026-08-26",
+   "scene_id": "SIM-20260826",
+   "cloud_pct": 3,
+   "shadow_pct": 1,
+   "cirrus_pct": 0,
+   "zones": {
+    "in_nw": {
+     "ndvi": 0.749,
+     "valid_fraction": 0.94,
+     "pixels": 24
+    },
+    "in_ne": {
+     "ndvi": 0.759,
+     "valid_fraction": 0.95,
+     "pixels": 24
+    },
+    "in_sw": {
+     "ndvi": 0.771,
+     "valid_fraction": 1.0,
+     "pixels": 24
+    },
+    "in_se": {
+     "ndvi": 0.755,
+     "valid_fraction": 0.94,
+     "pixels": 24
+    },
+    "edge_n": {
+     "ndvi": 0.749,
+     "valid_fraction": 0.98,
+     "pixels": 32
+    },
+    "edge_e": {
+     "ndvi": 0.756,
+     "valid_fraction": 0.97,
+     "pixels": 18
+    },
+    "edge_s": {
+     "ndvi": 0.758,
+     "valid_fraction": 1.0,
+     "pixels": 32
+    },
+    "edge_w": {
+     "ndvi": 0.753,
+     "valid_fraction": 0.94,
+     "pixels": 18
+    },
+    "raw_edge_n": {
+     "ndvi": 0.709,
+     "valid_fraction": 0.94,
+     "pixels": 36
+    },
+    "raw_edge_e": {
+     "ndvi": 0.733,
+     "valid_fraction": 0.98,
+     "pixels": 22
+    },
+    "raw_edge_s": {
+     "ndvi": 0.707,
+     "valid_fraction": 0.93,
+     "pixels": 36
+    },
+    "raw_edge_w": {
+     "ndvi": 0.729,
+     "valid_fraction": 0.97,
+     "pixels": 22
+    }
+   }
+  },
+  {
+   "date": "2026-08-31",
+   "scene_id": "SIM-20260831",
+   "cloud_pct": 26,
+   "shadow_pct": 5,
+   "cirrus_pct": 3,
+   "zones": {
+    "in_nw": {
+     "ndvi": 0.731,
+     "valid_fraction": 0.64,
+     "pixels": 24
+    },
+    "in_ne": {
+     "ndvi": 0.755,
+     "valid_fraction": 0.67,
+     "pixels": 24
+    },
+    "in_sw": {
+     "ndvi": 0.759,
+     "valid_fraction": 0.69,
+     "pixels": 24
+    },
+    "in_se": {
+     "ndvi": 0.715,
+     "valid_fraction": 0.63,
+     "pixels": 24
+    },
+    "edge_n": {
+     "ndvi": 0.692,
+     "valid_fraction": 0.67,
+     "pixels": 32
+    },
+    "edge_e": {
+     "ndvi": 0.695,
+     "valid_fraction": 0.65,
+     "pixels": 18
+    },
+    "edge_s": {
+     "ndvi": 0.705,
+     "valid_fraction": 0.63,
+     "pixels": 32
+    },
+    "edge_w": {
+     "ndvi": 0.692,
+     "valid_fraction": 0.64,
+     "pixels": 18
+    },
+    "raw_edge_n": {
+     "ndvi": 0.716,
+     "valid_fraction": 0.68,
+     "pixels": 36
+    },
+    "raw_edge_e": {
+     "ndvi": 0.707,
+     "valid_fraction": 0.67,
+     "pixels": 22
+    },
+    "raw_edge_s": {
+     "ndvi": 0.671,
+     "valid_fraction": 0.68,
+     "pixels": 36
+    },
+    "raw_edge_w": {
+     "ndvi": 0.702,
+     "valid_fraction": 0.64,
+     "pixels": 22
+    }
+   }
+  },
+  {
+   "date": "2026-09-05",
+   "scene_id": "SIM-20260905",
+   "cloud_pct": 0,
+   "shadow_pct": 0,
+   "cirrus_pct": 0,
+   "zones": {
+    "in_nw": {
+     "ndvi": 0.756,
+     "valid_fraction": 0.98,
+     "pixels": 24
+    },
+    "in_ne": {
+     "ndvi": 0.763,
+     "valid_fraction": 0.97,
+     "pixels": 24
+    },
+    "in_sw": {
+     "ndvi": 0.782,
+     "valid_fraction": 0.97,
+     "pixels": 24
+    },
+    "in_se": {
+     "ndvi": 0.756,
+     "valid_fraction": 0.98,
+     "pixels": 24
+    },
+    "edge_n": {
+     "ndvi": 0.748,
+     "valid_fraction": 0.97,
+     "pixels": 32
+    },
+    "edge_e": {
+     "ndvi": 0.748,
+     "valid_fraction": 0.97,
+     "pixels": 18
+    },
+    "edge_s": {
+     "ndvi": 0.758,
+     "valid_fraction": 0.97,
+     "pixels": 32
+    },
+    "edge_w": {
+     "ndvi": 0.749,
+     "valid_fraction": 1.0,
+     "pixels": 18
+    },
+    "raw_edge_n": {
+     "ndvi": 0.727,
+     "valid_fraction": 1.0,
+     "pixels": 36
+    },
+    "raw_edge_e": {
+     "ndvi": 0.723,
+     "valid_fraction": 1.0,
+     "pixels": 22
+    },
+    "raw_edge_s": {
+     "ndvi": 0.703,
+     "valid_fraction": 0.98,
+     "pixels": 36
+    },
+    "raw_edge_w": {
+     "ndvi": 0.723,
+     "valid_fraction": 0.99,
+     "pixels": 22
+    }
+   }
+  },
+  {
+   "date": "2026-09-10",
+   "scene_id": "SIM-20260910",
+   "cloud_pct": 6,
+   "shadow_pct": 1,
+   "cirrus_pct": 1,
+   "zones": {
+    "in_nw": {
+     "ndvi": 0.756,
+     "valid_fraction": 0.93,
+     "pixels": 24
+    },
+    "in_ne": {
+     "ndvi": 0.758,
+     "valid_fraction": 0.89,
+     "pixels": 24
+    },
+    "in_sw": {
+     "ndvi": 0.78,
+     "valid_fraction": 0.9,
+     "pixels": 24
+    },
+    "in_se": {
+     "ndvi": 0.763,
+     "valid_fraction": 0.95,
+     "pixels": 24
+    },
+    "edge_n": {
+     "ndvi": 0.752,
+     "valid_fraction": 0.91,
+     "pixels": 32
+    },
+    "edge_e": {
+     "ndvi": 0.755,
+     "valid_fraction": 0.9,
+     "pixels": 18
+    },
+    "edge_s": {
+     "ndvi": 0.762,
+     "valid_fraction": 0.91,
+     "pixels": 32
+    },
+    "edge_w": {
+     "ndvi": 0.748,
+     "valid_fraction": 0.9,
+     "pixels": 18
+    },
+    "raw_edge_n": {
+     "ndvi": 0.708,
+     "valid_fraction": 0.93,
+     "pixels": 36
+    },
+    "raw_edge_e": {
+     "ndvi": 0.732,
+     "valid_fraction": 0.9,
+     "pixels": 22
+    },
+    "raw_edge_s": {
+     "ndvi": 0.713,
+     "valid_fraction": 0.94,
+     "pixels": 36
+    },
+    "raw_edge_w": {
+     "ndvi": 0.738,
+     "valid_fraction": 0.92,
+     "pixels": 22
+    }
+   }
+  },
+  {
+   "date": "2026-09-15",
+   "scene_id": "SIM-20260915",
+   "cloud_pct": 0,
+   "shadow_pct": 0,
+   "cirrus_pct": 0,
+   "zones": {
+    "in_nw": {
+     "ndvi": 0.758,
+     "valid_fraction": 1.0,
+     "pixels": 24
+    },
+    "in_ne": {
+     "ndvi": 0.76,
+     "valid_fraction": 0.97,
+     "pixels": 24
+    },
+    "in_sw": {
+     "ndvi": 0.775,
+     "valid_fraction": 1.0,
+     "pixels": 24
+    },
+    "in_se": {
+     "ndvi": 0.765,
+     "valid_fraction": 0.96,
+     "pixels": 24
+    },
+    "edge_n": {
+     "ndvi": 0.747,
+     "valid_fraction": 0.96,
+     "pixels": 32
+    },
+    "edge_e": {
+     "ndvi": 0.762,
+     "valid_fraction": 0.96,
+     "pixels": 18
+    },
+    "edge_s": {
+     "ndvi": 0.76,
+     "valid_fraction": 1.0,
+     "pixels": 32
+    },
+    "edge_w": {
+     "ndvi": 0.742,
+     "valid_fraction": 0.99,
+     "pixels": 18
+    },
+    "raw_edge_n": {
+     "ndvi": 0.713,
+     "valid_fraction": 0.99,
+     "pixels": 36
+    },
+    "raw_edge_e": {
+     "ndvi": 0.733,
+     "valid_fraction": 0.96,
+     "pixels": 22
+    },
+    "raw_edge_s": {
+     "ndvi": 0.706,
+     "valid_fraction": 1.0,
+     "pixels": 36
+    },
+    "raw_edge_w": {
+     "ndvi": 0.731,
+     "valid_fraction": 1.0,
+     "pixels": 22
+    }
+   }
+  },
+  {
+   "date": "2026-09-20",
+   "scene_id": "SIM-20260920",
+   "cloud_pct": 7,
+   "shadow_pct": 1,
+   "cirrus_pct": 1,
+   "zones": {
+    "in_nw": {
+     "ndvi": 0.75,
+     "valid_fraction": 0.92,
+     "pixels": 24
+    },
+    "in_ne": {
+     "ndvi": 0.767,
+     "valid_fraction": 0.94,
+     "pixels": 24
+    },
+    "in_sw": {
+     "ndvi": 0.769,
+     "valid_fraction": 0.89,
+     "pixels": 24
+    },
+    "in_se": {
+     "ndvi": 0.757,
+     "valid_fraction": 0.94,
+     "pixels": 24
+    },
+    "edge_n": {
+     "ndvi": 0.746,
+     "valid_fraction": 0.89,
+     "pixels": 32
+    },
+    "edge_e": {
+     "ndvi": 0.743,
+     "valid_fraction": 0.91,
+     "pixels": 18
+    },
+    "edge_s": {
+     "ndvi": 0.763,
+     "valid_fraction": 0.89,
+     "pixels": 32
+    },
+    "edge_w": {
+     "ndvi": 0.741,
+     "valid_fraction": 0.89,
+     "pixels": 18
+    },
+    "raw_edge_n": {
+     "ndvi": 0.706,
+     "valid_fraction": 0.9,
+     "pixels": 36
+    },
+    "raw_edge_e": {
+     "ndvi": 0.726,
+     "valid_fraction": 0.9,
+     "pixels": 22
+    },
+    "raw_edge_s": {
+     "ndvi": 0.707,
+     "valid_fraction": 0.88,
+     "pixels": 36
+    },
+    "raw_edge_w": {
+     "ndvi": 0.726,
+     "valid_fraction": 0.89,
+     "pixels": 22
+    }
+   }
+  },
+  {
+   "date": "2026-09-25",
+   "scene_id": "SIM-20260925",
+   "cloud_pct": 0,
+   "shadow_pct": 0,
+   "cirrus_pct": 0,
+   "zones": {
+    "in_nw": {
+     "ndvi": 0.757,
+     "valid_fraction": 0.99,
+     "pixels": 24
+    },
+    "in_ne": {
+     "ndvi": 0.765,
+     "valid_fraction": 1.0,
+     "pixels": 24
+    },
+    "in_sw": {
+     "ndvi": 0.781,
+     "valid_fraction": 0.97,
+     "pixels": 24
+    },
+    "in_se": {
+     "ndvi": 0.766,
+     "valid_fraction": 1.0,
+     "pixels": 24
+    },
+    "edge_n": {
+     "ndvi": 0.744,
+     "valid_fraction": 1.0,
+     "pixels": 32
+    },
+    "edge_e": {
+     "ndvi": 0.754,
+     "valid_fraction": 1.0,
+     "pixels": 18
+    },
+    "edge_s": {
+     "ndvi": 0.769,
+     "valid_fraction": 1.0,
+     "pixels": 32
+    },
+    "edge_w": {
+     "ndvi": 0.746,
+     "valid_fraction": 1.0,
+     "pixels": 18
+    },
+    "raw_edge_n": {
+     "ndvi": 0.703,
+     "valid_fraction": 1.0,
+     "pixels": 36
+    },
+    "raw_edge_e": {
+     "ndvi": 0.728,
+     "valid_fraction": 0.98,
+     "pixels": 22
+    },
+    "raw_edge_s": {
+     "ndvi": 0.709,
+     "valid_fraction": 1.0,
+     "pixels": 36
+    },
+    "raw_edge_w": {
+     "ndvi": 0.736,
+     "valid_fraction": 1.0,
+     "pixels": 22
+    }
+   }
+  },
+  {
+   "date": "2026-09-30",
+   "scene_id": "SIM-20260930",
+   "cloud_pct": 3,
+   "shadow_pct": 1,
+   "cirrus_pct": 0,
+   "zones": {
+    "in_nw": {
+     "ndvi": 0.762,
+     "valid_fraction": 0.96,
+     "pixels": 24
+    },
+    "in_ne": {
+     "ndvi": 0.766,
+     "valid_fraction": 0.99,
+     "pixels": 24
+    },
+    "in_sw": {
+     "ndvi": 0.761,
+     "valid_fraction": 0.98,
+     "pixels": 24
+    },
+    "in_se": {
+     "ndvi": 0.76,
+     "valid_fraction": 0.99,
+     "pixels": 24
+    },
+    "edge_n": {
+     "ndvi": 0.748,
+     "valid_fraction": 0.96,
+     "pixels": 32
+    },
+    "edge_e": {
+     "ndvi": 0.755,
+     "valid_fraction": 0.97,
+     "pixels": 18
+    },
+    "edge_s": {
+     "ndvi": 0.757,
+     "valid_fraction": 0.97,
+     "pixels": 32
+    },
+    "edge_w": {
+     "ndvi": 0.752,
+     "valid_fraction": 0.94,
+     "pixels": 18
+    },
+    "raw_edge_n": {
+     "ndvi": 0.721,
+     "valid_fraction": 0.94,
+     "pixels": 36
+    },
+    "raw_edge_e": {
+     "ndvi": 0.74,
+     "valid_fraction": 0.95,
+     "pixels": 22
+    },
+    "raw_edge_s": {
+     "ndvi": 0.72,
+     "valid_fraction": 0.96,
+     "pixels": 36
+    },
+    "raw_edge_w": {
+     "ndvi": 0.731,
+     "valid_fraction": 1.0,
+     "pixels": 22
+    }
+   }
+  },
+  {
+   "date": "2026-10-05",
+   "scene_id": "SIM-20261005",
+   "cloud_pct": 0,
+   "shadow_pct": 0,
+   "cirrus_pct": 0,
+   "zones": {
+    "in_nw": {
+     "ndvi": 0.568,
+     "valid_fraction": 1.0,
+     "pixels": 24
+    },
+    "in_ne": {
+     "ndvi": 0.569,
+     "valid_fraction": 0.98,
+     "pixels": 24
+    },
+    "in_sw": {
+     "ndvi": 0.558,
+     "valid_fraction": 0.99,
+     "pixels": 24
+    },
+    "in_se": {
+     "ndvi": 0.564,
+     "valid_fraction": 1.0,
+     "pixels": 24
+    },
+    "edge_n": {
+     "ndvi": 0.55,
+     "valid_fraction": 1.0,
+     "pixels": 32
+    },
+    "edge_e": {
+     "ndvi": 0.536,
+     "valid_fraction": 0.97,
+     "pixels": 18
+    },
+    "edge_s": {
+     "ndvi": 0.56,
+     "valid_fraction": 0.99,
+     "pixels": 32
+    },
+    "edge_w": {
+     "ndvi": 0.541,
+     "valid_fraction": 1.0,
+     "pixels": 18
+    },
+    "raw_edge_n": {
+     "ndvi": 0.519,
+     "valid_fraction": 1.0,
+     "pixels": 36
+    },
+    "raw_edge_e": {
+     "ndvi": 0.526,
+     "valid_fraction": 0.98,
+     "pixels": 22
+    },
+    "raw_edge_s": {
+     "ndvi": 0.507,
+     "valid_fraction": 1.0,
+     "pixels": 36
+    },
+    "raw_edge_w": {
+     "ndvi": 0.523,
+     "valid_fraction": 0.98,
+     "pixels": 22
+    }
+   }
+  },
+  {
+   "date": "2026-10-10",
+   "scene_id": "SIM-20261010",
+   "cloud_pct": 0,
+   "shadow_pct": 0,
+   "cirrus_pct": 0,
+   "zones": {
+    "in_nw": {
+     "ndvi": 0.426,
+     "valid_fraction": 0.98,
+     "pixels": 24
+    },
+    "in_ne": {
+     "ndvi": 0.419,
+     "valid_fraction": 1.0,
+     "pixels": 24
+    },
+    "in_sw": {
+     "ndvi": 0.429,
+     "valid_fraction": 1.0,
+     "pixels": 24
+    },
+    "in_se": {
+     "ndvi": 0.423,
+     "valid_fraction": 1.0,
+     "pixels": 24
+    },
+    "edge_n": {
+     "ndvi": 0.409,
+     "valid_fraction": 0.97,
+     "pixels": 32
+    },
+    "edge_e": {
+     "ndvi": 0.405,
+     "valid_fraction": 1.0,
+     "pixels": 18
+    },
+    "edge_s": {
+     "ndvi": 0.42,
+     "valid_fraction": 1.0,
+     "pixels": 32
+    },
+    "edge_w": {
+     "ndvi": 0.401,
+     "valid_fraction": 1.0,
+     "pixels": 18
+    },
+    "raw_edge_n": {
+     "ndvi": 0.376,
+     "valid_fraction": 1.0,
+     "pixels": 36
+    },
+    "raw_edge_e": {
+     "ndvi": 0.383,
+     "valid_fraction": 0.96,
+     "pixels": 22
+    },
+    "raw_edge_s": {
+     "ndvi": 0.383,
+     "valid_fraction": 1.0,
+     "pixels": 36
+    },
+    "raw_edge_w": {
+     "ndvi": 0.39,
+     "valid_fraction": 0.98,
+     "pixels": 22
+    }
+   }
+  }
+ ]
+}

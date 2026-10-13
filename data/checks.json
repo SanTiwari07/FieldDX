@@ -1,0 +1,95 @@
+{
+  "_note": "Candidate on-site checks. Each outcome says which hypotheses it supports or argues against. Costs are minutes on site. 'applies_when' limits a check to cases where it makes physical sense.",
+  "checks": [
+    {
+      "id": "drip_line",
+      "label": "Check the drip line and valve on the {edge} edge",
+      "short": "Drip line / valve",
+      "cost_min": 5,
+      "applies_when": "edge_zone",
+      "outcomes": {
+        "dry": {
+          "label": "Drip line dry",
+          "then": "points to irrigation failure",
+          "supports": ["H7"],
+          "against": ["H8", "H9"]
+        },
+        "wet": {
+          "label": "Drip line wet",
+          "then": "inspect leaf undersides for thrips and mildew",
+          "supports": ["H8", "H9"],
+          "against": ["H7"]
+        }
+      }
+    },
+    {
+      "id": "soil_probe",
+      "label": "Dig 10 cm in the affected zone and feel the soil",
+      "short": "Soil probe",
+      "cost_min": 10,
+      "applies_when": "always",
+      "outcomes": {
+        "dry": {
+          "label": "Soil dry",
+          "then": "points to a water supply problem",
+          "supports": ["H7"],
+          "against": ["H8"]
+        },
+        "moist": {
+          "label": "Soil moist",
+          "then": "water is reaching the roots, so look for pests or nutrients",
+          "supports": ["H8", "H9"],
+          "against": ["H7"]
+        }
+      }
+    },
+    {
+      "id": "leaf_undersides",
+      "label": "Photograph leaf undersides in the affected patch",
+      "short": "Leaf undersides",
+      "cost_min": 4,
+      "applies_when": "always",
+      "outcomes": {
+        "pests_or_lesions": {
+          "label": "Pests or lesions visible",
+          "then": "points to pest or disease spread",
+          "supports": ["H8"],
+          "against": ["H7", "H9"]
+        },
+        "clean": {
+          "label": "Leaves clean",
+          "then": "rules out the common leaf pests; look at water and nutrients",
+          "supports": [],
+          "against": ["H8"]
+        }
+      }
+    },
+    {
+      "id": "leaf_yellowing",
+      "label": "Note which leaves are yellowing, old or new",
+      "short": "Leaf yellowing",
+      "cost_min": 2,
+      "applies_when": "always",
+      "outcomes": {
+        "old_leaves": {
+          "label": "Older leaves yellow first",
+          "then": "points to a nitrogen shortfall",
+          "supports": ["H9"],
+          "against": ["H8"]
+        },
+        "new_leaves": {
+          "label": "Newer leaves yellow first",
+          "then": "not a classic nitrogen pattern",
+          "supports": [],
+          "against": ["H9"]
+        }
+      }
+    }
+  ],
+  "visit_checklist": [
+    "Walk the affected zones and note what looks different from the rest of the plot.",
+    "Check the water supply: drip lines, valves, pump and the soil at 10 cm.",
+    "Look at leaf undersides for pests, webbing or lesions.",
+    "Ask the farmer what changed in the last two weeks: water, sprays, labour."
+  ]
+}

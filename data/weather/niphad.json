@@ -1,0 +1,849 @@
+{
+ "cluster": "niphad",
+ "lat": 20.078,
+ "lon": 74.11,
+ "synthetic": true,
+ "source": "Simulated daily weather shaped like an Open-Meteo archive pull",
+ "days": [
+  {
+   "date": "2026-06-15",
+   "rain_mm": 7.6,
+   "tmax_c": 33.3,
+   "rh_mean": 81.0,
+   "soil_moisture": 0.275
+  },
+  {
+   "date": "2026-06-16",
+   "rain_mm": 0.0,
+   "tmax_c": 34.3,
+   "rh_mean": 70.0,
+   "soil_moisture": 0.276
+  },
+  {
+   "date": "2026-06-17",
+   "rain_mm": 0.0,
+   "tmax_c": 32.8,
+   "rh_mean": 76.0,
+   "soil_moisture": 0.275
+  },
+  {
+   "date": "2026-06-18",
+   "rain_mm": 0.0,
+   "tmax_c": 32.9,
+   "rh_mean": 77.0,
+   "soil_moisture": 0.272
+  },
+  {
+   "date": "2026-06-19",
+   "rain_mm": 21.1,
+   "tmax_c": 33.7,
+   "rh_mean": 80.0,
+   "soil_moisture": 0.28
+  },
+  {
+   "date": "2026-06-20",
+   "rain_mm": 13.0,
+   "tmax_c": 32.3,
+   "rh_mean": 72.0,
+   "soil_moisture": 0.279
+  },
+  {
+   "date": "2026-06-21",
+   "rain_mm": 0.0,
+   "tmax_c": 33.2,
+   "rh_mean": 76.0,
+   "soil_moisture": 0.279
+  },
+  {
+   "date": "2026-06-22",
+   "rain_mm": 3.9,
+   "tmax_c": 34.5,
+   "rh_mean": 73.0,
+   "soil_moisture": 0.28
+  },
+  {
+   "date": "2026-06-23",
+   "rain_mm": 0.0,
+   "tmax_c": 32.9,
+   "rh_mean": 67.0,
+   "soil_moisture": 0.279
+  },
+  {
+   "date": "2026-06-24",
+   "rain_mm": 0.0,
+   "tmax_c": 33.0,
+   "rh_mean": 76.0,
+   "soil_moisture": 0.277
+  },
+  {
+   "date": "2026-06-25",
+   "rain_mm": 13.9,
+   "tmax_c": 34.5,
+   "rh_mean": 83.0,
+   "soil_moisture": 0.281
+  },
+  {
+   "date": "2026-06-26",
+   "rain_mm": 21.9,
+   "tmax_c": 34.3,
+   "rh_mean": 85.0,
+   "soil_moisture": 0.283
+  },
+  {
+   "date": "2026-06-27",
+   "rain_mm": 0.0,
+   "tmax_c": 32.2,
+   "rh_mean": 78.0,
+   "soil_moisture": 0.281
+  },
+  {
+   "date": "2026-06-28",
+   "rain_mm": 7.1,
+   "tmax_c": 32.7,
+   "rh_mean": 73.0,
+   "soil_moisture": 0.282
+  },
+  {
+   "date": "2026-06-29",
+   "rain_mm": 16.8,
+   "tmax_c": 33.6,
+   "rh_mean": 80.0,
+   "soil_moisture": 0.284
+  },
+  {
+   "date": "2026-06-30",
+   "rain_mm": 21.1,
+   "tmax_c": 34.1,
+   "rh_mean": 80.0,
+   "soil_moisture": 0.285
+  },
+  {
+   "date": "2026-07-01",
+   "rain_mm": 0.0,
+   "tmax_c": 30.8,
+   "rh_mean": 64.0,
+   "soil_moisture": 0.284
+  },
+  {
+   "date": "2026-07-02",
+   "rain_mm": 10.3,
+   "tmax_c": 29.0,
+   "rh_mean": 75.0,
+   "soil_moisture": 0.284
+  },
+  {
+   "date": "2026-07-03",
+   "rain_mm": 8.1,
+   "tmax_c": 28.2,
+   "rh_mean": 74.0,
+   "soil_moisture": 0.286
+  },
+  {
+   "date": "2026-07-04",
+   "rain_mm": 6.0,
+   "tmax_c": 28.4,
+   "rh_mean": 72.0,
+   "soil_moisture": 0.287
+  },
+  {
+   "date": "2026-07-05",
+   "rain_mm": 0.0,
+   "tmax_c": 28.2,
+   "rh_mean": 67.0,
+   "soil_moisture": 0.283
+  },
+  {
+   "date": "2026-07-06",
+   "rain_mm": 0.0,
+   "tmax_c": 30.0,
+   "rh_mean": 67.0,
+   "soil_moisture": 0.284
+  },
+  {
+   "date": "2026-07-07",
+   "rain_mm": 10.8,
+   "tmax_c": 28.0,
+   "rh_mean": 75.0,
+   "soil_moisture": 0.283
+  },
+  {
+   "date": "2026-07-08",
+   "rain_mm": 7.4,
+   "tmax_c": 29.1,
+   "rh_mean": 85.0,
+   "soil_moisture": 0.285
+  },
+  {
+   "date": "2026-07-09",
+   "rain_mm": 17.5,
+   "tmax_c": 28.1,
+   "rh_mean": 82.0,
+   "soil_moisture": 0.285
+  },
+  {
+   "date": "2026-07-10",
+   "rain_mm": 9.0,
+   "tmax_c": 28.9,
+   "rh_mean": 77.0,
+   "soil_moisture": 0.286
+  },
+  {
+   "date": "2026-07-11",
+   "rain_mm": 0.0,
+   "tmax_c": 29.8,
+   "rh_mean": 65.0,
+   "soil_moisture": 0.287
+  },
+  {
+   "date": "2026-07-12",
+   "rain_mm": 18.7,
+   "tmax_c": 29.0,
+   "rh_mean": 82.0,
+   "soil_moisture": 0.287
+  },
+  {
+   "date": "2026-07-13",
+   "rain_mm": 0.0,
+   "tmax_c": 29.0,
+   "rh_mean": 77.0,
+   "soil_moisture": 0.286
+  },
+  {
+   "date": "2026-07-14",
+   "rain_mm": 0.0,
+   "tmax_c": 30.2,
+   "rh_mean": 67.0,
+   "soil_moisture": 0.285
+  },
+  {
+   "date": "2026-07-15",
+   "rain_mm": 19.3,
+   "tmax_c": 29.5,
+   "rh_mean": 76.0,
+   "soil_moisture": 0.285
+  },
+  {
+   "date": "2026-07-16",
+   "rain_mm": 19.2,
+   "tmax_c": 30.6,
+   "rh_mean": 81.0,
+   "soil_moisture": 0.288
+  },
+  {
+   "date": "2026-07-17",
+   "rain_mm": 14.8,
+   "tmax_c": 30.4,
+   "rh_mean": 85.0,
+   "soil_moisture": 0.289
+  },
+  {
+   "date": "2026-07-18",
+   "rain_mm": 0.0,
+   "tmax_c": 29.9,
+   "rh_mean": 78.0,
+   "soil_moisture": 0.288
+  },
+  {
+   "date": "2026-07-19",
+   "rain_mm": 0.0,
+   "tmax_c": 30.6,
+   "rh_mean": 63.0,
+   "soil_moisture": 0.287
+  },
+  {
+   "date": "2026-07-20",
+   "rain_mm": 19.6,
+   "tmax_c": 30.1,
+   "rh_mean": 79.0,
+   "soil_moisture": 0.288
+  },
+  {
+   "date": "2026-07-21",
+   "rain_mm": 16.0,
+   "tmax_c": 29.6,
+   "rh_mean": 74.0,
+   "soil_moisture": 0.287
+  },
+  {
+   "date": "2026-07-22",
+   "rain_mm": 20.8,
+   "tmax_c": 30.7,
+   "rh_mean": 78.0,
+   "soil_moisture": 0.287
+  },
+  {
+   "date": "2026-07-23",
+   "rain_mm": 0.0,
+   "tmax_c": 29.8,
+   "rh_mean": 69.0,
+   "soil_moisture": 0.289
+  },
+  {
+   "date": "2026-07-24",
+   "rain_mm": 0.0,
+   "tmax_c": 30.7,
+   "rh_mean": 72.0,
+   "soil_moisture": 0.286
+  },
+  {
+   "date": "2026-07-25",
+   "rain_mm": 0.0,
+   "tmax_c": 31.0,
+   "rh_mean": 70.0,
+   "soil_moisture": 0.286
+  },
+  {
+   "date": "2026-07-26",
+   "rain_mm": 21.9,
+   "tmax_c": 29.1,
+   "rh_mean": 75.0,
+   "soil_moisture": 0.289
+  },
+  {
+   "date": "2026-07-27",
+   "rain_mm": 2.1,
+   "tmax_c": 28.2,
+   "rh_mean": 86.0,
+   "soil_moisture": 0.287
+  },
+  {
+   "date": "2026-07-28",
+   "rain_mm": 0.0,
+   "tmax_c": 28.1,
+   "rh_mean": 71.0,
+   "soil_moisture": 0.287
+  },
+  {
+   "date": "2026-07-29",
+   "rain_mm": 0.0,
+   "tmax_c": 29.0,
+   "rh_mean": 61.0,
+   "soil_moisture": 0.287
+  },
+  {
+   "date": "2026-07-30",
+   "rain_mm": 20.8,
+   "tmax_c": 29.3,
+   "rh_mean": 77.0,
+   "soil_moisture": 0.288
+  },
+  {
+   "date": "2026-07-31",
+   "rain_mm": 0.0,
+   "tmax_c": 30.6,
+   "rh_mean": 75.0,
+   "soil_moisture": 0.289
+  },
+  {
+   "date": "2026-08-01",
+   "rain_mm": 3.1,
+   "tmax_c": 29.6,
+   "rh_mean": 76.0,
+   "soil_moisture": 0.286
+  },
+  {
+   "date": "2026-08-02",
+   "rain_mm": 0.0,
+   "tmax_c": 28.7,
+   "rh_mean": 64.0,
+   "soil_moisture": 0.288
+  },
+  {
+   "date": "2026-08-03",
+   "rain_mm": 17.6,
+   "tmax_c": 29.2,
+   "rh_mean": 82.0,
+   "soil_moisture": 0.288
+  },
+  {
+   "date": "2026-08-04",
+   "rain_mm": 0.0,
+   "tmax_c": 28.8,
+   "rh_mean": 75.0,
+   "soil_moisture": 0.286
+  },
+  {
+   "date": "2026-08-05",
+   "rain_mm": 11.7,
+   "tmax_c": 28.8,
+   "rh_mean": 72.0,
+   "soil_moisture": 0.288
+  },
+  {
+   "date": "2026-08-06",
+   "rain_mm": 17.4,
+   "tmax_c": 29.1,
+   "rh_mean": 80.0,
+   "soil_moisture": 0.288
+  },
+  {
+   "date": "2026-08-07",
+   "rain_mm": 10.5,
+   "tmax_c": 30.1,
+   "rh_mean": 80.0,
+   "soil_moisture": 0.288
+  },
+  {
+   "date": "2026-08-08",
+   "rain_mm": 0.0,
+   "tmax_c": 29.5,
+   "rh_mean": 78.0,
+   "soil_moisture": 0.289
+  },
+  {
+   "date": "2026-08-09",
+   "rain_mm": 20.8,
+   "tmax_c": 28.1,
+   "rh_mean": 77.0,
+   "soil_moisture": 0.286
+  },
+  {
+   "date": "2026-08-10",
+   "rain_mm": 16.3,
+   "tmax_c": 30.1,
+   "rh_mean": 76.0,
+   "soil_moisture": 0.287
+  },
+  {
+   "date": "2026-08-11",
+   "rain_mm": 19.7,
+   "tmax_c": 28.7,
+   "rh_mean": 72.0,
+   "soil_moisture": 0.288
+  },
+  {
+   "date": "2026-08-12",
+   "rain_mm": 0.0,
+   "tmax_c": 30.3,
+   "rh_mean": 74.0,
+   "soil_moisture": 0.29
+  },
+  {
+   "date": "2026-08-13",
+   "rain_mm": 0.0,
+   "tmax_c": 29.1,
+   "rh_mean": 61.0,
+   "soil_moisture": 0.289
+  },
+  {
+   "date": "2026-08-14",
+   "rain_mm": 3.3,
+   "tmax_c": 29.2,
+   "rh_mean": 85.0,
+   "soil_moisture": 0.286
+  },
+  {
+   "date": "2026-08-15",
+   "rain_mm": 0.0,
+   "tmax_c": 27.8,
+   "rh_mean": 76.0,
+   "soil_moisture": 0.287
+  },
+  {
+   "date": "2026-08-16",
+   "rain_mm": 0.0,
+   "tmax_c": 29.4,
+   "rh_mean": 74.0,
+   "soil_moisture": 0.288
+  },
+  {
+   "date": "2026-08-17",
+   "rain_mm": 11.5,
+   "tmax_c": 29.4,
+   "rh_mean": 80.0,
+   "soil_moisture": 0.286
+  },
+  {
+   "date": "2026-08-18",
+   "rain_mm": 9.8,
+   "tmax_c": 28.0,
+   "rh_mean": 80.0,
+   "soil_moisture": 0.287
+  },
+  {
+   "date": "2026-08-19",
+   "rain_mm": 21.7,
+   "tmax_c": 28.3,
+   "rh_mean": 82.0,
+   "soil_moisture": 0.287
+  },
+  {
+   "date": "2026-08-20",
+   "rain_mm": 5.2,
+   "tmax_c": 28.1,
+   "rh_mean": 85.0,
+   "soil_moisture": 0.289
+  },
+  {
+   "date": "2026-08-21",
+   "rain_mm": 6.7,
+   "tmax_c": 29.3,
+   "rh_mean": 81.0,
+   "soil_moisture": 0.286
+  },
+  {
+   "date": "2026-08-22",
+   "rain_mm": 4.3,
+   "tmax_c": 28.1,
+   "rh_mean": 82.0,
+   "soil_moisture": 0.288
+  },
+  {
+   "date": "2026-08-23",
+   "rain_mm": 0.0,
+   "tmax_c": 28.0,
+   "rh_mean": 76.0,
+   "soil_moisture": 0.288
+  },
+  {
+   "date": "2026-08-24",
+   "rain_mm": 3.0,
+   "tmax_c": 29.7,
+   "rh_mean": 80.0,
+   "soil_moisture": 0.288
+  },
+  {
+   "date": "2026-08-25",
+   "rain_mm": 0.0,
+   "tmax_c": 28.5,
+   "rh_mean": 75.0,
+   "soil_moisture": 0.286
+  },
+  {
+   "date": "2026-08-26",
+   "rain_mm": 0.0,
+   "tmax_c": 27.7,
+   "rh_mean": 67.0,
+   "soil_moisture": 0.283
+  },
+  {
+   "date": "2026-08-27",
+   "rain_mm": 0.0,
+   "tmax_c": 28.6,
+   "rh_mean": 62.0,
+   "soil_moisture": 0.286
+  },
+  {
+   "date": "2026-08-28",
+   "rain_mm": 0.0,
+   "tmax_c": 29.7,
+   "rh_mean": 62.0,
+   "soil_moisture": 0.283
+  },
+  {
+   "date": "2026-08-29",
+   "rain_mm": 0.0,
+   "tmax_c": 29.9,
+   "rh_mean": 64.0,
+   "soil_moisture": 0.28
+  },
+  {
+   "date": "2026-08-30",
+   "rain_mm": 14.2,
+   "tmax_c": 28.2,
+   "rh_mean": 79.0,
+   "soil_moisture": 0.284
+  },
+  {
+   "date": "2026-08-31",
+   "rain_mm": 4.3,
+   "tmax_c": 29.6,
+   "rh_mean": 79.0,
+   "soil_moisture": 0.285
+  },
+  {
+   "date": "2026-09-01",
+   "rain_mm": 0.0,
+   "tmax_c": 29.7,
+   "rh_mean": 72.0,
+   "soil_moisture": 0.282
+  },
+  {
+   "date": "2026-09-02",
+   "rain_mm": 2.6,
+   "tmax_c": 29.7,
+   "rh_mean": 80.0,
+   "soil_moisture": 0.284
+  },
+  {
+   "date": "2026-09-03",
+   "rain_mm": 0.0,
+   "tmax_c": 30.4,
+   "rh_mean": 77.0,
+   "soil_moisture": 0.28
+  },
+  {
+   "date": "2026-09-04",
+   "rain_mm": 0.0,
+   "tmax_c": 31.6,
+   "rh_mean": 68.0,
+   "soil_moisture": 0.281
+  },
+  {
+   "date": "2026-09-05",
+   "rain_mm": 0.0,
+   "tmax_c": 31.7,
+   "rh_mean": 65.0,
+   "soil_moisture": 0.279
+  },
+  {
+   "date": "2026-09-06",
+   "rain_mm": 0.0,
+   "tmax_c": 30.3,
+   "rh_mean": 62.0,
+   "soil_moisture": 0.278
+  },
+  {
+   "date": "2026-09-07",
+   "rain_mm": 0.0,
+   "tmax_c": 32.4,
+   "rh_mean": 62.0,
+   "soil_moisture": 0.278
+  },
+  {
+   "date": "2026-09-08",
+   "rain_mm": 0.0,
+   "tmax_c": 29.8,
+   "rh_mean": 75.0,
+   "soil_moisture": 0.277
+  },
+  {
+   "date": "2026-09-09",
+   "rain_mm": 4.5,
+   "tmax_c": 30.6,
+   "rh_mean": 82.0,
+   "soil_moisture": 0.278
+  },
+  {
+   "date": "2026-09-10",
+   "rain_mm": 0.0,
+   "tmax_c": 31.2,
+   "rh_mean": 68.0,
+   "soil_moisture": 0.275
+  },
+  {
+   "date": "2026-09-11",
+   "rain_mm": 5.0,
+   "tmax_c": 32.1,
+   "rh_mean": 75.0,
+   "soil_moisture": 0.276
+  },
+  {
+   "date": "2026-09-12",
+   "rain_mm": 0.0,
+   "tmax_c": 30.9,
+   "rh_mean": 71.0,
+   "soil_moisture": 0.275
+  },
+  {
+   "date": "2026-09-13",
+   "rain_mm": 0.0,
+   "tmax_c": 31.5,
+   "rh_mean": 61.0,
+   "soil_moisture": 0.275
+  },
+  {
+   "date": "2026-09-14",
+   "rain_mm": 0.0,
+   "tmax_c": 29.8,
+   "rh_mean": 64.0,
+   "soil_moisture": 0.274
+  },
+  {
+   "date": "2026-09-15",
+   "rain_mm": 0.0,
+   "tmax_c": 31.7,
+   "rh_mean": 66.0,
+   "soil_moisture": 0.276
+  },
+  {
+   "date": "2026-09-16",
+   "rain_mm": 9.0,
+   "tmax_c": 31.1,
+   "rh_mean": 89.0,
+   "soil_moisture": 0.276
+  },
+  {
+   "date": "2026-09-17",
+   "rain_mm": 14.0,
+   "tmax_c": 29.8,
+   "rh_mean": 93.0,
+   "soil_moisture": 0.279
+  },
+  {
+   "date": "2026-09-18",
+   "rain_mm": 10.0,
+   "tmax_c": 31.8,
+   "rh_mean": 91.0,
+   "soil_moisture": 0.281
+  },
+  {
+   "date": "2026-09-19",
+   "rain_mm": 5.0,
+   "tmax_c": 32.3,
+   "rh_mean": 91.0,
+   "soil_moisture": 0.281
+  },
+  {
+   "date": "2026-09-20",
+   "rain_mm": 0.0,
+   "tmax_c": 31.5,
+   "rh_mean": 88.0,
+   "soil_moisture": 0.279
+  },
+  {
+   "date": "2026-09-21",
+   "rain_mm": 0.0,
+   "tmax_c": 29.9,
+   "rh_mean": 87.0,
+   "soil_moisture": 0.277
+  },
+  {
+   "date": "2026-09-22",
+   "rain_mm": 0.0,
+   "tmax_c": 31.3,
+   "rh_mean": 88.0,
+   "soil_moisture": 0.276
+  },
+  {
+   "date": "2026-09-23",
+   "rain_mm": 0.0,
+   "tmax_c": 29.8,
+   "rh_mean": 93.0,
+   "soil_moisture": 0.276
+  },
+  {
+   "date": "2026-09-24",
+   "rain_mm": 0.0,
+   "tmax_c": 31.2,
+   "rh_mean": 90.0,
+   "soil_moisture": 0.275
+  },
+  {
+   "date": "2026-09-25",
+   "rain_mm": 0.0,
+   "tmax_c": 29.5,
+   "rh_mean": 50.0,
+   "soil_moisture": 0.275
+  },
+  {
+   "date": "2026-09-26",
+   "rain_mm": 0.0,
+   "tmax_c": 31.0,
+   "rh_mean": 53.0,
+   "soil_moisture": 0.273
+  },
+  {
+   "date": "2026-09-27",
+   "rain_mm": 0.0,
+   "tmax_c": 30.3,
+   "rh_mean": 66.0,
+   "soil_moisture": 0.274
+  },
+  {
+   "date": "2026-09-28",
+   "rain_mm": 7.0,
+   "tmax_c": 30.2,
+   "rh_mean": 79.0,
+   "soil_moisture": 0.275
+  },
+  {
+   "date": "2026-09-29",
+   "rain_mm": 0.0,
+   "tmax_c": 31.7,
+   "rh_mean": 57.0,
+   "soil_moisture": 0.274
+  },
+  {
+   "date": "2026-09-30",
+   "rain_mm": 0.0,
+   "tmax_c": 31.5,
+   "rh_mean": 60.0,
+   "soil_moisture": 0.273
+  },
+  {
+   "date": "2026-10-01",
+   "rain_mm": 0.0,
+   "tmax_c": 32.7,
+   "rh_mean": 64.0,
+   "soil_moisture": 0.275
+  },
+  {
+   "date": "2026-10-02",
+   "rain_mm": 0.0,
+   "tmax_c": 33.0,
+   "rh_mean": 61.0,
+   "soil_moisture": 0.271
+  },
+  {
+   "date": "2026-10-03",
+   "rain_mm": 0.0,
+   "tmax_c": 33.9,
+   "rh_mean": 63.0,
+   "soil_moisture": 0.271
+  },
+  {
+   "date": "2026-10-04",
+   "rain_mm": 0.0,
+   "tmax_c": 32.7,
+   "rh_mean": 62.0,
+   "soil_moisture": 0.27
+  },
+  {
+   "date": "2026-10-05",
+   "rain_mm": 0.0,
+   "tmax_c": 33.0,
+   "rh_mean": 63.0,
+   "soil_moisture": 0.269
+  },
+  {
+   "date": "2026-10-06",
+   "rain_mm": 0.0,
+   "tmax_c": 34.2,
+   "rh_mean": 49.0,
+   "soil_moisture": 0.268
+  },
+  {
+   "date": "2026-10-07",
+   "rain_mm": 0.0,
+   "tmax_c": 33.0,
+   "rh_mean": 53.0,
+   "soil_moisture": 0.267
+  },
+  {
+   "date": "2026-10-08",
+   "rain_mm": 0.0,
+   "tmax_c": 34.2,
+   "rh_mean": 54.0,
+   "soil_moisture": 0.268
+  },
+  {
+   "date": "2026-10-09",
+   "rain_mm": 0.0,
+   "tmax_c": 32.3,
+   "rh_mean": 61.0,
+   "soil_moisture": 0.269
+  },
+  {
+   "date": "2026-10-10",
+   "rain_mm": 0.0,
+   "tmax_c": 33.8,
+   "rh_mean": 55.0,
+   "soil_moisture": 0.265
+  },
+  {
+   "date": "2026-10-11",
+   "rain_mm": 0.0,
+   "tmax_c": 31.9,
+   "rh_mean": 58.0,
+   "soil_moisture": 0.267
+  },
+  {
+   "date": "2026-10-12",
+   "rain_mm": 0.0,
+   "tmax_c": 32.8,
+   "rh_mean": 56.0,
+   "soil_moisture": 0.267
+  }
+ ]
+}

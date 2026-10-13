@@ -1,0 +1,24 @@
+{
+  "_note": "Starting values for the demo. Management windows are PLACEHOLDERS until confirmed with NRC Grapes / KVK Nashik or a local agronomist (see IMPLEMENTATION_PLAN section 9). The UI labels them 'assumed'.",
+  "crops": {
+    "grape": {
+      "anchor_label": "back-pruning date",
+      "curve": [[0, 0.25], [30, 0.45], [60, 0.65], [90, 0.74], [250, 0.74]],
+      "windows": [
+        {
+          "id": "grape_fruit_pruning",
+          "label": "Grape fruit pruning",
+          "start": "2026-10-01",
+          "end": "2026-10-31",
+          "verified": false,
+          "source": "Placeholder. To be confirmed with NRC Grapes / KVK Nashik before any real use."
+        }
+      ]
+    },
+    "onion": {
+      "anchor_label": "transplant date",
+      "curve": [[0, 0.20], [18, 0.45], [35, 0.74], [50, 0.76], [120, 0.75], [140, 0.60]],
+      "windows": []
+    }
+  }
+}
