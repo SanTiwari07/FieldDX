@@ -512,7 +512,7 @@ Steps reveal one by one (`{motion.stagger}` apart, `{motion.base}` fade + 4px ri
 ### Honesty components
 **`limits-note`**: a small panel on every case, e.g. "Each pixel is 10 m × 10 m. This field is about 40 pixels. FieldDx can see zones, not individual vines or rows."
 
-**`scenario-banner`**: shown on any case built from replayed or simulated data: "Replayed scenario: real imagery, simulated field outcome." It is not dismissible in demo builds.
+**`data-note`**: a quiet one-line strip under the app bar naming the data behind every screen: "Real data: Sentinel-2 imagery via Earth Engine with Cloud Score+ masking, field shapes from the Fields of the World model, weather from Open-Meteo." It is neutral, not a warning, because nothing in FieldDx is simulated. Anything that *is* an assumption (a harvest or pruning window, the perennial or seasonal class) is labelled "assumed" on the evidence that uses it.
 
 ### Forms
 **`text-input`**: white, 1px strong border, `{rounded.sm}`, focus ring `{colors.focus}` 2px with a 2px offset. Labels sit above in `eyebrow`. Errors appear below in severity-high text with an icon.
@@ -542,8 +542,8 @@ Steps reveal one by one (`{motion.stagger}` apart, `{motion.base}` fade + 4px ri
 - Don't show a number for a cloudy or missing scene, and never show NDVI 0 as a stand-in.
 - Don't let the LLM's prose appear without evidence chips.
 - Don't stack shadows or round corners beyond `{rounded.md}` on working surfaces.
-- Don't hide the 10 m resolution limit; it's part of why judges and officers trust the result.
-- Don't present a replayed scenario as live data.
+- Don't hide the 10 m resolution limit or that field shapes are model predictions, not parcels; it's part of why judges and officers trust the result.
+- Don't present an assumption as a fact: the crop class and the management windows say "assumed, not yet verified" wherever they are used.
 
 ## Provenance
 - This replaces an earlier draft that copied NerdWallet's brand language. Nothing here comes from NerdWallet.
