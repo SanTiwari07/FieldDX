@@ -47,7 +47,7 @@ export function VisitChecklist({ items }: { items: string[] }) {
 
 export function CandidatesTable({ r }: { r: CaseResult }) {
   const nc = r.next_check;
-  if (!nc) return null;
+  if (!nc || nc.hypotheses.length < 2) return null;
   const [a, b] = nc.hypotheses;
   const name = (id: string) => r.hypotheses.find((h) => h.id === id)?.name ?? id;
   return (

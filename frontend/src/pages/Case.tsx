@@ -3,14 +3,14 @@ import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, Check, LineChart, ListChecks, Stethoscope } from "lucide-react";
 import { api, CaseResult, MapData, SeriesData } from "../api";
 import { STEPS, useInvestigation } from "../hooks";
-import { CROP_LABEL, fmtDate, fmtDelta } from "../lib/format";
+import { fmtDate, fmtDelta } from "../lib/format";
 import { Diagnosis } from "../components/Diagnosis";
 import { Dock, RecordDialog } from "../components/Dock";
 import { InvestigationRail } from "../components/Investigation";
 import { MapWorkspace } from "../components/MapWorkspace";
 import { CandidatesTable } from "../components/NextCheck";
 import { Timeline } from "../components/Timeline";
-import { LimitsNote, SeverityBadge, Spinner, StatusBadge } from "../components/ui";
+import { DataNote, LimitsNote, SeverityBadge, Spinner, StatusBadge } from "../components/ui";
 
 type Tab = "findings" | "evidence" | "trend";
 
@@ -22,8 +22,7 @@ function StageHead({ r }: { r: CaseResult }) {
         <Link to="/" className="back"><ArrowLeft size={14} aria-hidden /> Inbox</Link>
         <h1>{r.field.name}</h1>
         <p className="meta">
-          {CROP_LABEL[r.field.crop]}, {r.field.area_ha} ha. {r.field.anchor_label[0].toUpperCase() + r.field.anchor_label.slice(1)} {fmtDate(r.field.anchor_date)}
-          {r.field.anchor_assumed && " (assumed)"}. Alert {fmtDate(r.alert_date)}.
+          {r.field.class_label}, {r.field.area_ha} ha. Alert raised {fmtDate(r.alert_date)}.
         </p>
       </div>
       <div className="sh-status">
@@ -89,7 +88,7 @@ export default function CasePage() {
 
   return (
     <div className="case-shell">
-      {r.replayed && <div className="strip" role="note">{r.banner}</div>}
+      <DataNote text={r.banner} />
       <div className="workspace">
         <section className="stage" aria-label="Field map">
           <StageHead r={r} />

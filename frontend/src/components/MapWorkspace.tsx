@@ -127,7 +127,7 @@ function MapPane({
           {map.zones.map((z) => {
             const m = means[z.id];
             return (
-              <Polygon key={z.id} positions={z.polygon}
+              <Polygon key={z.id} positions={z.polygon.map((ring) => [ring])}
                 pathOptions={{ color: z.affected ? "#1769aa" : "#ffffff", weight: z.affected ? 3 : 1, opacity: z.affected ? 1 : 0.5, fill: true, fillOpacity: 0, dashArray: z.affected ? undefined : "2 4" }}>
                 <Tooltip sticky>
                   <strong>{z.label}</strong>

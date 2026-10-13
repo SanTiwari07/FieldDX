@@ -2,9 +2,9 @@ import { Link, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { ArrowLeft, ArrowRight, Clock } from "lucide-react";
 import { api, CaseResult } from "../api";
-import { CROP_LABEL, fmtDate } from "../lib/format";
+import { fmtDate } from "../lib/format";
 import { CloseCaseForm, ResolutionCard, VisitChecklist } from "../components/NextCheck";
-import { ScenarioBanner } from "../components/ui";
+import { DataNote } from "../components/ui";
 
 /** Phone-first: one column, large tap targets, the instruction and the close form together. */
 export default function Checklist() {
@@ -27,8 +27,8 @@ export default function Checklist() {
       <Link to={`/case/${r.case_id}`} className="back"><ArrowLeft size={15} aria-hidden /> Back to case</Link>
       <div className="eyebrow">Field checklist · {fmtDate(r.alert_date)}</div>
       <h1>{r.field.name}</h1>
-      <p className="meta">{CROP_LABEL[r.field.crop]} · {r.field.area_ha} ha</p>
-      {r.replayed && <ScenarioBanner text={r.banner} />}
+      <p className="meta">{r.field.class_label}, {r.field.area_ha} ha</p>
+      <DataNote text={r.banner} />
 
       {r.outcome === "field_case" && nc && (
         <>
@@ -62,7 +62,14 @@ export default function Checklist() {
         </>
       )}
 
-      {r.outcome === "unexplained" && <VisitChecklist items={r.visit_checklist} />}
+      {r.outcome === "unexplained" && (
+        <>
+          <VisitChecklist items={r.visit_checklist} />
+          <CloseCaseForm r={r} onSaved={setR} large />
+        </>
+      )}
+
+      {r.outcome === "watch" && <p className="lede">Seen on one clear pass only. FieldDx will check again on the next pass; nobody needs to go out yet.</p>}
 
       {(r.outcome === "auto_dismissed" || r.outcome === "area_alert") && (
         <p className="lede">This case was closed at an earlier stage ({r.stage_outcome?.reason}). No visit needed.

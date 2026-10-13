@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, CheckCircle2, ClipboardList, Clock, EyeOff, MapPinned, Pencil, X } from "lucide-react";
+import { ArrowRight, CheckCircle2, ClipboardList, Clock, Eye, EyeOff, MapPinned, Pencil, X } from "lucide-react";
 import type { CaseResult } from "../api";
 import { CloseCaseForm } from "./NextCheck";
 import { Refs } from "./ui";
@@ -45,12 +45,27 @@ export function Dock({ r, onRecord }: { r: CaseResult; onRecord: () => void }) {
   }
 
   if (r.outcome === "unexplained") {
+    const ask = r.visit_checklist[0];
     return (
       <div className="dock dock-slip">
-        <p className="dock-kicker">Visit needed</p>
-        <p className="dock-instruction">No single check separates the causes, so look at everything once.</p>
+        <p className="dock-kicker">Ask or visit</p>
+        <p className="dock-instruction">No single check separates the causes. Start with the cheapest question.</p>
+        {ask && <p className="dock-ask">{ask}</p>}
         <div className="dock-actions">
-          <Link to={`/case/${r.case_id}/check`} className="btn btn-inverse"><ClipboardList size={15} aria-hidden /> Open visit checklist</Link>
+          {nc && <button type="button" className="btn btn-inverse" onClick={onRecord}><Pencil size={15} aria-hidden /> Record finding</button>}
+          <Link to={`/case/${r.case_id}/check`} className="btn btn-outline-inverse"><ClipboardList size={15} aria-hidden /> Visit checklist</Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (r.outcome === "watch") {
+    return (
+      <div className="dock dock-quiet">
+        <Eye size={18} aria-hidden />
+        <div>
+          <strong>Waiting for the next clear pass</strong>
+          <p>Seen on one clear pass only. Nobody needs to go out yet. {r.stage_outcome?.confirm_with}</p>
         </div>
       </div>
     );

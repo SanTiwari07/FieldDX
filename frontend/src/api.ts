@@ -1,7 +1,7 @@
 export type Quality = "usable" | "partial" | "cloudy" | "none" | "n/a";
 export type Confidence = "high" | "medium" | "low";
 export type Severity = "high" | "medium" | "low";
-export type Outcome = "auto_dismissed" | "area_alert" | "field_case" | "unexplained" | "resolved";
+export type Outcome = "auto_dismissed" | "area_alert" | "field_case" | "unexplained" | "watch" | "resolved";
 export type Stance = "for" | "against" | "neutral";
 
 export interface Evidence {
@@ -36,7 +36,7 @@ export interface Hypothesis {
 }
 
 export interface StageOutcome {
-  kind: "auto_dismissed" | "area_alert";
+  kind: "auto_dismissed" | "area_alert" | "watch";
   hypothesis_id: string;
   title: string;
   reason: string;
@@ -104,13 +104,10 @@ export interface Resolution {
 export interface FieldInfo {
   id: string;
   name: string;
-  village: string;
-  crop: string;
+  klass: string;
+  class_label: string;
   area_ha: number;
   analysis_pixels: number;
-  anchor_date: string;
-  anchor_label: string;
-  anchor_assumed: boolean;
 }
 
 export interface CaseResult {
@@ -118,8 +115,6 @@ export interface CaseResult {
   field: FieldInfo;
   alert_date: string;
   as_of: string;
-  replayed: boolean;
-  scenario_label: string;
   banner: string;
   outcome: Outcome;
   severity: Severity | null;
@@ -146,13 +141,12 @@ export interface InboxRow {
   reason: string | null;
   stage_title: string | null;
   alert_date: string;
-  replayed: boolean;
 }
 
 export interface MapZone {
   id: string;
   label: string;
-  polygon: [number, number][];
+  polygon: [number, number][][];
   pixels: number;
   delta: number | null;
   quality: Quality;
@@ -162,20 +156,17 @@ export interface MapZone {
 export interface MapData {
   field_id: string;
   name: string;
-  outline: [number, number][];
+  outline: [number, number][][];
   zones: MapZone[];
-  grid: [[number, number], [number, number]][];
   bounds: [[number, number], [number, number]];
   scene_date: string | null;
   baseline: string;
-  size_m: [number, number];
   analysis_pixels: number;
 }
 
 export interface SeriesData {
   zones: { id: string; label: string; affected: boolean }[];
   scenes: { date: string; quality: Quality; zones: Record<string, { ndvi: number | null; quality: Quality }> }[];
-  expected: { date: string; value: number }[];
   windows: { id: string; label: string; start: string; end: string; verified: boolean }[];
   alert_date: string;
   as_of: string;
@@ -196,7 +187,9 @@ async function json<T>(res: Response): Promise<T> {
 }
 
 export const api = {
-  inbox: () => fetch("/api/cases").then((r) => json<{ banner: string; as_of: string; cases: InboxRow[] }>(r)),
+  inbox: () => fetch("/api/cases").then((r) => json<{ banner: string; as_of: string; provenance: Provenance; cases: InboxRow[] }>(r)),
+  health: () => fetch("/api/health").then((r) => json<{ ok: boolean; fields: number; cases: number }>(r)),
+  fieldsGeoJson: () => fetch("/api/fields.geojson").then((r) => json<FieldsGeoJson>(r)),
   getCase: (id: string) => fetch(`/api/cases/${id}`).then((r) => json<CaseResult>(r)),
   map: (id: string) => fetch(`/api/cases/${id}/map`).then((r) => json<MapData>(r)),
   series: (id: string) => fetch(`/api/cases/${id}/series`).then((r) => json<SeriesData>(r)),
@@ -226,3 +219,18 @@ export interface RasterData {
   zones: string[][];
 }
 
+
+export interface Provenance {
+  boundaries?: string;
+  imagery?: string;
+  landcover?: string;
+}
+
+export interface FieldsGeoJson {
+  type: "FeatureCollection";
+  features: {
+    type: "Feature";
+    geometry: { type: "Polygon"; coordinates: [number, number][][] };
+    properties: { id: string; name: string; class: string; area_ha: number; case_outcome: Outcome | null };
+  }[];
+}

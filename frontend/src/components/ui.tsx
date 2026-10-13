@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import {
   CheckCircle2, CircleDashed, CircleHelp, CloudOff, CircleDot, EyeOff, Info, MapPinned,
-  OctagonAlert, TriangleAlert, CircleArrowDown, FlaskConical, Check,
+  OctagonAlert, TriangleAlert, CircleArrowDown, Satellite, Check, Eye,
 } from "lucide-react";
 import type { Confidence, Outcome, Quality, Severity } from "../api";
 
@@ -59,7 +59,9 @@ export function StatusBadge({ outcome }: { outcome: Outcome }) {
     case "resolved":
       return <span className="status status-resolved"><CheckCircle2 size={14} aria-hidden /> Resolved</span>;
     case "unexplained":
-      return <span className="status status-open"><CircleHelp size={14} aria-hidden /> Visit</span>;
+      return <span className="status status-open"><CircleHelp size={14} aria-hidden /> Ask or visit</span>;
+    case "watch":
+      return <span className="status status-watch"><Eye size={14} aria-hidden /> Watching</span>;
     default:
       return <span className="status status-open"><CircleDot size={14} aria-hidden /> Open</span>;
   }
@@ -96,10 +98,10 @@ export function ConfidenceMeter({ level, label = true }: { level: Confidence; la
   );
 }
 
-export function ScenarioBanner({ text }: { text: string }) {
+export function DataNote({ text }: { text: string }) {
   return (
-    <div className="scenario-banner" role="note">
-      <FlaskConical size={14} aria-hidden /> <span>{text}</span>
+    <div className="data-note" role="note">
+      <Satellite size={14} aria-hidden /> <span>{text}</span>
     </div>
   );
 }

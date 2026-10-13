@@ -189,3 +189,33 @@ dialog.sheet::backdrop { background: rgba(16, 28, 22, 0.5); }
   .dock-instruction { font-size: 16px; }
   .inbox-row .thumb { width: 52px; height: 38px; }
 }
+
+/* ---------- real-data additions ---------- */
+.data-note { flex: none; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 28px; padding: 4px 16px; background: var(--canvas); color: var(--text-2); border-bottom: 1px solid var(--border); font-size: 12px; font-weight: 500; text-align: center; }
+.page > .data-note { border: 1px solid var(--border); border-radius: var(--r-sm); background: var(--canvas); justify-content: flex-start; text-align: left; }
+.data-note svg { flex: none; color: var(--brand); }
+.status-watch { color: var(--sev-medium); }
+.outcome-watch { border-left: 3px solid var(--sev-medium); }
+.dock-ask { font-size: 13.5px; line-height: 1.4; padding: 8px 10px; background: rgba(255, 255, 255, 0.09); border-radius: var(--r-sm); }
+.tally { flex-wrap: wrap; }
+.view-toggle { margin-top: 4px; }
+.fieldsmap-wrap { margin-top: 12px; }
+.fieldsmap { position: relative; height: min(62dvh, 640px); min-height: 380px; background: var(--canvas-sunken); border: 1px solid var(--border); border-radius: var(--r-md); overflow: hidden; }
+.fieldsmap .map { position: absolute; inset: 0; }
+.fieldsmap.skeleton { animation: shimmer 1.4s linear infinite; background: linear-gradient(90deg, var(--canvas-sunken), var(--border-subtle), var(--canvas-sunken)); background-size: 200% 100%; }
+.fieldsmap-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 10px 2px 0; font-size: 12px; color: var(--text-2); }
+.fieldsmap-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.fieldsmap-legend i { width: 14px; height: 14px; border-radius: 3px; border: 2px solid; display: inline-block; opacity: 0.9; }
+.about { margin-top: 48px; padding: 20px 24px; background: var(--canvas); border: 1px solid var(--border); border-radius: var(--r-md); }
+.about h2 { font-size: 15px; font-weight: 600; }
+.about dl { margin-top: 12px; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px 28px; }
+.about dt { font-size: 12px; font-weight: 600; color: var(--text-2); }
+.about dd { font-size: 13px; line-height: 1.5; margin-top: 2px; }
+.about .muted { margin-top: 14px; }
+.mv-months { margin-top: 10px; }
+.mv-months-bars { display: flex; align-items: flex-end; gap: 4px; height: 56px; }
+.mv-month { flex: 1; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 2px; }
+.mv-month-bar { width: 100%; background: #5da66a; border-radius: 2px 2px 0 0; }
+.mv-month small { font-size: 10px; color: var(--text-3); line-height: 1; }
+.mv-months figcaption { font-size: 11px; margin-top: 3px; }
+@media (max-width: 760px) { .about { padding: 16px; } }

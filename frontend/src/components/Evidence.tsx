@@ -114,6 +114,24 @@ function Rain({ days }: { days: { date: string; rain: number; tmax: number }[] }
   );
 }
 
+function Months({ rows }: { rows: { month: string; value: number }[] }) {
+  const max = 0.9;
+  const names = ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"];
+  return (
+    <figure className="mv-months">
+      <div className="mv-months-bars" role="img" aria-label="Median NDVI by month over the past year">
+        {rows.map((r) => (
+          <span key={r.month} className="mv-month" title={`${r.month}: ${r.value.toFixed(2)}`}>
+            <span className="mv-month-bar" style={{ height: `${Math.max(4, (r.value / max) * 100)}%` }} />
+            <small>{names[Number(r.month.slice(5)) - 1]}</small>
+          </span>
+        ))}
+      </div>
+      <figcaption><span className="muted">median NDVI by month, last 12 months</span></figcaption>
+    </figure>
+  );
+}
+
 function Visual({ v }: { v: any }) {
   if (!v) return null;
   switch (v.type) {
@@ -124,6 +142,7 @@ function Visual({ v }: { v: any }) {
       return <Bars unit="ΔNDVI" rows={v.rows.map((r: any) => ({ label: r.label, value: r.value, anomalous: r.anomalous }))} />;
     case "dots": return <Dots rows={v.rows} />;
     case "rain": return <Rain days={v.days} />;
+    case "months": return <Months rows={v.rows} />;
     default: return null;
   }
 }

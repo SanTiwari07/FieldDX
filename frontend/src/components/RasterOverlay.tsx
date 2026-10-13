@@ -12,9 +12,10 @@ export function paintRaster(r: RasterData, mode: Mode, grid: boolean, cell = CEL
   const g = c.getContext("2d")!;
   for (let y = 0; y < r.h; y++) {
     for (let x = 0; x < r.w; x++) {
-      const masked = r.mask[y][x] === 1;
+      const m = r.mask[y][x];
+      if (m === 0) continue; // outside the field: leave transparent
       const v = mode === "change" ? r.delta[y][x] : r.ndvi[y][x];
-      if (masked || v === null) {
+      if (m === 2 || v === null) {
         g.fillStyle = MASK_FILL;
         g.fillRect(x * cell, y * cell, cell, cell);
         g.strokeStyle = "#9aa0a6";
@@ -27,15 +28,12 @@ export function paintRaster(r: RasterData, mode: Mode, grid: boolean, cell = CEL
         g.fillStyle = mode === "change" ? deltaColorOf(v) : ndviColor(v);
         g.fillRect(x * cell, y * cell, cell, cell);
       }
+      if (grid) {
+        g.strokeStyle = "rgba(255,255,255,0.6)";
+        g.lineWidth = 1;
+        g.strokeRect(x * cell + 0.5, y * cell + 0.5, cell - 1, cell - 1);
+      }
     }
-  }
-  if (grid) {
-    g.strokeStyle = "rgba(255,255,255,0.55)";
-    g.lineWidth = 1;
-    g.beginPath();
-    for (let x = 0; x <= r.w; x++) { g.moveTo(x * cell + 0.5, 0); g.lineTo(x * cell + 0.5, c.height); }
-    for (let y = 0; y <= r.h; y++) { g.moveTo(0, y * cell + 0.5); g.lineTo(c.width, y * cell + 0.5); }
-    g.stroke();
   }
   return c.toDataURL("image/png");
 }
@@ -61,7 +59,8 @@ function Probe({ r, onHover }: { r: RasterData; onHover: (h: Hover | null) => vo
       if (key === last.current) return;
       last.current = key;
       if (x < 0 || y < 0 || x >= r.w || y >= r.h) return onHover(null);
-      onHover({ x, y, ndvi: r.ndvi[y][x], delta: r.delta[y][x], masked: r.mask[y][x] === 1 });
+      if (r.mask[y][x] === 0) return onHover(null);
+      onHover({ x, y, ndvi: r.ndvi[y][x], delta: r.delta[y][x], masked: r.mask[y][x] === 2 });
     },
     mouseout() {
       last.current = "";

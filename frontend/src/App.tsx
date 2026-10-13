@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Link, Route, Routes, useLocation } from "react-router-dom";
 import { RotateCcw } from "lucide-react";
 import { api } from "./api";
@@ -22,6 +23,8 @@ function Mark() {
 
 function AppBar() {
   const loc = useLocation();
+  const [fields, setFields] = useState<number | null>(null);
+  useEffect(() => { api.health().then((h) => setFields(h.fields)).catch(() => undefined); }, []);
   const reset = async () => {
     await api.reset();
     window.location.assign(loc.pathname.startsWith("/case") ? "/" : loc.pathname);
@@ -35,7 +38,7 @@ function AppBar() {
         </Link>
         <span className="appbar-tag">Differential diagnosis for farm fields</span>
         <span className="appbar-spacer" />
-        <span className="appbar-meta">Niphad cluster · 12 plots</span>
+        <span className="appbar-meta">Niphad, Nashik{fields ? `, ${fields} fields watched` : ""}</span>
         <button type="button" className="btn btn-ghost" onClick={reset} title="Clear closed cases and stored narratives so the demo starts clean">
           <RotateCcw size={14} aria-hidden /> Reset demo
         </button>

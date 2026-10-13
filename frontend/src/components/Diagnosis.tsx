@@ -79,10 +79,12 @@ export function CaseFilePanel({ r }: { r: CaseResult }) {
 }
 
 export function Diagnosis({ r }: { r: CaseResult }) {
-  const live = r.hypotheses.filter((h) => h.stage === 3 && (h.status === "leading" || h.status === "possible"));
+  const resolved = r.outcome === "resolved";
+  const live = r.hypotheses.filter(
+    (h) => (h.stage === 3 && (h.status === "leading" || h.status === "possible")) || (resolved && h.status === "leading"),
+  );
   const ruledOut = r.hypotheses.filter((h) => h.status === "ruled_out" && h.brief);
   const flip = useFlip(live.map((h) => h.id));
-  const resolved = r.outcome === "resolved";
 
   return (
     <section aria-labelledby="dx-h" className="rail-section dx">
@@ -90,11 +92,13 @@ export function Diagnosis({ r }: { r: CaseResult }) {
 
       {r.stage_outcome && (
         <div className={`outcome-card outcome-${r.stage_outcome.kind}`}>
-          <div className="eyebrow">{r.stage_outcome.kind === "area_alert" ? "Area alert" : "Auto-dismissed"}</div>
+          <div className="eyebrow">{r.stage_outcome.kind === "area_alert" ? "Area alert" : r.stage_outcome.kind === "watch" ? "Watching" : "Auto-dismissed"}</div>
           <h3>{r.stage_outcome.title.split(": ")[1]?.replace(/^./, (c) => c.toUpperCase()) ?? r.stage_outcome.title}</h3>
           <p className="outcome-reason">{r.stage_outcome.reason}. <Refs ids={r.stage_outcome.evidence_ids} /></p>
           {r.stage_outcome.confirm_with && <p className="outcome-confirm">{r.stage_outcome.confirm_with}</p>}
-          <p className="muted small">This case never reaches the officer as an alert. It stays in the inbox, muted, so the dismissal can be checked.</p>
+          {r.stage_outcome.kind === "auto_dismissed" && (
+            <p className="muted small">This case never reaches the officer as an alert. It stays in the inbox, muted, so the dismissal can be checked.</p>
+          )}
         </div>
       )}
 
@@ -108,7 +112,7 @@ export function Diagnosis({ r }: { r: CaseResult }) {
 
       <CaseFilePanel r={r} />
 
-      {live.length > 0 && !r.stage_outcome && (
+      {live.length > 0 && (!r.stage_outcome || resolved) && (
         <div className="hyp-list">
           {live.map((h, i) => (
             <HypothesisCard key={h.id} h={h} rank={i + 1} confirmed={resolved && i === 0} setRef={flip(h.id)} />
