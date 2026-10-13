@@ -46,7 +46,7 @@ export function FtwLayer({ url, layer = "2025", picking, picked, onPick }: {
       paintRules: [
         { dataLayer: layer, symbolizer: new PolygonSymbolizer({ fill: "#facc15", opacity: 0.12 }) },
         { dataLayer: layer, symbolizer: new LineSymbolizer({ color: "#fde047", width: (z: number) => (z >= 15 ? 0.6 : 0.9), opacity: 0.8 }) },
-        { dataLayer: layer, filter: isPicked, symbolizer: new PolygonSymbolizer({ fill: "#22c55e", opacity: 0.55 }) },
+        { dataLayer: layer, filter: isPicked, symbolizer: new PolygonSymbolizer({ fill: "#101c16", opacity: 0.5 }) },
         { dataLayer: layer, filter: isPicked, symbolizer: new LineSymbolizer({ color: "#ffffff", width: 2 }) },
       ],
     });

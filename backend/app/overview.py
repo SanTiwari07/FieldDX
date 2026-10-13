@@ -13,6 +13,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import os
 import threading
 import time
 import urllib.request
@@ -49,7 +50,7 @@ def _ee():
     with _ee_lock:
         if not _ee_ready:
             try:
-                project = __import__("os").environ.get("FIELDDX_EE_PROJECT")
+                project = os.environ.get("FIELDDX_EE_PROJECT")
                 ee.Initialize(project=project) if project else ee.Initialize()
             except Exception as e:  # noqa: BLE001
                 raise OverviewError("Earth Engine is not set up on this server (run earthengine authenticate)") from e

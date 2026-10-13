@@ -545,7 +545,7 @@ export default function Setup() {
           ))}
           {goPoint && (
             <CircleMarker center={goPoint} radius={9} interactive={false}
-              pathOptions={{ color: "#ffffff", weight: 3, fillColor: "#2563eb", fillOpacity: 1 }} />
+              pathOptions={{ color: "#101c16", weight: 3, fillColor: "#ffffff", fillOpacity: 1 }} />
           )}
           {place && (
             <>
@@ -563,11 +563,11 @@ export default function Setup() {
           {mode === "draw" && draw.length > 0 && (
             <>
               {closed
-                ? <Polygon positions={toLatLng(draw)} pathOptions={{ color: "#22c55e", weight: 3, fillOpacity: 0.12 }} interactive={false} />
-                : <Polyline positions={toLatLng(draw)} pathOptions={{ color: "#22c55e", weight: 3, dashArray: "4 6" }} interactive={false} />}
+                ? <Polygon positions={toLatLng(draw)} pathOptions={{ color: "#ffffff", weight: 3, fillColor: "#101c16", fillOpacity: 0.18 }} interactive={false} />
+                : <Polyline positions={toLatLng(draw)} pathOptions={{ color: "#ffffff", weight: 3, dashArray: "4 6" }} interactive={false} />}
               {draw.map(([lng, lat], i) => (
                 <CircleMarker key={i} center={[lat, lng]} radius={i === 0 && !closed && draw.length >= 3 ? 8 : 5}
-                  pathOptions={{ color: "#fff", weight: 2, fillColor: i === 0 ? "#22c55e" : "#101c16", fillOpacity: 1 }}
+                  pathOptions={{ color: i === 0 ? "#101c16" : "#ffffff", weight: 2, fillColor: i === 0 ? "#ffffff" : "#101c16", fillOpacity: 1 }}
                   eventHandlers={{ click: (e) => { if (i === 0 && draw.length >= 3 && !closed) { L.DomEvent.stopPropagation(e); setClosed(true); } } }} />
               ))}
             </>
@@ -582,7 +582,7 @@ export default function Setup() {
           ))}
           {mode === "coords" && ring && (
             <>
-              <Polygon positions={toLatLng(ring)} pathOptions={{ color: "#22c55e", weight: 3, fillOpacity: 0.12 }} interactive={false} />
+              <Polygon positions={toLatLng(ring)} pathOptions={{ color: "#ffffff", weight: 3, fillColor: "#101c16", fillOpacity: 0.18 }} interactive={false} />
               <FitTo ring={ring} />
             </>
           )}
