@@ -24,8 +24,14 @@ Thumbs.db
 .vscode/
 .idea/
 
-# large raw downloads (rebuild with scripts/export_s2.py); the small inputs stay in git
-data/raw/s2/*.tif
-data/raw/*.png
-data/raw/*.npy
-data/raw/ftw_*/inference_*
+# areas officers set up at runtime live next to the shipped demo area but are not part of the repo
+data/areas/*
+!data/areas/niphad/
+
+# large raw downloads (rebuild with scripts/build_area.py); the small inputs stay in git
+data/areas/*/raw/s2/*.tif
+data/areas/*/raw/*.png
+data/areas/*/raw/*.npy
+data/areas/*/raw/ftw_*/inference_*
+data/areas/*/build.log
+data/areas/*/build.json

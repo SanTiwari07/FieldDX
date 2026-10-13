@@ -10,21 +10,39 @@ It runs after a satellite alert, the way an agronomist would:
 
 The officer gets a **case file**, not a heatmap: ranked hypotheses where every line cites evidence (`E1`, `E4`), the false alarms thrown out with their reasons, and a next-step slip. When she reports back, the finding becomes new evidence and the ranking updates.
 
+## The flow
+
+```
+Sign in ─► Mark your area ─► FieldDx builds it ─► Today's briefing ─► Cases ─► Investigation ─► Next check ─► Visit and close
+```
+
+1. **Sign in.** An officer creates an account (username and a 4 to 8 digit PIN) or signs in. *Explore the demo area* opens the shipped Niphad area without an account.
+2. **Mark your area, anywhere.** Search a district, taluka or village (OpenStreetMap). The map locks to that region's real boundary. Then either:
+   - **pick fields** on the published Fields of the World map for that state (the shapes stream in as PMTiles), or
+   - **draw** a polygon, or
+   - **type coordinates**: one point for a square of 2 to 12 km, or three or more corners.
+
+   A colleague's area can also be joined as it is.
+3. **FieldDx builds it** from real sources, for that polygon only, with live progress: field shapes, about 13 months of Sentinel-2, weather, 10 m pixel zones, the harvest season, then the alerts. A small area takes a few minutes; you can leave the page.
+4. **Today's briefing** shows what happened to this week's passes: fields watched, alerts raised, how many were dismissed and why, area-wide events, and the few fields that need a call or a visit, with where to start.
+5. **Cases, investigation, next check, close** work as before, and every route reads only the officer's own area. Another area's case IDs answer 404.
+
 ## Everything is real data
 
 Nothing in the app is simulated. Every number traces back to a real source:
 
 | What | Source |
 |---|---|
-| Field shapes | **Fields of the World** (FTW) segmentation model, PRUE EfficientNet-B5 (CC-BY weights), run on real Sentinel-2 scenes of Niphad, Nashik. A shape is a model prediction (a remote-sensing field unit), not a legal parcel. |
+| Field shapes | **Fields of the World** (FTW). Either the published **FTW Global** map (PRUE model, 2024 and 2025, about 3.2 billion fields, read per state from Source Cooperative), or the FTW model (PRUE EfficientNet-B5, CC-BY weights) run on fresh Sentinel-2 scenes of the area, as for the Niphad demo. A shape is a model prediction (a remote-sensing field unit), not a legal parcel. |
+| Places | **OpenStreetMap** Nominatim: the region's name and real boundary, which the map locks to. |
 | Imagery | Copernicus **Sentinel-2 L2A** at 10 m through Google Earth Engine. Clouds, shadow and cirrus are masked per pixel with **Cloud Score+** (0.60) and the scene classification layer. |
 | Cropland | ESA WorldCover 2021 keeps only cropland (no river, town or trees). |
 | Weather | **Open-Meteo** archive (ERA5 / ERA5-Land reanalysis): rain, heat, humidity and soil moisture. |
 | Alerts | Detected from the data (`scripts/build_cases.py`): a zone at least 0.10 NDVI below the field's own baseline on a clear pass in the last 21 days. No case is hand-picked. |
 
-What is **assumed and says so**: the crop is not known, so each field is called *perennial canopy* or *seasonal crop* from a year of NDVI, and the harvest and fruit-pruning windows are placeholders until an agronomist confirms them. Every case says when it relies on one.
+What is **assumed and says so**: the crop is not known, so each field is called *perennial canopy* or *seasonal crop* from a year of NDVI. Management windows are not known either. In a new area the harvest season is **inferred from the area's own NDVI**: the months in which last year's median seasonal field fell by 0.10 or more. Niphad keeps its grape-pruning and kharif-harvest placeholders. None of these is verified with an agronomist, and every case says when it relies on one.
 
-The published FTW global vectors are sparse over smallholder Nashik (about 170 polygons in a 55 × 38 km box), so the model is run directly on the area; `scripts/ftw_fields.py` wraps the official `ftw` CLI.
+Smallholder plots are small. Fields under about 0.8 ha cannot be split into zones at 10 m, so they are not monitored, and the build says how many shapes passed.
 
 ## How it works
 
@@ -37,6 +55,14 @@ The published FTW global vectors are sparse over smallholder Nashik (about 170 p
 - **Honest about resolution.** Each case carries a limits note, and the inbox has a map of every monitored field coloured by outcome.
 
 Not modelled yet: red-edge (NDRE) evidence, elevation for waterlogging, a real crop calendar. Storm damage and waterlogging are scored from weather only.
+
+## Accounts and areas
+
+- Officers and sessions live in SQLite (`backend/fielddx.db`). PINs are stored as PBKDF2 hashes, and the session is an HttpOnly cookie whose token is stored hashed.
+- Every case, map, timeline, raster and close route is resolved inside the signed-in officer's area. Findings and stored narratives are keyed by area.
+- An area is a folder, `data/areas/<id>/`: `area.json` (the polygon and how it was marked), `fields.geojson`, `grids/`, `scenes/`, `weather.json`, `calendar.json` and `cases.json`, plus `build.json` and `build.log` while it builds. Only `data/areas/niphad` is in git. Areas built at runtime stay on the machine that built them.
+- The build runs `scripts/build_area.py` in a subprocess, one area at a time. If the server stops mid-build, the build resumes when the server starts again, and the imagery already downloaded is kept.
+- The state's FTW PMTiles reach the browser through `/api/ftw/<state>.pmtiles`, a small byte-range proxy with a cache, because many networks drop the HTTP/3 connections Source Cooperative offers.
 
 ## Run it
 
@@ -54,50 +80,62 @@ npm install
 npm run dev        # http://localhost:5173, proxies /api to port 8000
 ```
 
+Open the app and create an account, or choose *Explore the demo area* to go straight to Niphad. `FIELDDX_API` points the dev proxy at another API address.
+
 For a single process, run `npm run build` in `frontend/` and the API serves the built app at `http://localhost:8000`.
 
 **Gemini (optional).** Copy `.env.example` to `.env` and set `GEMINI_API_KEY` (and `GEMINI_MODEL` if you want another model). Set `FIELDDX_LLM=off` to force the template narrative. Narratives are stored in SQLite so a replay never depends on a live call.
 
-**Starting a clean take.** The "Reset demo" button (or `POST /api/admin/reset`) clears closed cases and stored narratives. `DEMO_PACING` (milliseconds, default 550) sets the pause between investigation steps.
+**Starting a clean take.** *Reset closed cases* in the officer menu (or `POST /api/admin/reset`) clears closed cases and stored narratives in the signed-in officer's area. `DEMO_PACING` (milliseconds, default 550) sets the pause between investigation steps.
 
 **Tests.** `cd backend && python -m pytest`. The engine logic is tested on a tiny hand-built fixture with known answers (an edge drop, a hazy pass, a boundary artefact, a pruning wave, a spreading patch...), and the real dataset is tested for invariants: real polygons, grids and scenes line up, cloudy passes carry no values, every case cites only evidence it has, and the API serves a whole case.
 
-## Rebuild the data
+## Building areas
 
-All steps need network access; Earth Engine needs `earthengine authenticate` once. `pip install -r scripts/requirements.txt`.
+Building an area needs network access and the pipeline's packages on the server: `pip install -r scripts/requirements.txt`, and `earthengine authenticate` once. The app runs `scripts/build_area.py` for you. It can also be run by hand on any folder holding an `area.json`:
 
 ```bash
-# 1. real field boundaries (Fields of the World model, run in its own environment)
-python scripts/ftw_fields.py --bbox 74.07 20.04 74.16 20.12 --year 2025
+python scripts/build_area.py --area data/areas/<id>
+```
 
-# 2. real Sentinel-2 pixels, Cloud Score+ and SCL, plus WorldCover, on a 10 m UTM grid
-python scripts/export_s2.py --bbox 74.07 20.04 74.16 20.12 --start 2025-10-01 --end 2026-10-13 --out data/raw/s2
+It runs these steps, which also work on their own:
 
-# 3. real weather
-python scripts/fetch_weather.py --lat 20.0775 --lon 74.115 --start 2026-06-01 --end 2026-10-12 --out data/weather/niphad.json
+```bash
+# field shapes: the published FTW Global map for the area's state ...
+python scripts/ftw_global.py --area data/areas/<id>
+# ... or the FTW model on fresh imagery (needs the ftw CLI, see scripts/ftw_fields.py; FIELDDX_FTW points at it)
+python scripts/ftw_fields.py --bbox 74.07 20.04 74.16 20.12 --year 2025 --out data/areas/niphad/raw/ftw_b5
 
-# 4. select fields, build the pixel zones, cut every field out of every scene
-python scripts/build_dataset.py
+# Sentinel-2 pixels, Cloud Score+ and SCL, plus WorldCover, on a 10 m grid in the area's UTM zone
+python scripts/export_s2.py --bbox 74.07 20.04 74.16 20.12 --start 2025-10-01 --end 2026-10-13 --out data/areas/niphad/raw/s2
 
-# 5. detect the alerts
-python scripts/build_cases.py
+# weather
+python scripts/fetch_weather.py --lat 20.0775 --lon 74.115 --start 2026-06-01 --end 2026-10-12 --out data/areas/niphad/weather.json
+
+# select fields, build the pixel zones, cut every field out of every scene
+python scripts/build_dataset.py --area data/areas/niphad
+
+# detect the alerts
+python scripts/build_cases.py --area data/areas/niphad
 ```
 
 ## Layout
 
 ```
-backend/app   tools/ engine/ next_check.py pipeline.py raster.py narrative.py llm.py resolve.py data.py main.py
-backend/tests logic tests on a fixture, invariants on the real data
-frontend/src  pages/ components/ styles/ (design tokens from DESIGN.md)
-data/         fields.geojson, grids/, scenes/, weather/, cases.json, calendar.json, checks.json
-scripts/      ftw_fields.py export_s2.py fetch_weather.py build_dataset.py build_cases.py
+backend/app   tools/ engine/ next_check.py pipeline.py raster.py narrative.py llm.py resolve.py data.py
+              areas.py (areas and builds) places.py (place search, FTW partitions) db.py main.py
+backend/tests logic tests on a fixture, invariants on the real data, sign-in and area scoping
+frontend/src  pages/ (SignIn, Setup, Home, Inbox, Case, Checklist) components/ styles/ session.tsx
+data/         checks.json, areas/niphad/ (the shipped demo area), areas/<id>/ built at runtime
+scripts/      build_area.py ftw_global.py ftw_fields.py export_s2.py fetch_weather.py build_dataset.py build_cases.py
 DESIGN.md     the visual language
 idea.md       the concept and the hypothesis table
 ```
 
 ## Sources and licences
 
-- Field boundaries: Fields of the World, Robinson et al., <https://fieldsofthe.world>; model weights CC-BY-4.0; code MIT.
+- Field boundaries: Fields of the World, Robinson et al., <https://fieldsofthe.world>; model weights CC-BY-4.0; code MIT. FTW Global map: Robinson et al. 2026, "The first global agricultural field boundary map at 10 m resolution" (arXiv:2605.11055), CC-BY-4.0, on Source Cooperative.
+- Places and boundaries: OpenStreetMap contributors (ODbL), through Nominatim.
 - Imagery: contains modified Copernicus Sentinel data, via Google Earth Engine and Cloud Score+ (Google).
 - Land cover: ESA WorldCover 2021 (CC-BY-4.0).
 - Weather: Open-Meteo, ERA5 and ERA5-Land reanalysis (CC-BY-4.0).
