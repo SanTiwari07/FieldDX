@@ -14,6 +14,8 @@ class CloseError(ValueError):
 
 
 def _find_check(check_id: str) -> dict:
+    if check_id == "visit":
+        return data.checks()["visit"]
     for ch in data.checks()["checks"]:
         if ch["id"] == check_id:
             return ch
@@ -44,7 +46,8 @@ def apply_outcome(base: CaseResult, check_id: str, outcome_key: str, note: str, 
         as_of=closed_at.date(), quality="usable", source="Officer field visit",
     ))
 
-    stage3 = [h for h in r.hypotheses if h.stage == 3]
+    touched = set(outcome["supports"]) | set(outcome["against"])
+    stage3 = [h for h in r.hypotheses if h.stage == 3 or h.id in touched]
     before = [h.id for h in sorted(stage3, key=lambda h: (-h.score, int(h.id[1:])))]
     for h in stage3:
         if h.id in outcome["supports"]:
@@ -69,10 +72,13 @@ def apply_outcome(base: CaseResult, check_id: str, outcome_key: str, note: str, 
         else:
             h.status = "possible"
     # keep stage 1 and 2 entries where they were; re-order stage 3 by the new ranking
-    others = [h for h in r.hypotheses if h.stage != 3]
+    ids = {h.id for h in ordered}
+    others = [h for h in r.hypotheses if h.id not in ids]
     r.hypotheses = ordered + others
 
     top = ordered[0]
+    if not (outcome["supports"] or outcome["against"]):
+        top.status = "possible"  # a finding that names no hypothesis confirms none
     assign_stance(r.evidence, top)
     r.outcome = "resolved"
     r.next_check = r.next_check

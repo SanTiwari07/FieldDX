@@ -33,6 +33,7 @@ class Series:
         self.field = field_rec
         self.scenes = list(data.scenes(field_rec.id))
         self.alert = alert
+        self.baseline_scenes: list[Scene] = []
         self.baseline, self.baseline_dates = self._baseline()
 
     # -- scene helpers
@@ -59,18 +60,21 @@ class Series:
 
     # -- baseline
     def _baseline(self) -> tuple[dict[str, float], tuple[date, date] | None]:
-        lo = self.alert - timedelta(days=config.BASELINE_FROM_DAYS)
-        hi = self.alert - timedelta(days=config.BASELINE_TO_DAYS)
-        picks = self.usable(lo, hi)
+        """Median of clear passes 25 to 45 days before the alert; widened to 20 to 75 days if too few."""
+        picks: list[Scene] = []
+        for near, far in ((config.BASELINE_TO_DAYS, config.BASELINE_FROM_DAYS), (20, 75)):
+            lo, hi = self.alert - timedelta(days=far), self.alert - timedelta(days=near)
+            picks = self.usable(lo, hi)
+            if len(picks) >= 2:
+                break
         if len(picks) < 2:
-            earlier = [s for s in self.usable(None, hi)]
-            picks = earlier[-3:]
-        if not picks:
             return {}, None
-        base = {
-            z: statistics.median(s.zones[z].ndvi for s in picks)
-            for z in data.ALL_ZONES
-        }
+        self.baseline_scenes = picks
+        base = {}
+        for z in data.ALL_ZONES:
+            vals = [s.zones[z].ndvi for s in picks if s.zones[z].ndvi is not None]
+            if vals:
+                base[z] = statistics.median(vals)
         return base, (picks[0].date, picks[-1].date)
 
     def baseline_label(self) -> str:
@@ -84,9 +88,10 @@ class Series:
         """Change in NDVI against the zone's own baseline. None when no honest number exists."""
         if scene is None or zone not in self.baseline:
             return None
-        if quality_of(scene.zones[zone].valid) in ("cloudy", "none"):
+        obs = scene.zones[zone]
+        if obs.ndvi is None or quality_of(obs.valid) in ("cloudy", "none"):
             return None
-        return round(scene.zones[zone].ndvi - self.baseline[zone], 3)
+        return round(obs.ndvi - self.baseline[zone], 3)
 
     def weighted_delta(self, scene: Scene | None, zones: list[str]) -> float | None:
         if scene is None:
@@ -139,7 +144,8 @@ def build_ctx(field_id: str, alert: date, as_of: date) -> Ctx:
     f = data.fields()[field_id]
     others = [
         o for o in data.fields().values()
-        if o.id != f.id and o.crop == f.crop and data.distance_km(f, o) <= config.NEIGHBOUR_RADIUS_KM
+        if o.id != f.id and f.klass != "unknown" and o.klass == f.klass
+        and data.distance_km(f, o) <= config.NEIGHBOUR_RADIUS_KM
     ]
     return Ctx(field=f, alert=alert, as_of=as_of, series=Series(f, alert), neighbours=others)
 

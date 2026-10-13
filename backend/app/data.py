@@ -1,11 +1,19 @@
-"""Load the cached JSON (fields, scenes, weather, calendar, checks, scenarios)."""
+"""Load the real dataset built by scripts/build_dataset.py.
+
+Fields are real shapes (Fields of the World), scenes are real Sentinel-2 L2A pixels masked with Cloud
+Score+ and SCL, weather is the Open-Meteo archive. Zone values are derived here from the pixels, so
+every number the tools report traces back to pixels.
+"""
 from __future__ import annotations
 
 import json
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date
 from functools import lru_cache
+
+import numpy as np
+import pyproj
 
 from . import config
 
@@ -23,11 +31,17 @@ ZONE_LABEL = {
     "raw_edge_s": "South edge (unshrunk)", "raw_edge_w": "West edge (unshrunk)",
 }
 SIDE_NAME = {"n": "north", "e": "east", "s": "south", "w": "west"}
+CLASS_LABEL = {
+    "perennial": "Perennial canopy",
+    "seasonal": "Seasonal crop",
+    "unknown": "Crop not identified",
+}
+CELL_M = 10
 
 
 @dataclass(frozen=True)
 class ZoneObs:
-    ndvi: float
+    ndvi: float | None
     valid: float
     pixels: int
 
@@ -40,27 +54,132 @@ class Scene:
     shadow_pct: int
     cirrus_pct: int
     zones: dict[str, ZoneObs]
+    px: np.ndarray  # NDVI of every pixel inside the field, NaN where masked; same order as Grid.cells
+
+    def __hash__(self):  # numpy arrays are not hashable; a scene is identified by its date
+        return hash(self.date)
+
+
+@dataclass(frozen=True)
+class Grid:
+    epsg: str
+    x0: float
+    y_top: float
+    r0: int
+    c0: int
+    nr: int
+    nc: int
+    inside: np.ndarray  # nr x nc bool
+    az: np.ndarray      # nr x nc int, index into ANALYSIS, -1 outside the analysis area
+    rz: np.ndarray      # nr x nc int, index into RAW, -1 when not on the outer ring
+    cells: np.ndarray   # flat indices of the pixels inside the field, row-major
+
+    def bounds_lonlat(self) -> list[list[float]]:
+        """[[south, west], [north, east]] of the grid rectangle, for placing the raster."""
+        to_ll = pyproj.Transformer.from_crs(self.epsg, "EPSG:4326", always_xy=True)
+        left = self.x0 + self.c0 * CELL_M
+        top = self.y_top - self.r0 * CELL_M
+        right, bottom = left + self.nc * CELL_M, top - self.nr * CELL_M
+        pts = [to_ll.transform(x, y) for x in (left, right) for y in (top, bottom)]
+        lons, lats = [p[0] for p in pts], [p[1] for p in pts]
+        return [[min(lats), min(lons)], [max(lats), max(lons)]]
 
 
 @dataclass(frozen=True)
 class FieldRec:
     id: str
     name: str
-    village: str
-    crop: str
-    anchor_date: date
-    anchor_label: str
-    anchor_assumed: bool
+    klass: str
     area_ha: float
+    compactness: float
     analysis_pixels: int
-    size_m: tuple[int, int]
-    origin_m: tuple[int, int]
-    edge_context: dict[str, dict]
     zone_pixels: dict[str, int]
-    zone_polygons: dict[str, list]
-    outline: list
+    zone_polygons: dict[str, list]   # zone -> list of rings, each a list of [lon, lat]
+    outline: list                    # list of rings, each a list of [lon, lat]
     lat: float
     lon: float
+    monthly: dict[str, float]
+    pixel_count: int = 0
+
+
+def _read(path):
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def _rings(geom: dict) -> list:
+    """Exterior rings of a Polygon or MultiPolygon GeoJSON geometry."""
+    if not geom or not geom.get("coordinates"):
+        return []
+    if geom["type"] == "Polygon":
+        return [geom["coordinates"][0]]
+    if geom["type"] == "MultiPolygon":
+        return [p[0] for p in geom["coordinates"]]
+    return []
+
+
+@lru_cache(maxsize=1)
+def provenance() -> dict:
+    return _read(config.DATA_DIR / "fields.geojson").get("provenance", {})
+
+
+@lru_cache(maxsize=1)
+def fields() -> dict[str, FieldRec]:
+    raw = _read(config.DATA_DIR / "fields.geojson")
+    out: dict[str, FieldRec] = {}
+    for feat in raw["features"]:
+        p = feat["properties"]
+        zp = p["zone_pixels"]
+        out[p["id"]] = FieldRec(
+            id=p["id"], name=p["name"], klass=p.get("class", "unknown"), area_ha=p["area_ha"],
+            compactness=p.get("compactness", 0.0), analysis_pixels=sum(zp[z] for z in ANALYSIS),
+            zone_pixels=zp, zone_polygons={z: _rings(g) for z, g in p["zones"].items()},
+            outline=_rings(feat["geometry"]), lat=p["centroid"][1], lon=p["centroid"][0],
+            monthly=p.get("ndvi_monthly", {}),
+        )
+    return out
+
+
+@lru_cache(maxsize=None)
+def grid(field_id: str) -> Grid:
+    g = _read(config.DATA_DIR / "grids" / f"{field_id}.json")
+    nr, nc = g["nr"], g["nc"]
+    inside = np.array(g["inside"], dtype=bool).reshape(nr, nc)
+    return Grid(
+        epsg=g["epsg"], x0=g["x0"], y_top=g["y_top"], r0=g["r0"], c0=g["c0"], nr=nr, nc=nc, inside=inside,
+        az=np.array(g["az"], dtype=int).reshape(nr, nc), rz=np.array(g["rz"], dtype=int).reshape(nr, nc),
+        cells=np.flatnonzero(inside.ravel()),
+    )
+
+
+def _zone_obs(g: Grid, px: np.ndarray) -> dict[str, ZoneObs]:
+    az = g.az.ravel()[g.cells]
+    rz = g.rz.ravel()[g.cells]
+    ok = ~np.isnan(px)
+    out: dict[str, ZoneObs] = {}
+    for k, z in enumerate(ANALYSIS):
+        m = az == k
+        n = int(m.sum())
+        out[z] = ZoneObs(float(px[m & ok].mean()) if (m & ok).any() else None, float((m & ok).sum() / n) if n else 0.0, n)
+    for k, z in enumerate(RAW):
+        m = rz == k
+        n = int(m.sum())
+        out[z] = ZoneObs(float(px[m & ok].mean()) if (m & ok).any() else None, float((m & ok).sum() / n) if n else 0.0, n)
+    return out
+
+
+@lru_cache(maxsize=None)
+def scenes(field_id: str) -> tuple[Scene, ...]:
+    g = grid(field_id)
+    raw = _read(config.DATA_DIR / "scenes" / f"{field_id}.json")
+    out = []
+    for s in raw["scenes"]:
+        px = np.array([np.nan if v is None else v / 1000.0 for v in s["ndvi"]], dtype=float)
+        out.append(Scene(
+            date=date.fromisoformat(s["date"]), scene_id=s["scene_id"], cloud_pct=s.get("cloud_pct", 0),
+            shadow_pct=s.get("shadow_pct", 0), cirrus_pct=s.get("cirrus_pct", 0),
+            zones=_zone_obs(g, px), px=px,
+        ))
+    return tuple(sorted(out, key=lambda x: x.date))
 
 
 @dataclass(frozen=True)
@@ -70,49 +189,6 @@ class WeatherDay:
     tmax_c: float
     rh_mean: float
     soil_moisture: float
-
-
-def _read(path):
-    return json.loads(path.read_text(encoding="utf-8"))
-
-
-@lru_cache(maxsize=1)
-def fields() -> dict[str, FieldRec]:
-    raw = _read(config.DATA_DIR / "fields.geojson")
-    out: dict[str, FieldRec] = {}
-    for feat in raw["features"]:
-        p = feat["properties"]
-        ring = feat["geometry"]["coordinates"][0]
-        lon = sum(c[0] for c in ring[:-1]) / (len(ring) - 1)
-        lat = sum(c[1] for c in ring[:-1]) / (len(ring) - 1)
-        out[p["id"]] = FieldRec(
-            id=p["id"], name=p["name"], village=p["village"], crop=p["crop"],
-            anchor_date=date.fromisoformat(p["anchor_date"]), anchor_label=p["anchor_label"],
-            anchor_assumed=p["anchor_assumed"], area_ha=p["area_ha"],
-            analysis_pixels=p["analysis_pixels"], size_m=tuple(p["size_m"]),
-            origin_m=tuple(p["origin_m"]), edge_context=p["edge_context"],
-            zone_pixels={z: v["pixels"] for z, v in p["zones"].items()},
-            zone_polygons={z: v["polygon"] for z, v in p["zones"].items()},
-            outline=feat["geometry"]["coordinates"], lat=lat, lon=lon,
-        )
-    return out
-
-
-@lru_cache(maxsize=None)
-def scenes(field_id: str) -> tuple[Scene, ...]:
-    raw = _read(config.DATA_DIR / "scenes" / f"{field_id}.json")
-    out = []
-    for s in raw["scenes"]:
-        zones = {
-            z: ZoneObs(ndvi=v["ndvi"], valid=v["valid_fraction"], pixels=v["pixels"])
-            for z, v in s["zones"].items()
-        }
-        out.append(Scene(
-            date=date.fromisoformat(s["date"]), scene_id=s["scene_id"],
-            cloud_pct=s.get("cloud_pct", 0), shadow_pct=s.get("shadow_pct", 0),
-            cirrus_pct=s.get("cirrus_pct", 0), zones=zones,
-        ))
-    return tuple(sorted(out, key=lambda x: x.date))
 
 
 @lru_cache(maxsize=1)
@@ -132,7 +208,7 @@ def weather_meta() -> dict:
 
 @lru_cache(maxsize=1)
 def calendar() -> dict:
-    return _read(config.DATA_DIR / "calendar.json")["crops"]
+    return _read(config.DATA_DIR / "calendar.json")["classes"]
 
 
 @lru_cache(maxsize=1)
@@ -141,16 +217,21 @@ def checks() -> dict:
 
 
 @lru_cache(maxsize=1)
-def scenarios() -> dict:
-    return _read(config.DATA_DIR / "scenarios.json")
+def cases_file() -> dict:
+    return _read(config.DATA_DIR / "cases.json")
 
 
 def case_specs() -> list[dict]:
-    return scenarios()["cases"]
+    return cases_file()["cases"]
 
 
 def case_spec(case_id: str) -> dict | None:
     return next((c for c in case_specs() if c["id"] == case_id), None)
+
+
+def clear_caches() -> None:
+    for fn in (provenance, fields, grid, scenes, weather, weather_meta, calendar, checks, cases_file):
+        fn.cache_clear()
 
 
 def distance_km(a: FieldRec, b: FieldRec) -> float:

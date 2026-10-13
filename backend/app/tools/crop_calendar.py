@@ -1,4 +1,9 @@
-"""crop_calendar: is the drop expected from the crop curve or a local management window?"""
+"""crop_calendar: does the drop fall in a local management window for this kind of canopy?
+
+The crop itself is not known. FieldDx only knows whether the canopy looks perennial (it never went to
+bare soil in the past year of NDVI) or seasonal. Management windows are therefore keyed to that class,
+and they are placeholders until an agronomist confirms them, which the evidence says out loud.
+"""
 from __future__ import annotations
 
 from datetime import date, timedelta
@@ -7,73 +12,58 @@ from .. import config, data
 from .common import Ctx, ToolResult, fmt_date
 
 
-def expected_ndvi(crop: str, anchor: date, day: date) -> float:
-    curve = data.calendar()[crop]["curve"]
-    d = (day - anchor).days
-    if d <= curve[0][0]:
-        return curve[0][1]
-    for (d0, v0), (d1, v1) in zip(curve, curve[1:]):
-        if d <= d1:
-            return v0 + (v1 - v0) * (d - d0) / (d1 - d0)
-    return curve[-1][1]
-
-
-def active_window(crop: str, day: date) -> dict | None:
+def active_window(klass: str, day: date) -> dict | None:
     slack = timedelta(days=config.MANAGEMENT_SLACK_DAYS)
-    for w in data.calendar()[crop]["windows"]:
-        start, end = date.fromisoformat(w["start"]), date.fromisoformat(w["end"])
+    for w in data.calendar().get(klass, {}).get("windows", []):
+        sm, sd = map(int, w["start"].split("-"))
+        em, ed = map(int, w["end"].split("-"))
+        start, end = date(day.year, sm, sd), date(day.year, em, ed)
         if start - slack <= day <= end + slack:
-            return w
+            return {**w, "start_date": start.isoformat(), "end_date": end.isoformat()}
     return None
 
 
 def run(ctx: Ctx) -> ToolResult:
     f = ctx.field
     onset = ctx.state.get("onset_date") or ctx.alert
-    window = active_window(f.crop, onset)
-    base_day = ctx.series.baseline_dates[1] if ctx.series.baseline_dates else ctx.alert - timedelta(days=30)
-    now_day = ctx.state["ref_scene"].date if ctx.state.get("ref_scene") else ctx.as_of
-    exp_then, exp_now = expected_ndvi(f.crop, f.anchor_date, base_day), expected_ndvi(f.crop, f.anchor_date, now_day)
-    expected_change = exp_now - exp_then
-    expected_drop = expected_change <= config.EXPECTED_DROP
+    window = active_window(f.klass, onset)
+    monthly = f.monthly
+    lows = [v for m, v in monthly.items() if "2025-11" <= m <= "2026-09"]
+    low = min(lows) if lows else None
 
-    anchor_note = f"{f.anchor_label} {fmt_date(f.anchor_date)}" + (", assumed" if f.anchor_assumed else "")
+    if low is None:
+        kind = "There is no year of NDVI history to tell perennial from seasonal."
+    elif f.klass == "perennial":
+        kind = f"The canopy looks perennial: it never fell below NDVI {low:.2f} in a monthly median over the past year."
+    elif f.klass == "seasonal":
+        kind = f"The canopy looks seasonal: it fell to NDVI {low:.2f} in a monthly median over the past year."
+    else:
+        kind = "The crop could not be identified from a year of NDVI."
+
     if window:
         verified = window.get("verified", False)
         finding = (
             f"The drop began {fmt_date(onset)}, inside the {window['label'].lower()} window "
-            f"({fmt_date(date.fromisoformat(window['start']))} to {fmt_date(date.fromisoformat(window['end']))}, "
-            f"{'verified' if verified else 'assumed, not yet verified with an agronomist'})."
+            f"({fmt_date(date.fromisoformat(window['start_date']))} to {fmt_date(date.fromisoformat(window['end_date']))}, "
+            f"{'verified' if verified else 'assumed, not yet verified with an agronomist'}). {kind}"
         )
     else:
-        finding = f"No management window in the {f.crop} calendar around {fmt_date(onset)}. "
-        finding += (
-            f"The expected curve falls by {abs(expected_change):.2f} NDVI over this period ({anchor_note})."
-            if expected_drop else
-            f"The expected curve is {'flat' if abs(expected_change) < 0.03 else 'steady'} over this period ({anchor_note})."
+        finding = (
+            f"No management window in the calendar for this kind of canopy around {fmt_date(onset)}. {kind} "
+            "There is no crop-specific expected curve, so a normal crop cycle cannot be ruled in or out."
         )
-
-    curve_pts = []
-    d = date(2026, 7, 7)
-    while d <= date(2026, 10, 10):
-        curve_pts.append({"date": d.isoformat(), "value": round(expected_ndvi(f.crop, f.anchor_date, d), 3)})
-        d += timedelta(days=5)
 
     return ToolResult(
         tool="crop_calendar", title="Crop calendar", finding=finding,
-        facts={
-            "in_window": window is not None,
-            "expected_drop": expected_drop,
-        },
+        facts={"in_window": window is not None, "expected_drop": None},
         vars={
             "window_label": window["label"] if window else "",
             "window_verified": "verified" if (window and window.get("verified")) else "assumed",
+            "window_ask": window.get("ask", "") if window else "",
         },
-        data={
-            "window": window, "onset": onset.isoformat(),
-            "expected_change": round(expected_change, 3), "anchor": f.anchor_date.isoformat(),
-            "expected_curve": curve_pts,
-        },
+        data={"window": window, "onset": onset.isoformat(), "class": f.klass, "monthly": monthly},
         as_of=onset, quality="n/a",
-        source="Crop calendar (assumed windows, unverified)" if window and not window.get("verified") else "Crop calendar",
+        source=("Crop calendar (assumed window, unverified) and 12 months of Sentinel-2 NDVI"
+                if window and not window.get("verified") else "Crop calendar and 12 months of Sentinel-2 NDVI"),
+        visual={"type": "months", "rows": [{"month": m, "value": v} for m, v in monthly.items()]} if monthly else None,
     )

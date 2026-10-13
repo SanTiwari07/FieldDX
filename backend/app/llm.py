@@ -55,7 +55,7 @@ def build_prompt(r: CaseResult) -> str:
         nc = {"check": r.next_check.label, "minutes": r.next_check.cost_min,
               "outcomes": [{"result": o.label, "means": o.then} for o in r.next_check.outcomes]}
     payload = {
-        "field": f"{r.field.name} ({r.field.crop})", "outcome": r.outcome,
+        "field": f"{r.field.name} ({r.field.class_label.lower()})", "outcome": r.outcome,
         "stage_outcome": r.stage_outcome.model_dump() if r.stage_outcome else None,
         "evidence": ev, "hypotheses_in_order": ranking, "next_check": nc, "limits": r.limits,
     }

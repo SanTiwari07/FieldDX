@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 Quality = Literal["usable", "partial", "cloudy", "none", "n/a"]
 Confidence = Literal["high", "medium", "low"]
 Severity = Literal["high", "medium", "low"]
-Outcome = Literal["auto_dismissed", "area_alert", "field_case", "unexplained", "resolved"]
+Outcome = Literal["auto_dismissed", "area_alert", "field_case", "unexplained", "watch", "resolved"]
 Stance = Literal["for", "against", "neutral"]
 
 
@@ -45,7 +45,7 @@ class HypothesisResult(BaseModel):
 
 
 class StageOutcome(BaseModel):
-    kind: Literal["auto_dismissed", "area_alert"]
+    kind: Literal["auto_dismissed", "area_alert", "watch"]
     hypothesis_id: str
     title: str
     reason: str
@@ -123,13 +123,10 @@ class Resolution(BaseModel):
 class FieldInfo(BaseModel):
     id: str
     name: str
-    village: str
-    crop: str
+    klass: str
+    class_label: str
     area_ha: float
     analysis_pixels: int
-    anchor_date: date
-    anchor_label: str
-    anchor_assumed: bool
 
 
 class CaseResult(BaseModel):
@@ -137,8 +134,6 @@ class CaseResult(BaseModel):
     field: FieldInfo
     alert_date: date
     as_of: date
-    replayed: bool = True
-    scenario_label: str = ""
     banner: str = ""
     outcome: Outcome
     severity: Severity | None = None

@@ -39,7 +39,7 @@ FACT_SOURCE = {
     "neighbours_dropped": "neighbour_compare", "neighbours_fine": "neighbour_compare",
     "pattern_uniform": "spatial_pattern", "pattern_edge": "spatial_pattern",
     "pattern_spreading": "spatial_pattern", "pattern_patch_or_spreading": "spatial_pattern",
-    "pattern_patch": "spatial_pattern", "pattern_localised": "spatial_pattern",
+    "pattern_patch": "spatial_pattern", "pattern_localised": "spatial_pattern", "pattern_fieldwide": "spatial_pattern",
     "dry_spell": "weather", "heavy_rain": "weather", "heat_stress": "weather", "dry_or_hot": "weather",
     "rain_in_window": "weather", "soil_moisture_low": "weather", "soil_moisture_normal": "weather",
     "humid_after_rain": "weather", "no_weather_trigger": "weather",
@@ -66,10 +66,9 @@ RULES: tuple[Rule, ...] = (
     Rule(
         "H2", "Boundary-mixing artefact", 1,
         supports=(
-            Cond("raw_edge_drop", "The drop sits on the {edge_name} edge of the unshrunk polygon", 0.20),
-            Cond("edge_vanishes_in_buffer", "The drop disappears once the 10 m boundary ring is removed", 0.45),
-            Cond("edge_next_to_bare", "That side borders a {edge_context}", 0.25),
-            Cond("interior_fine", "The interior zones are stable", 0.10),
+            Cond("raw_edge_drop", "The drop sits on the {edge_name} edge of the unshrunk shape", 0.25),
+            Cond("edge_vanishes_in_buffer", "The drop disappears once the 10 m boundary ring is removed", 0.55),
+            Cond("interior_fine", "The interior zones are stable", 0.20),
         ),
         against=(
             Cond("edge_survives_buffer", "The edge drop survives the 10 m buffer", 0.60),
@@ -80,25 +79,25 @@ RULES: tuple[Rule, ...] = (
     ),
     # ---- Stage 2: expected, or shared with the area?
     Rule(
-        "H3", "Management event", 2,
+        "H3", "Management event or harvest", 2,
         supports=(
-            Cond("in_window", "The drop began inside the {window_label} window ({window_verified})", 0.35),
-            Cond("pattern_uniform", "The loss is uniform across the field", 0.25),
-            Cond("drop_sudden", "The drop is sudden", 0.15),
-            Cond("neighbours_dropped", "Same-crop neighbours dropped in the same window", 0.25),
+            Cond("in_window", "The drop began inside the {window_label} window ({window_verified})", 0.30),
+            Cond("pattern_fieldwide", "The loss covers most of the field", 0.30),
+            Cond("drop_sudden", "The drop is sudden", 0.10),
+            Cond("neighbours_dropped", "Similar plots nearby dropped in the same window", 0.30),
         ),
         against=(
             Cond("in_window", "The drop is outside any known management window", 0.50, want=False),
             Cond("pattern_localised", "The loss is localised, not field-wide", 0.40),
         ),
-        requires=("in_window",),
-        short="Management event",
+        requires=("in_window", "neighbours_dropped"),
+        short="Management event or harvest",
     ),
     Rule(
         "H4", "Normal crop cycle", 2,
         supports=(
             Cond("expected_drop", "The crop curve expects a fall at this stage", 0.60),
-            Cond("pattern_uniform", "The loss is uniform across the field", 0.20),
+            Cond("pattern_fieldwide", "The loss covers most of the field", 0.20),
             Cond("drop_gradual", "The decline is gradual", 0.20),
         ),
         against=(Cond("expected_drop", "The crop curve expects no fall at this stage", 0.50, want=False),),
@@ -108,12 +107,12 @@ RULES: tuple[Rule, ...] = (
     Rule(
         "H5", "Regional dry or hot spell", 2,
         supports=(
-            Cond("neighbours_dropped", "Same-crop neighbours dropped too", 0.40),
+            Cond("neighbours_dropped", "Similar plots nearby dropped too", 0.40),
             Cond("dry_or_hot", "The window is dry or hot", 0.35),
             Cond("soil_moisture_low", "Soil moisture is low across the area", 0.25),
         ),
         against=(
-            Cond("neighbours_fine", "Neighbours are fine, so the cause is local", 0.50),
+            Cond("neighbours_fine", "Similar plots nearby are fine, so the cause is local", 0.50),
             Cond("in_window", "A management event already explains the drop", 0.40),
         ),
         requires=("neighbours_dropped",),
@@ -123,7 +122,7 @@ RULES: tuple[Rule, ...] = (
         "H6", "Storm, hail or unseasonal rain damage", 2,
         supports=(
             Cond("heavy_rain", "A heavy rain day fell inside the window", 0.50),
-            Cond("neighbours_dropped", "Neighbours were hit too", 0.25),
+            Cond("neighbours_dropped", "Similar plots nearby were hit too", 0.25),
             Cond("drop_sudden", "The drop is sudden", 0.25),
         ),
         against=(Cond("heavy_rain", "No heavy rain day in the window", 0.60, want=False),),
@@ -137,13 +136,13 @@ RULES: tuple[Rule, ...] = (
             Cond("pattern_edge", "The loss is concentrated on the {edge_name} edge", 0.35),
             Cond("edge_survives_buffer", "The edge drop survives the 10 m buffer, so it is not mixed pixels", 0.25),
             Cond("dry_spell", "It has been dry for {days_since_rain} days", 0.15),
-            Cond("neighbours_fine", "Same-crop neighbours are fine", 0.15),
+            Cond("neighbours_fine", "Similar plots nearby are fine", 0.15),
             Cond("soil_moisture_normal", "Area soil moisture is normal, so it is not regional drought", 0.10),
         ),
         against=(
             Cond("rain_in_window", "Rain fell in the window", 0.40),
-            Cond("pattern_uniform", "The loss is uniform, not edge or row aligned", 0.30),
-            Cond("neighbours_dropped", "Neighbours dropped too", 0.40),
+            Cond("pattern_fieldwide", "The loss covers most of the field, not an edge or row", 0.30),
+            Cond("neighbours_dropped", "Similar plots nearby dropped too", 0.40),
         ),
         short="Irrigation failure",
     ),
@@ -152,12 +151,12 @@ RULES: tuple[Rule, ...] = (
         supports=(
             Cond("pattern_spreading", "The affected patch grows across scenes", 0.40),
             Cond("pattern_patch_or_spreading", "The loss forms a patch rather than an edge or a uniform fall", 0.30),
-            Cond("neighbours_fine", "Same-crop neighbours are fine", 0.15),
+            Cond("neighbours_fine", "Similar plots nearby are fine", 0.15),
             Cond("humid_after_rain", "Rain and humid days came before the drop began", 0.15),
         ),
         against=(
-            Cond("pattern_uniform", "The loss is uniform, not patchy", 0.40),
-            Cond("neighbours_dropped", "Neighbours dropped too, which points to an area cause", 0.30),
+            Cond("pattern_fieldwide", "The loss covers most of the field, not a patch", 0.40),
+            Cond("neighbours_dropped", "Similar plots nearby dropped too, which points to an area cause", 0.30),
         ),
         short="Pest or disease spread",
     ),
@@ -165,7 +164,7 @@ RULES: tuple[Rule, ...] = (
         "H9", "Nutrient deficiency", 3,
         supports=(
             Cond("drop_gradual", "The decline is slow and steady", 0.35),
-            Cond("neighbours_fine", "Neighbours sown at the same time are fine", 0.15),
+            Cond("neighbours_fine", "Similar plots nearby are fine", 0.15),
             Cond("ndre_low", "Red-edge index is low relative to NDVI", 0.30, unknown=NDRE_UNKNOWN),
             Cond("no_weather_trigger", "No weather trigger in the window", 0.20),
         ),

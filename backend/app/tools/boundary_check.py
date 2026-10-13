@@ -5,8 +5,6 @@ from .. import config
 from ..data import SIDE_NAME
 from .common import Ctx, ToolResult, fmt_date, fmt_delta, interior_mean
 
-MIXING_KINDS = {"bare_plot", "road", "bund"}
-
 
 def run(ctx: Ctx) -> ToolResult:
     s = ctx.series
@@ -34,7 +32,7 @@ def run(ctx: Ctx) -> ToolResult:
             facts=quiet, as_of=ref.date if ref else ctx.alert, quality="n/a",
         )
 
-    rows, survives, vanishes, bare = [], [], [], []
+    rows, survives, vanishes = [], [], []
     for side in sides:
         raw = s.delta(ref, f"raw_edge_{side}")
         shrunk = s.delta(ref, f"edge_{side}")
@@ -43,15 +41,13 @@ def run(ctx: Ctx) -> ToolResult:
         sv = shrunk <= config.EDGE_SURVIVES and (interior - shrunk) >= config.EDGE_VS_INTERIOR
         survives.append(sv)
         vanishes.append(shrunk > config.EDGE_SURVIVES)
-        kind = ctx.field.edge_context.get(side, {})
-        bare.append(kind.get("kind") in MIXING_KINDS)
-        rows.append((side, raw, shrunk, kind))
+        rows.append((side, raw, shrunk))
 
     if not rows:
         return ToolResult(tool="boundary_check", title="Boundary check", skipped=True,
                           skip_reason="No clear pixels to test the buffer.", facts=quiet, quality="n/a")
 
-    side, raw, shrunk, kind = rows[0]
+    side, raw, shrunk = rows[0]
     name = SIDE_NAME[side]
     survives_any, vanishes_all = any(survives), all(vanishes)
     if survives_any:
@@ -63,8 +59,8 @@ def run(ctx: Ctx) -> ToolResult:
     elif vanishes_all:
         finding = (
             f"{name.capitalize()} edge: ΔNDVI {fmt_delta(raw)} on the unshrunk polygon but only "
-            f"{fmt_delta(shrunk)} inside the 10 m buffer. The {name} side borders a "
-            f"{kind.get('label', 'neighbouring plot')}, so the drop is mixed boundary pixels."
+            f"{fmt_delta(shrunk)} inside the 10 m buffer, so the drop is mixed boundary pixels "
+            "from whatever lies beyond the field edge."
         )
     else:
         finding = (
@@ -76,16 +72,15 @@ def run(ctx: Ctx) -> ToolResult:
         "raw_edge_drop": True,
         "edge_survives_buffer": survives_any,
         "edge_vanishes_in_buffer": vanishes_all,
-        "edge_next_to_bare": any(bare),
+        "edge_next_to_bare": False,
         "interior_fine": interior > -0.05,
         "interior_dropped": interior <= config.ANOMALOUS_ZONE,
     }
     ctx.state["boundary_side"] = side
     return ToolResult(
         tool="boundary_check", title="Boundary check", finding=finding, facts=facts,
-        vars={"edge_name": name, "edge_context": kind.get("label", "neighbouring plot")},
-        data={"sides": sides, "raw": raw, "shrunk": shrunk, "interior": interior,
-              "context": kind, "survives": survives_any},
+        vars={"edge_name": name},
+        data={"sides": sides, "raw": raw, "shrunk": shrunk, "interior": interior, "survives": survives_any},
         as_of=ref.date, quality="usable",
         visual={"type": "bars", "unit": "ΔNDVI", "rows": [
             {"label": "Edge, unshrunk", "value": raw},

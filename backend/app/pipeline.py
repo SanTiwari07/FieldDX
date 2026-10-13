@@ -12,7 +12,7 @@ from typing import Iterator
 from . import config, data
 from .data import ZONE_LABEL
 from .engine.stages import diagnose
-from .models import (CaseResult, Evidence, FieldInfo, Headline, HypothesisResult)
+from .models import (CaseResult, CheckOutcome, Evidence, FieldInfo, Headline, HypothesisResult, NextCheck)
 from .next_check import choose
 from .tools import PIPELINE
 from .tools.common import ToolResult, build_ctx
@@ -28,7 +28,8 @@ STEP_LABELS["next_check"] = ("Choosing the next best check", "Next best check")
 def limits_text(f: data.FieldRec) -> str:
     return (
         f"Each pixel is 10 m × 10 m. This field has about {f.analysis_pixels} analysis pixels ({f.area_ha} ha), "
-        "so FieldDx can see zones, not individual plants or rows. Cloud gaps can hide a week of change. "
+        "so FieldDx can see zones, not individual plants or rows. The field shape is a model prediction, not a survey. "
+        "The crop is not known, only whether the canopy looks perennial or seasonal. Cloud gaps can hide days of change. "
         "Storm damage and waterlogging are scored from weather only, and red-edge (NDRE) is not used yet."
     )
 
@@ -67,8 +68,8 @@ def iter_events(case_id: str) -> Iterator[tuple[str, dict]]:
     spec = data.case_spec(case_id)
     if spec is None:
         raise KeyError(case_id)
-    scn = data.scenarios()
-    as_of = date.fromisoformat(scn["as_of"])
+    cases = data.cases_file()
+    as_of = date.fromisoformat(cases["as_of"])
     alert = date.fromisoformat(spec["alert_date"])
     ctx = build_ctx(spec["field_id"], alert, as_of)
 
@@ -101,12 +102,22 @@ def iter_events(case_id: str) -> Iterator[tuple[str, dict]]:
     next_check = None
     if diag.outcome == "field_case" and len(diag.ranking) >= 2:
         next_check = choose(diag.ranking[:2], ctx.state)
-    if next_check:
+    if diag.outcome == "unexplained":
+        v = data.checks()["visit"]
+        next_check = NextCheck(
+            check_id="visit", label=v["label"], cost_min=v["cost_min"], hypotheses=[], candidates=[],
+            outcomes=[CheckOutcome(key=k, label=o["label"], then=o["then"], supports=o["supports"], against=o["against"])
+                      for k, o in v["outcomes"].items()],
+        )
+    if next_check and diag.outcome == "unexplained":
+        yield "step", {"tool": "next_check", "state": "skipped", "label": STEP_LABELS["next_check"][0],
+                       "reason": "No single check separates the causes, so a call or visit is the check."}
+    elif next_check:
         yield "step", {"tool": "next_check", "state": "done", "label": STEP_LABELS["next_check"][0],
                        "evidence_ids": [], "summary": f"{next_check.label} ({next_check.cost_min} min)"}
     else:
         reason = ("Case closed at an earlier stage, no check needed."
-                  if diag.outcome in ("auto_dismissed", "area_alert")
+                  if diag.outcome in ("auto_dismissed", "area_alert", "watch")
                   else "No single check separates the leading causes; a general visit checklist applies.")
         yield "step", {"tool": "next_check", "state": "skipped", "label": STEP_LABELS["next_check"][0], "reason": reason}
 
@@ -137,18 +148,27 @@ def iter_events(case_id: str) -> Iterator[tuple[str, dict]]:
     result = CaseResult(
         case_id=case_id,
         field=FieldInfo(
-            id=f.id, name=f.name, village=f.village, crop=f.crop, area_ha=f.area_ha,
-            analysis_pixels=f.analysis_pixels, anchor_date=f.anchor_date,
-            anchor_label=f.anchor_label, anchor_assumed=f.anchor_assumed,
+            id=f.id, name=f.name, klass=f.klass, class_label=data.CLASS_LABEL[f.klass],
+            area_ha=f.area_ha, analysis_pixels=f.analysis_pixels,
         ),
-        alert_date=alert, as_of=as_of, replayed=True, scenario_label=spec.get("label", ""),
-        banner=scn.get("banner", ""), outcome=diag.outcome, severity=severity, headline=headline,
+        alert_date=alert, as_of=as_of, banner=cases["banner"],
+        outcome=diag.outcome, severity=severity, headline=headline,
         evidence=evidence, hypotheses=diag.hypotheses, stage_outcome=diag.stage_outcome,
         next_check=next_check,
-        visit_checklist=data.checks()["visit_checklist"] if diag.outcome == "unexplained" else [],
+        visit_checklist=_visit_list(diag.outcome, facts, vars_),
         limits=limits_text(f),
     )
     yield "diagnosis", result.model_dump(mode="json")
+
+
+def _visit_list(outcome: str, facts: dict, vars_: dict) -> list[str]:
+    if outcome != "unexplained":
+        return []
+    items = list(data.checks()["visit_checklist"])
+    if facts.get("in_window"):
+        ask = vars_.get("window_ask") or "Ask the farmer whether the crop was harvested or pruned this week."
+        items.insert(0, ask.replace(" One phone call settles it.", " It is one phone call and may settle the case."))
+    return items
 
 
 def _engine_summary(diag) -> str:
@@ -175,7 +195,7 @@ def build_case(case_id: str) -> CaseResult:
 
 
 def inbox_sort_key(r: CaseResult) -> tuple:
-    group = {"field_case": 0, "unexplained": 0, "area_alert": 1, "resolved": 2, "auto_dismissed": 3}[r.outcome]
+    group = {"field_case": 0, "unexplained": 0, "watch": 1, "area_alert": 2, "resolved": 3, "auto_dismissed": 4}[r.outcome]
     sev = SEVERITY_RANK.get(r.severity or "low", 0)
     lead = next((h for h in r.hypotheses if h.status in ("leading", "fired")), None)
     conf = CONFIDENCE_RANK.get(lead.confidence, 0) if lead and r.outcome != "unexplained" else 1

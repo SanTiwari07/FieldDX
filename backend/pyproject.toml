@@ -1,6 +1,6 @@
 [project]
 name = "fielddx-backend"
-version = "0.1.0"
+version = "0.2.0"
 description = "FieldDx: differential diagnosis for farm fields (API and engine)"
 requires-python = ">=3.11"
 dependencies = [
@@ -8,12 +8,14 @@ dependencies = [
   "uvicorn>=0.29",
   "pydantic>=2.6",
   "python-dotenv>=1.0",
+  "numpy>=1.26",
+  "pyproj>=3.6",
   "google-genai>=1.0",
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8.0", "httpx>=0.27"]
+dev = ["pytest>=8.0", "httpx>=0.27", "shapely>=2.0"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["."]
+pythonpath = [".", ".."]

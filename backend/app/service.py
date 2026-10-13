@@ -52,7 +52,10 @@ def inbox() -> list[dict]:
         if r.outcome == "resolved" and r.resolution:
             lead_name, conf = r.resolution.confirmed_name, "high"
         elif r.outcome == "unexplained":
-            lead_name, conf = "Unexplained: visit", None
+            ask = (r.visit_checklist[0] if r.visit_checklist else "").split(".")[0].split("It is one")[0].strip()
+            lead_name, conf = (ask or "Ask or visit: no clear cause"), None
+        elif r.outcome == "watch":
+            lead_name, conf = "Waiting for the next clear pass", None
         else:
             lead_name = lead.name if lead else ""
             conf = lead.confidence if lead and r.outcome == "field_case" else None
@@ -63,6 +66,6 @@ def inbox() -> list[dict]:
             "headline": r.headline.model_dump(mode="json") if r.headline else None,
             "leading": lead_name, "confidence": conf, "reason": reason,
             "stage_title": r.stage_outcome.title if r.stage_outcome else None,
-            "alert_date": r.alert_date.isoformat(), "replayed": r.replayed,
+            "alert_date": r.alert_date.isoformat(),
         })
     return rows

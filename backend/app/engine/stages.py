@@ -97,7 +97,9 @@ def diagnose(facts: dict, vars_: dict, ev_ids: dict[str, str]) -> Diagnosis:
 
     stage3 = sorted((s for s in scored.values() if s.rule.stage == 3), key=lambda s: (-s.score, int(s.rule.id[1:])))
     if winner is None:
-        if stage3 and stage3[0].score >= config.FIELD_CASE_MIN:
+        if facts.get("drop_confirmed") is False and facts.get("recovered_next") is None:
+            outcome = "watch"  # seen on one clear pass only; wait for the next one before sending anyone
+        elif stage3 and stage3[0].score >= config.FIELD_CASE_MIN:
             outcome = "field_case"
         else:
             outcome = "unexplained"
@@ -112,7 +114,9 @@ def diagnose(facts: dict, vars_: dict, ev_ids: dict[str, str]) -> Diagnosis:
             conf[s.rule.id] = "high" if s.score >= 0.85 else "medium" if s.score >= config.GATE_FIRE else "low"
 
     lead_id = None
-    if outcome == "field_case":
+    if outcome == "watch":
+        pass
+    elif outcome == "field_case":
         lead_id = stage3[0].rule.id
     elif winner is not None:
         lead_id = winner.rule.id
@@ -148,6 +152,13 @@ def diagnose(facts: dict, vars_: dict, ev_ids: dict[str, str]) -> Diagnosis:
         hyps.append(build(s))
 
     stage_outcome = _stage_outcome(winner, outcome, vars_, facts) if winner else None
+    if outcome == "watch":
+        ids = [i for t in ("scene_quality", "ndvi_series") if (i := ev_ids.get(t))]
+        stage_outcome = StageOutcome(
+            kind="watch", hypothesis_id="", title="Not confirmed yet",
+            reason="Seen on one clear pass only", evidence_ids=ids,
+            confirm_with="FieldDx re-checks on the next clear pass, usually within five days.",
+        )
     return Diagnosis(outcome=outcome, hypotheses=hyps, stage_outcome=stage_outcome,
                      lead_id=lead_id, ranking=[s.rule.id for s in stage3])
 
@@ -161,17 +172,17 @@ def _stage_outcome(w: Scored, outcome: str, vars_: dict, facts: dict) -> StageOu
         word = "Cloud or haze" if vars_.get("alert_scene_class") in ("partial", "cloudy") else "Data artefact"
         reason, title = f"{word} on the {vars_.get('alert_date', '')} scene", "Auto-dismissed: data artefact"
     elif rid == "H2":
-        reason = f"Edge pixels mix with the {vars_.get('edge_context', 'neighbouring plot')} next door"
+        reason = "Edge pixels mix with what lies beyond the field boundary"
         title = "Auto-dismissed: boundary mixing"
     elif rid == "H3":
         label = vars_.get("window_label", "Management event")
         reason, title = f"{label}, expected", "Auto-dismissed: expected management event"
-        confirm = f"Ask the farmer: was {label.lower()} done this week? One phone call settles it."
+        confirm = vars_.get("window_ask") or f"Ask the farmer: was {label.lower()} done this week? One phone call settles it."
     elif rid == "H4":
         reason, title = "Normal crop cycle", "Auto-dismissed: normal crop cycle"
         confirm = "Ask the farmer: has the crop been harvested? One phone call settles it."
     elif rid == "H5":
-        reason = f"{v['n_dropped']} of {v['n_neighbours']} neighbouring {v['crop']} plots dropped in a dry or hot spell"
+        reason = f"{v['n_dropped']} of {v['n_neighbours']} {v['crop']} plots nearby dropped in a dry or hot spell"
         title = "Area alert: regional dry or hot spell"
     else:
         reason, title = "Heavy rain with neighbours also hit", "Area alert: storm or hail"

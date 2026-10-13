@@ -34,13 +34,9 @@ def run(ctx: Ctx) -> ToolResult:
                 f"shadow or cirrus ({clear_pct}% clear).{tail}"
             )
 
-    # last eight passes on the five-day grid, gaps included
-    strip = []
-    d = ctx.as_of
-    grid = [d - timedelta(days=5 * i) for i in range(7, -1, -1)]
-    for gd in grid:
-        sc = s.scene_at(gd)
-        strip.append({"date": gd.isoformat(), "quality": s.scene_class(sc), "alert": gd == ctx.alert})
+    # the last eight acquisitions up to the end of the data
+    recent = [sc for sc in s.scenes if sc.date <= ctx.as_of][-8:]
+    strip = [{"date": sc.date.isoformat(), "quality": s.scene_class(sc), "alert": sc.date == ctx.alert} for sc in recent]
 
     ctx.state["alert_scene_class"] = cls
     ctx.state["clear_scenes_since_alert"] = len(clear_since)

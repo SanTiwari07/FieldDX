@@ -14,6 +14,7 @@ PATTERN_WORDS = {
     "patch": "a single patch",
     "spreading": "a patch that is spreading",
     "mixed": "scattered, with no clear shape",
+    "widespread": "covering most of the field, unevenly",
 }
 
 
@@ -31,7 +32,7 @@ def run(ctx: Ctx) -> ToolResult:
     ref = ctx.state.get("ref_scene")
     quiet = {
         "pattern_uniform": False, "pattern_edge": False, "pattern_patch_or_spreading": False,
-        "pattern_spreading": False, "pattern_localised": False,
+        "pattern_spreading": False, "pattern_localised": False, "pattern_fieldwide": False,
     }
     if ref is None:
         return ToolResult(tool="spatial_pattern", title="Spatial pattern", skipped=True,
@@ -75,6 +76,9 @@ def run(ctx: Ctx) -> ToolResult:
         pattern = "patch"
     else:
         pattern = "mixed"
+    extent = sum(s.field.zone_pixels[z] for z in anomalous) / sum(s.field.zone_pixels[z] for z in ANALYSIS)
+    if pattern in ("mixed", "spreading") and extent >= 0.6:
+        pattern = "widespread"  # a patch that has taken most of the field is no longer a patch
 
     zones_px = {z: s.field.zone_pixels[z] for z in ANALYSIS}
     affected_px = sum(zones_px[z] for z in anomalous)
@@ -99,6 +103,11 @@ def run(ctx: Ctx) -> ToolResult:
             f"A patch that grows across scenes: anomalous zones {trail}. Now {', '.join(names)} "
             f"({affected_px} of {total_px} pixels)."
         )
+    elif pattern == "widespread":
+        finding = (
+            f"The loss covers most of the field, unevenly: {affected_px} of {total_px} analysis pixels, "
+            f"\u0394NDVI {fmt_delta(vals[worst])} at worst and {fmt_delta(interior)} in the interior."
+        )
     elif pattern == "patch":
         finding = f"A single patch in the {names[0]}: {affected_px} of {total_px} analysis pixels, ΔNDVI {fmt_delta(vals[worst])}."
     else:
@@ -113,6 +122,7 @@ def run(ctx: Ctx) -> ToolResult:
         "pattern_spreading": pattern == "spreading",
         "pattern_patch_or_spreading": pattern in ("patch", "spreading"),
         "pattern_localised": pattern in ("edge", "patch", "spreading", "mixed"),
+        "pattern_fieldwide": pattern in ("uniform", "widespread"),
         "pattern_patch": pattern == "patch",
     }
     ctx.state.update(pattern=pattern, affected_zones=anomalous, edge_name=edge_name,

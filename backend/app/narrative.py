@@ -14,7 +14,7 @@ EVIDENCE_REF = re.compile(r"\bE\d+\b")
 def explained_ids(r: CaseResult) -> list[str]:
     """The hypotheses a narrative must explain, in the order the engine ranks them."""
     if r.stage_outcome is not None:
-        return [r.stage_outcome.hypothesis_id]
+        return [] if r.stage_outcome.kind == "watch" else [r.stage_outcome.hypothesis_id]
     return [h.id for h in r.hypotheses if h.stage == 3 and h.status in ("leading", "possible")]
 
 
@@ -38,6 +38,15 @@ def _tool_ids(r: CaseResult, *tools: str) -> list[str]:
 
 def template_narrative(r: CaseResult) -> CaseFile:
     by_id = {h.id: h for h in r.hypotheses}
+
+    if r.stage_outcome is not None and r.stage_outcome.kind == "watch":
+        so = r.stage_outcome
+        summary = CaseFileLine(
+            text=("The drop shows on one clear pass only, so FieldDx cannot yet tell a real change from a "
+                  "passing artefact. It waits for the next clear pass before asking anyone to visit."),
+            evidence_ids=so.evidence_ids,
+        )
+        return CaseFile(summary=summary, hypotheses=[], next_check_explainer=None, limits=r.limits)
 
     if r.stage_outcome is not None:
         so = r.stage_outcome
@@ -130,7 +139,7 @@ def validate_narrative(cf: CaseFile, r: CaseResult) -> list[str]:
             errors.append(f"{h.id}: no lines")
         for n, ln in enumerate(h.why):
             check_line(f"{h.id}[{n}]", ln)
-    if r.next_check is not None:
+    if r.next_check is not None and r.next_check.hypotheses:
         if cf.next_check_explainer is None:
             errors.append("next_check_explainer missing")
         else:

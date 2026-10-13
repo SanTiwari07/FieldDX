@@ -2,8 +2,10 @@
 from __future__ import annotations
 
 import json
+import threading
+from contextlib import asynccontextmanager
 import time
-from datetime import date, timedelta
+from datetime import date
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import FileResponse, StreamingResponse
@@ -12,11 +14,21 @@ from fastapi.staticfiles import StaticFiles
 from . import config, data, db, llm, service
 from .models import CaseResult, CloseRequest
 from .pipeline import build_case, iter_events
-from .resolve import CloseError, apply_outcome
 from .raster import raster as build_raster
+from .resolve import CloseError, apply_outcome
 from .tools.common import build_ctx, quality_of
 
-app = FastAPI(title="FieldDx", version="0.1.0")
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    """Compute every case once in the background so the inbox opens fast."""
+    def run():
+        for c in data.case_specs():
+            build_case(c["id"])
+    threading.Thread(target=run, daemon=True).start()
+    yield
+
+
+app = FastAPI(title="FieldDx", version="0.2.0", lifespan=lifespan)
 
 
 def _case_or_404(case_id: str) -> CaseResult:
@@ -27,14 +39,14 @@ def _case_or_404(case_id: str) -> CaseResult:
 
 @app.get("/api/health")
 def health():
-    return {"ok": True, "llm": "gemini" if llm.is_enabled() else "template",
-            "model": config.GEMINI_MODEL}
+    return {"ok": True, "llm": "gemini" if llm.is_enabled() else "template", "model": config.GEMINI_MODEL,
+            "fields": len(data.fields()), "cases": len(data.case_specs())}
 
 
 @app.get("/api/cases")
 def list_cases():
-    return {"banner": data.scenarios().get("banner", ""), "as_of": data.scenarios()["as_of"],
-            "cases": service.inbox()}
+    return {"banner": data.cases_file()["banner"], "as_of": data.cases_file()["as_of"],
+            "provenance": data.provenance(), "cases": service.inbox()}
 
 
 @app.get("/api/cases/{case_id}")
@@ -54,10 +66,8 @@ def investigate(case_id: str, pace: int | None = Query(None, ge=0, le=2000)):
     delay = (config.DEMO_PACING_MS if pace is None else pace) / 1000.0
 
     def stream():
-        final = None
         for kind, payload in iter_events(case_id):
             if kind == "diagnosis":
-                final = payload
                 continue
             if kind == "step" and payload["state"] == "running":
                 time.sleep(delay)
@@ -75,13 +85,8 @@ def investigate(case_id: str, pace: int | None = Query(None, ge=0, le=2000)):
                              headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
 
-def _lerp_point(f: data.FieldRec, x: float, y: float) -> list[float]:
-    """Local metres within the field to [lat, lon], using the outline corners as the frame."""
-    sw, se, _ne, nw = f.outline[0][0], f.outline[0][1], f.outline[0][2], f.outline[0][3]
-    w, h = f.size_m
-    lon = sw[0] + (se[0] - sw[0]) * x / w
-    lat = sw[1] + (nw[1] - sw[1]) * y / h
-    return [lat, lon]
+def _latlon(rings: list) -> list:
+    return [[[c[1], c[0]] for c in ring] for ring in rings]
 
 
 @app.get("/api/cases/{case_id}/map")
@@ -99,28 +104,20 @@ def case_map(case_id: str):
 
     zones = []
     for z in data.ANALYSIS:
-        poly = [[c[1], c[0]] for c in f.zone_polygons[z][0]]
         obs = ref.zones[z] if ref else None
         zones.append({
-            "id": z, "label": data.ZONE_LABEL[z], "polygon": poly, "pixels": f.zone_pixels[z],
-            "delta": ctx.series.delta(ref, z) if ref else None,
-            "quality": quality_of(obs.valid) if obs else "none",
-            "affected": z in affected,
+            "id": z, "label": data.ZONE_LABEL[z], "polygon": _latlon(f.zone_polygons.get(z, [])),
+            "pixels": f.zone_pixels[z], "delta": ctx.series.delta(ref, z) if ref else None,
+            "quality": quality_of(obs.valid) if obs else "none", "affected": z in affected,
         })
-    w, h = f.size_m
-    lines = []
-    for i in range(0, w + 1, 10):
-        lines.append([_lerp_point(f, i, 0), _lerp_point(f, i, h)])
-    for j in range(0, h + 1, 10):
-        lines.append([_lerp_point(f, 0, j), _lerp_point(f, w, j)])
-    outline = [[c[1], c[0]] for c in f.outline[0]]
-    lats, lons = [p[0] for p in outline], [p[1] for p in outline]
+    outline = _latlon(f.outline)
+    pts = [p for ring in outline for p in ring]
+    lats, lons = [p[0] for p in pts], [p[1] for p in pts]
     return {
-        "field_id": f.id, "name": f.name, "outline": outline, "zones": zones, "grid": lines,
+        "field_id": f.id, "name": f.name, "outline": outline, "zones": zones,
         "bounds": [[min(lats), min(lons)], [max(lats), max(lons)]],
         "scene_date": ref.date.isoformat() if ref else None,
-        "baseline": ctx.series.baseline_label(), "size_m": [w, h],
-        "analysis_pixels": f.analysis_pixels,
+        "baseline": ctx.series.baseline_label(), "analysis_pixels": f.analysis_pixels,
     }
 
 
@@ -129,7 +126,6 @@ def case_series(case_id: str):
     r = _case_or_404(case_id)
     f = data.fields()[r.field.id]
     ctx = build_ctx(f.id, r.alert_date, r.as_of)
-    first = ctx.series.scenes[0].date
     affected = []
     for e in r.evidence:
         if e.tool == "spatial_pattern":
@@ -139,26 +135,27 @@ def case_series(case_id: str):
     elif not affected and r.headline:
         affected = [r.headline.zone]
 
-    rows, d = [], first
-    while d <= r.as_of:
-        sc = ctx.series.scene_at(d)
+    rows = []
+    for sc in ctx.series.scenes:
+        if sc.date > r.as_of:
+            continue
         zones = {}
         for z in data.ANALYSIS:
-            if sc is None:
-                zones[z] = {"ndvi": None, "quality": "none"}
-                continue
-            q = quality_of(sc.zones[z].valid)
-            zones[z] = {"ndvi": sc.zones[z].ndvi if q != "cloudy" else None, "quality": q}
-        rows.append({"date": d.isoformat(), "quality": ctx.series.scene_class(sc), "zones": zones})
-        d += timedelta(days=5)
+            obs = sc.zones[z]
+            q = quality_of(obs.valid)
+            zones[z] = {"ndvi": obs.ndvi if (obs.ndvi is not None and q != "cloudy") else None, "quality": q}
+        rows.append({"date": sc.date.isoformat(), "quality": ctx.series.scene_class(sc), "zones": zones})
 
-    from .tools.crop_calendar import expected_ndvi
-    expected = [{"date": row["date"], "value": round(expected_ndvi(f.crop, f.anchor_date, date.fromisoformat(row["date"])), 3)}
-                for row in rows]
-    windows = [w for w in data.calendar()[f.crop]["windows"]]
+    windows = []
+    year = r.alert_date.year
+    for w in data.calendar().get(f.klass, {}).get("windows", []):
+        sm, sd = map(int, w["start"].split("-"))
+        em, ed = map(int, w["end"].split("-"))
+        windows.append({"id": w["id"], "label": w["label"], "start": date(year, sm, sd).isoformat(),
+                        "end": date(year, em, ed).isoformat(), "verified": w.get("verified", False)})
     return {
         "zones": [{"id": z, "label": data.ZONE_LABEL[z], "affected": z in affected} for z in data.ANALYSIS],
-        "scenes": rows, "expected": expected, "windows": windows,
+        "scenes": rows, "windows": windows,
         "alert_date": r.alert_date.isoformat(), "as_of": r.as_of.isoformat(),
         "baseline": ctx.series.baseline_label(),
     }
@@ -166,7 +163,7 @@ def case_series(case_id: str):
 
 @app.get("/api/cases/{case_id}/raster")
 def case_raster(case_id: str, scene: str | None = None):
-    """10 m pixels for one scene date (defaults to the headline scene)."""
+    """The real 10 m pixels for one scene date (defaults to the headline scene)."""
     r = _case_or_404(case_id)
     ctx = build_ctx(r.field.id, r.alert_date, r.as_of)
     try:
@@ -192,13 +189,27 @@ def close_case(case_id: str, body: CloseRequest):
     if db.get_outcome(case_id):
         raise HTTPException(409, "This case is already closed")
     db.save_outcome(case_id, body.check_id, body.outcome, body.note, closed_at)
-    result = service.ensure_narrative(service.effective_case(case_id))
-    return result
+    return service.ensure_narrative(service.effective_case(case_id))
 
 
 @app.get("/api/checks")
 def list_checks():
     return data.checks()
+
+
+@app.get("/api/fields.geojson")
+def fields_geojson():
+    """The monitored field shapes as GeoJSON, with the current case outcome where there is one."""
+    outcome = {c["field_id"]: service.effective_case(c["id"]).outcome for c in data.case_specs()}
+    feats = []
+    for f in data.fields().values():
+        ring = f.outline[0] if f.outline else []
+        feats.append({
+            "type": "Feature", "geometry": {"type": "Polygon", "coordinates": [ring]},
+            "properties": {"id": f.id, "name": f.name, "class": f.klass, "area_ha": f.area_ha,
+                           "case_outcome": outcome.get(f.id)},
+        })
+    return {"type": "FeatureCollection", "provenance": data.provenance(), "features": feats}
 
 
 @app.post("/api/admin/reset")

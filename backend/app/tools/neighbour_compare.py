@@ -1,4 +1,4 @@
-"""neighbour_compare: did same-crop fields nearby drop in the same window?"""
+"""neighbour_compare: did similar fields nearby drop in the same window?"""
 from __future__ import annotations
 
 from .. import config, data
@@ -27,7 +27,7 @@ def run(ctx: Ctx) -> ToolResult:
     shared = (share >= config.NEIGHBOURS_SHARED) if enough else None
     fine = (share < config.NEIGHBOURS_FINE) if enough else None
 
-    crop = ctx.field.crop
+    crop = {"perennial": "perennial-canopy", "seasonal": "seasonal-crop"}.get(ctx.field.klass, "nearby")
     if not enough:
         finding = f"Only {n} {crop} plot{'s' if n != 1 else ''} within {config.NEIGHBOUR_RADIUS_KM:.0f} km; too few to compare."
     elif shared:
