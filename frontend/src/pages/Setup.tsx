@@ -1,12 +1,14 @@
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { CircleMarker, MapContainer, Polygon, Polyline, Rectangle, TileLayer, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import {
-  ArrowRight, Check, CornerUpLeft, Hand, Layers, MapPin, MousePointerClick, PenLine, Search, Trash2, Type, X,
+  Activity, ArrowRight, Check, CornerUpLeft, Hand, Layers, MapPin, MousePointerClick, Navigation, PenLine, Search, Trash2, Type, X,
 } from "lucide-react";
-import { api, AreaSummary, FieldsSource, GeoPolygon, Place } from "../api";
+import { api, AreaSummary, FieldsSource, GeoPolygon, OverviewMap, OverviewSummary, Place } from "../api";
+import { fmtDate } from "../lib/format";
+import { DELTA_STOPS } from "../lib/ramps";
 import { useSession } from "../session";
 import { FtwLayer, PickedField } from "../components/FtwLayer";
 import { Spinner } from "../components/ui";
@@ -107,6 +109,57 @@ function FitTo({ ring }: { ring: LngLat[] | null }) {
   return null;
 }
 
+function MapHandle({ onMap }: { onMap: (m: L.Map) => void }) {
+  const map = useMap();
+  useEffect(() => { onMap(map); }, [map, onMap]);
+  return null;
+}
+
+const pct = (v: number | null | undefined) => (v === null || v === undefined ? "–" : `${Math.round(v * 100)}%`);
+
+/** The region at a glance: how much of its cropland lost greenness this fortnight, and where. */
+function Overview({ place, summary, error, onGo }: {
+  place: Place;
+  summary: OverviewSummary | null;
+  error: string;
+  onGo: (b: [[number, number], [number, number]], near: string) => void;
+}) {
+  if (error) return <p className="hint warn">{error}</p>;
+  if (!summary) {
+    return <p className="hint"><Spinner /> Reading this fortnight's Sentinel-2 passes across {place.name}. This takes about half a minute.</p>;
+  }
+  const w = summary.windows;
+  return (
+    <>
+      <p className="setup-sub">Cropland NDVI, {fmtDate(w.recent[0])} to {fmtDate(w.recent[1])} against {fmtDate(w.baseline[0])} to {fmtDate(w.baseline[1])}. Clouds masked per pixel.</p>
+      <dl className="ov-stats">
+        <div className="drop"><dt>Lost greenness</dt><dd>{pct(summary.drop)}</dd><small>of cropland, 0.10 NDVI or more</small></div>
+        <div className="gain"><dt>Greened up</dt><dd>{pct(summary.gain)}</dd><small>0.10 NDVI or more</small></div>
+        <div><dt>Seen clearly</dt><dd>{pct(summary.seen)}</dd><small>of {summary.cropland_km2.toLocaleString()} km² cropland</small></div>
+      </dl>
+      {summary.hotspots.length > 0 ? (
+        <>
+          <h3 className="ov-h"><Activity size={14} aria-hidden /> Where most of it dropped</h3>
+          <ul className="hotspots">
+            {summary.hotspots.map((h, i) => (
+              <li key={i}>
+                <button type="button" onClick={() => onGo(h.bounds, h.near)}>
+                  <span className="hs-text">
+                    <strong>Around {h.near || `${h.center[0].toFixed(3)}, ${h.center[1].toFixed(3)}`}</strong>
+                    <small>{pct(h.drop)} of {h.cropland_km2} km² of cropland dropped</small>
+                  </span>
+                  <span className="hs-bar" aria-hidden><span style={{ width: `${Math.min(100, h.drop * 100)}%` }} /></span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : <p className="muted small">No part of the region stands out this fortnight.</p>}
+      <p className="muted small">A screen, not a diagnosis: a harvested field drops like a failing one. Go to the land and mark it, and FieldDx investigates it field by field.</p>
+    </>
+  );
+}
+
 function ZoomWatch({ onZoom }: { onZoom: (z: number) => void }) {
   const map = useMapEvents({ zoomend: () => onZoom(map.getZoom()) });
   useEffect(() => { onZoom(map.getZoom()); }, [map, onZoom]);
@@ -159,7 +212,7 @@ export default function Setup() {
   const [searchError, setSearchError] = useState("");
   const [place, setPlace] = useState<Place | null>(null);
   const [source, setSource] = useState<FieldsSource | null>(null);
-  const [mode, setMode] = useState<Mode>("pick");
+  const [mode, setMode] = useState<Mode>("draw");
   const [showFtw, setShowFtw] = useState(true);
   const [zoom, setZoom] = useState(5);
   const [picked, setPicked] = useState<PickedField[]>([]);
@@ -169,8 +222,18 @@ export default function Setup() {
   const [km, setKm] = useState(5);
   const [fieldSource, setFieldSource] = useState<"ftw_global" | "ftw_model">("ftw_global");
   const [name, setName] = useState("");
+  const [nameTouched, setNameTouched] = useState(false);
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
+  const [ovMap, setOvMap] = useState<OverviewMap | null>(null);
+  const [ovSummary, setOvSummary] = useState<OverviewSummary | null>(null);
+  const [ovError, setOvError] = useState("");
+  const [showChange, setShowChange] = useState(true);
+  const [goText, setGoText] = useState("");
+  const [goPoint, setGoPoint] = useState<[number, number] | null>(null);
+  const [goError, setGoError] = useState("");
+  const mapRef = useRef<L.Map | null>(null);
+  const onMap = useCallback((m: L.Map) => { mapRef.current = m; }, []);
   const searchBox = useRef<HTMLInputElement>(null);
 
   useEffect(() => { api.areas().then((r) => setExisting(r.areas)).catch(() => undefined); }, []);
@@ -210,6 +273,10 @@ export default function Setup() {
     setName(p.name);
     setPicked([]); setDraw([]); setClosed(false); setCoordText(""); setError("");
     setSource(null);
+    setOvMap(null); setOvSummary(null); setOvError(""); setGoPoint(null); setGoError("");
+    const region = { name: p.name, bounds: p.bounds, boundary: p.boundary };
+    api.overviewMap(region).then(setOvMap).catch((e) => setOvError((e as Error).message));
+    api.overviewSummary(region).then(setOvSummary).catch((e) => setOvError((e as Error).message));
     try {
       setSource(await api.fieldsSource(p.country, p.subdivision));
     } catch {
@@ -218,6 +285,24 @@ export default function Setup() {
   };
 
   const coords = useMemo(() => parseCoords(coordText, km), [coordText, km]);
+
+  const flyTo = (b: [[number, number], [number, number]]) => mapRef.current?.flyToBounds(b, { padding: [24, 24], duration: 0.8 });
+
+  /** Take the officer to a farm by its coordinates; the polygon is drawn there. */
+  const goTo = (e: FormEvent) => {
+    e.preventDefault();
+    setGoError("");
+    const m = goText.trim().match(/^(-?\d+(?:\.\d+)?)\s*[,\s]\s*(-?\d+(?:\.\d+)?)$/);
+    if (!m) { setGoError("Write latitude, longitude, for example 16.7410, 74.4425."); return; }
+    const lat = Number(m[1]), lng = Number(m[2]);
+    if (place && !L.latLngBounds(place.bounds).contains([lat, lng])) {
+      setGoError(`That point is outside ${place.name}. Check the order: latitude first, then longitude.`);
+      return;
+    }
+    setGoPoint([lat, lng]);
+    mapRef.current?.flyTo([lat, lng], 17, { duration: 0.8 });
+    if (mode === "coords") setMode("draw");
+  };
 
   const ring: LngLat[] | null = useMemo(() => {
     if (mode === "pick") return picked.length ? boxAround(picked.map((p) => p.point), PICK_MARGIN_M) : null;
@@ -342,11 +427,27 @@ export default function Setup() {
 
         {place && (
           <section className="setup-block">
-            <h2 className="setup-h"><span className="n">2</span> Mark the fields you look after</h2>
+            <h2 className="setup-h"><span className="n">2</span> What is changing in {place.name}</h2>
+            <Overview place={place} summary={ovSummary} error={ovError}
+              onGo={(b, near) => { flyTo(b); if (near && !nameTouched) setName(`Around ${near}`); }} />
+          </section>
+        )}
+
+        {place && (
+          <section className="setup-block">
+            <h2 className="setup-h"><span className="n">3</span> Go to the land and mark it</h2>
+            <form className="search goto" onSubmit={goTo}>
+              <Navigation size={16} aria-hidden />
+              <input className="input" value={goText} onChange={(e) => setGoText(e.target.value)} spellCheck={false}
+                placeholder="Farm coordinates, e.g. 16.7410, 74.4425" aria-label="Go to coordinates" />
+              <button className="btn btn-outline btn-sm" type="submit" disabled={!goText.trim()}>Go</button>
+            </form>
+            {goError && <p className="form-error">{goError}</p>}
+            <p className="muted small">Or zoom in on the map, or tap a hotspot above. Then mark the land you want examined:</p>
             <div className="seg mode-seg" role="tablist" aria-label="How to mark the area">
+              <button type="button" role="tab" aria-selected={mode === "draw"} className={mode === "draw" ? "on" : ""} onClick={() => setMode("draw")}><PenLine size={14} aria-hidden /> Draw a polygon</button>
               <button type="button" role="tab" aria-selected={mode === "pick"} className={mode === "pick" ? "on" : ""} disabled={!partition} onClick={() => setMode("pick")}><MousePointerClick size={14} aria-hidden /> Pick fields</button>
-              <button type="button" role="tab" aria-selected={mode === "draw"} className={mode === "draw" ? "on" : ""} onClick={() => setMode("draw")}><PenLine size={14} aria-hidden /> Draw</button>
-              <button type="button" role="tab" aria-selected={mode === "coords"} className={mode === "coords" ? "on" : ""} onClick={() => setMode("coords")}><Type size={14} aria-hidden /> Coordinates</button>
+              <button type="button" role="tab" aria-selected={mode === "coords"} className={mode === "coords" ? "on" : ""} onClick={() => setMode("coords")}><Type size={14} aria-hidden /> Type corners</button>
             </div>
 
             {mode === "pick" && (
@@ -362,7 +463,7 @@ export default function Setup() {
             )}
             {mode === "draw" && (
               <div className="mode-help">
-                <p>Click the map to place corners. Click the first corner again to close the shape.</p>
+                <p>Click around the land to place corners. Click the first corner again to close the shape.</p>
                 <div className="draw-tools">
                   <span className="stat"><strong>{draw.length}</strong> corner{draw.length === 1 ? "" : "s"}{closed ? ", closed" : ""}</span>
                   <button type="button" className="btn btn-ghost btn-sm" disabled={!draw.length} onClick={() => { setClosed(false); setDraw((d) => d.slice(0, -1)); }}><CornerUpLeft size={14} aria-hidden /> Undo</button>
@@ -399,7 +500,7 @@ export default function Setup() {
 
         {place && ring && !tooBig && (
           <section className="setup-block">
-            <h2 className="setup-h"><span className="n">3</span> Build it</h2>
+            <h2 className="setup-h"><span className="n">4</span> Build it</h2>
             <fieldset className="source">
               <legend className="caption">Field shapes</legend>
               <label className={`radio ${!partition ? "off" : ""}`}>
@@ -413,7 +514,7 @@ export default function Setup() {
             </fieldset>
             <label className="field">
               <span className="caption">Name of this area</span>
-              <input className="input" value={name} onChange={(e) => setName(e.target.value)} maxLength={60} />
+              <input className="input" value={name} onChange={(e) => { setName(e.target.value); setNameTouched(true); }} maxLength={60} />
             </label>
             <p className="muted small">FieldDx will fetch about 13 months of Sentinel-2 passes for {km2 < 1 ? `${(km2 * 100).toFixed(0)} ha` : `${km2.toFixed(1)} km²`}, the weather, and then look for alerts. You can leave this page while it works.</p>
             {error && <p className="form-error" role="alert">{error}</p>}
@@ -433,6 +534,19 @@ export default function Setup() {
             maxNativeZoom={18} maxZoom={19} opacity={0.85} />
           <RegionLock place={place} />
           <ZoomWatch onZoom={setZoom} />
+          <MapHandle onMap={onMap} />
+          {place && ovMap && showChange && (
+            <TileLayer key={ovMap.key} url={ovMap.tiles} opacity={zoom >= 15 ? 0.5 : 0.85} zIndex={250} maxNativeZoom={15} maxZoom={19}
+              attribution="Change: Sentinel-2 via Google Earth Engine" />
+          )}
+          {place && ovSummary && showChange && zoom < 13 && ovSummary.hotspots.map((h, i) => (
+            <Rectangle key={`hs-${i}`} bounds={h.bounds} pathOptions={{ color: "#fbbf24", weight: 1.5, dashArray: "5 5", fill: false }}
+              eventHandlers={{ click: () => flyTo(h.bounds) }} />
+          ))}
+          {goPoint && (
+            <CircleMarker center={goPoint} radius={9} interactive={false}
+              pathOptions={{ color: "#ffffff", weight: 3, fillColor: "#2563eb", fillOpacity: 1 }} />
+          )}
           {place && (
             <>
               <Polygon positions={[WORLD, ...mask]} interactive={false}
@@ -473,10 +587,26 @@ export default function Setup() {
             </>
           )}
         </MapContainer>
-        {place && partition && mode !== "pick" && (
-          <button type="button" className={`map-toggle ${showFtw ? "on" : ""}`} onClick={() => setShowFtw((v) => !v)} aria-pressed={showFtw}>
-            <Layers size={14} aria-hidden /> Fields of the World shapes
-          </button>
+        {place && (
+          <div className="map-toggles">
+            {ovMap && (
+              <button type="button" className={`map-toggle ${showChange ? "on" : ""}`} onClick={() => setShowChange((v) => !v)} aria-pressed={showChange}>
+                <Activity size={14} aria-hidden /> Change this fortnight
+              </button>
+            )}
+            {partition && mode !== "pick" && (
+              <button type="button" className={`map-toggle ${showFtw ? "on" : ""}`} onClick={() => setShowFtw((v) => !v)} aria-pressed={showFtw}>
+                <Layers size={14} aria-hidden /> Fields of the World shapes
+              </button>
+            )}
+          </div>
+        )}
+        {place && ovMap && showChange && (
+          <div className="ov-legend" aria-label="Legend: change in NDVI this fortnight">
+            <strong>NDVI change, cropland</strong>
+            <div className="legend-bar" style={{ background: `linear-gradient(90deg, ${DELTA_STOPS.map(([, c]) => c).join(", ")})` }} />
+            <div className="legend-ends"><span>Loss ≤ −0.15</span><span>0</span><span>Gain ≥ +0.15</span></div>
+          </div>
         )}
         {!place && <div className="map-hint"><Search size={14} aria-hidden /> Search for your district to lock the map to it.</div>}
       </section>

@@ -13,19 +13,20 @@ The officer gets a **case file**, not a heatmap: ranked hypotheses where every l
 ## The flow
 
 ```
-Sign in ─► Mark your area ─► FieldDx builds it ─► Today's briefing ─► Cases ─► Investigation ─► Next check ─► Visit and close
+Sign in ─► Region overview ─► Go to the land, mark it ─► FieldDx builds it ─► Today's briefing ─► Cases ─► Investigation ─► Next check ─► Visit and close
 ```
 
 1. **Sign in.** An officer creates an account (username and a 4 to 8 digit PIN) or signs in. *Explore the demo area* opens the shipped Niphad area without an account.
-2. **Mark your area, anywhere.** Search a district, taluka or village (OpenStreetMap). The map locks to that region's real boundary. Then either:
+2. **Find your region and see what is changing.** Search a district, taluka or village (OpenStreetMap). The map locks to that region's real boundary and paints this fortnight's change in cropland NDVI across all of it, computed live in Google Earth Engine from cloud-masked Sentinel-2. A summary gives the share of cropland that lost or gained greenness and the places where most of it dropped ("around Karambali, 64% of cropland"). Tap one to fly there. This is a screen, not a diagnosis: harvest shows up here too.
+3. **Go to the land and mark it.** Type a farm's coordinates to fly to it, or zoom in, then:
+   - **draw a polygon** around the land, or
    - **pick fields** on the published Fields of the World map for that state (the shapes stream in as PMTiles), or
-   - **draw** a polygon, or
-   - **type coordinates**: one point for a square of 2 to 12 km, or three or more corners.
+   - **type corners**: one point for a square of 2 to 12 km, or three or more corners.
 
    A colleague's area can also be joined as it is.
-3. **FieldDx builds it** from real sources, for that polygon only, with live progress: field shapes, about 13 months of Sentinel-2, weather, 10 m pixel zones, the harvest season, then the alerts. A small area takes a few minutes; you can leave the page.
-4. **Today's briefing** shows what happened to this week's passes: fields watched, alerts raised, how many were dismissed and why, area-wide events, and the few fields that need a call or a visit, with where to start.
-5. **Cases, investigation, next check, close** work as before, and every route reads only the officer's own area. Another area's case IDs answer 404.
+4. **FieldDx builds it** from real sources, for that polygon only, with live progress: field shapes, about 13 months of Sentinel-2, weather, 10 m pixel zones, the harvest season, then the alerts. A small area takes a few minutes; you can leave the page.
+5. **Today's briefing** shows what happened to this week's passes: fields watched, alerts raised, how many were dismissed and why, area-wide events, and the few fields that need a call or a visit, with where to start.
+6. **Cases, investigation, next check, close** work as before, and every route reads only the officer's own area. Another area's case IDs answer 404.
 
 ## Everything is real data
 

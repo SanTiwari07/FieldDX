@@ -6,7 +6,7 @@ import { useSession } from "../session";
 import { Spinner } from "../components/ui";
 
 const FLOW = [
-  { Icon: MapPinned, title: "Mark your area", text: "Pick the district you work in, then draw it, type its coordinates, or tap the fields on the Fields of the World map." },
+  { Icon: MapPinned, title: "Find your district, mark your land", text: "See where crops changed across the district this fortnight, go to a farm by its coordinates, and draw around the land or tap its fields." },
   { Icon: Satellite, title: "FieldDx builds it from real data", text: "Field shapes, a year of Sentinel-2 passes with clouds masked, and the weather, for that area only." },
   { Icon: Stethoscope, title: "Each alert is investigated", text: "False alarms are thrown out with a reason. What is left is ranked, with the evidence for and against." },
   { Icon: LocateFixed, title: "One cheapest check per field", text: "Go, check, record what you found. The finding becomes evidence and the ranking updates." },

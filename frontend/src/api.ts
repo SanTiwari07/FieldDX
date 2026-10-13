@@ -215,6 +215,8 @@ export const api = {
   fieldsSource: (country: string, subdivision: string) =>
     fetch(`/api/places/fields-source?country=${encodeURIComponent(country)}&subdivision=${encodeURIComponent(subdivision)}`)
       .then((r) => json<FieldsSource>(r)),
+  overviewMap: (r: RegionRequest) => post("/api/overview/map", r).then((res) => json<OverviewMap>(res)),
+  overviewSummary: (r: RegionRequest) => post("/api/overview/summary", r).then((res) => json<OverviewSummary>(res)),
   areas: () => fetch("/api/areas").then((r) => json<{ areas: AreaSummary[] }>(r)),
   createArea: (body: NewArea) => post("/api/areas", body).then((r) => json<Me>(r)),
   joinArea: (area_id: string | null) => post("/api/me/area", { area_id }).then((r) => json<Me>(r)),
@@ -337,6 +339,46 @@ export interface NewArea {
   boundary: GeoPolygon | null;
   partition: { code: string } | null;
   picked_points?: [number, number][];
+}
+
+export interface RegionRequest {
+  name: string;
+  bounds: [[number, number], [number, number]];
+  boundary: GeoPolygon | null;
+}
+
+export interface OverviewWindows {
+  recent: [string, string];
+  baseline: [string, string];
+}
+
+export interface OverviewMap {
+  key: string;
+  tiles: string;
+  windows: OverviewWindows;
+}
+
+export interface Hotspot {
+  bounds: [[number, number], [number, number]];
+  center: [number, number];
+  drop: number;
+  gain: number;
+  seen: number;
+  cropland_km2: number;
+  near: string;
+}
+
+export interface OverviewSummary {
+  key: string;
+  name: string;
+  windows: OverviewWindows;
+  cropland_km2: number;
+  seen: number;
+  drop: number | null;
+  gain: number | null;
+  cell_km: number;
+  hotspots: Hotspot[];
+  source: string;
 }
 
 export interface BuildStep {
