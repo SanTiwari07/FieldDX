@@ -1,0 +1,8 @@
+# Data pipeline (run once, offline from the app). The FTW model runs from its own environment, see README.
+earthengine-api>=1.0
+geopandas>=1.0
+shapely>=2.0
+pyproj>=3.6
+rasterio>=1.3
+numpy>=1.26
+duckdb>=1.0

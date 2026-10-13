@@ -11,14 +11,24 @@
         "dry": {
           "label": "Drip line dry",
           "then": "points to irrigation failure",
-          "supports": ["H7"],
-          "against": ["H8", "H9"]
+          "supports": [
+            "H7"
+          ],
+          "against": [
+            "H8",
+            "H9"
+          ]
         },
         "wet": {
           "label": "Drip line wet",
           "then": "inspect leaf undersides for thrips and mildew",
-          "supports": ["H8", "H9"],
-          "against": ["H7"]
+          "supports": [
+            "H8",
+            "H9"
+          ],
+          "against": [
+            "H7"
+          ]
         }
       }
     },
@@ -32,14 +42,23 @@
         "dry": {
           "label": "Soil dry",
           "then": "points to a water supply problem",
-          "supports": ["H7"],
-          "against": ["H8"]
+          "supports": [
+            "H7"
+          ],
+          "against": [
+            "H8"
+          ]
         },
         "moist": {
           "label": "Soil moist",
           "then": "water is reaching the roots, so look for pests or nutrients",
-          "supports": ["H8", "H9"],
-          "against": ["H7"]
+          "supports": [
+            "H8",
+            "H9"
+          ],
+          "against": [
+            "H7"
+          ]
         }
       }
     },
@@ -53,14 +72,21 @@
         "pests_or_lesions": {
           "label": "Pests or lesions visible",
           "then": "points to pest or disease spread",
-          "supports": ["H8"],
-          "against": ["H7", "H9"]
+          "supports": [
+            "H8"
+          ],
+          "against": [
+            "H7",
+            "H9"
+          ]
         },
         "clean": {
           "label": "Leaves clean",
           "then": "rules out the common leaf pests; look at water and nutrients",
           "supports": [],
-          "against": ["H8"]
+          "against": [
+            "H8"
+          ]
         }
       }
     },
@@ -74,14 +100,20 @@
         "old_leaves": {
           "label": "Older leaves yellow first",
           "then": "points to a nitrogen shortfall",
-          "supports": ["H9"],
-          "against": ["H8"]
+          "supports": [
+            "H9"
+          ],
+          "against": [
+            "H8"
+          ]
         },
         "new_leaves": {
           "label": "Newer leaves yellow first",
           "then": "not a classic nitrogen pattern",
           "supports": [],
-          "against": ["H9"]
+          "against": [
+            "H9"
+          ]
         }
       }
     }
@@ -91,5 +123,75 @@
     "Check the water supply: drip lines, valves, pump and the soil at 10 cm.",
     "Look at leaf undersides for pests, webbing or lesions.",
     "Ask the farmer what changed in the last two weeks: water, sprays, labour."
-  ]
+  ],
+  "visit": {
+    "id": "visit",
+    "label": "Call the farmer or visit the field",
+    "short": "Call or visit",
+    "cost_min": 30,
+    "outcomes": {
+      "harvested": {
+        "label": "Crop was harvested",
+        "then": "explains the drop as a harvest",
+        "supports": [
+          "H3"
+        ],
+        "against": [
+          "H7",
+          "H8",
+          "H9"
+        ]
+      },
+      "pruned": {
+        "label": "Vines were pruned",
+        "then": "explains the drop as fruit pruning",
+        "supports": [
+          "H3"
+        ],
+        "against": [
+          "H7",
+          "H8",
+          "H9"
+        ]
+      },
+      "water": {
+        "label": "Water supply problem",
+        "then": "points to irrigation failure",
+        "supports": [
+          "H7"
+        ],
+        "against": [
+          "H8",
+          "H9"
+        ]
+      },
+      "pests": {
+        "label": "Pests or disease seen",
+        "then": "points to pest or disease spread",
+        "supports": [
+          "H8"
+        ],
+        "against": [
+          "H7",
+          "H9"
+        ]
+      },
+      "nutrient": {
+        "label": "Yellowing from old leaves",
+        "then": "points to a nutrient shortfall",
+        "supports": [
+          "H9"
+        ],
+        "against": [
+          "H8"
+        ]
+      },
+      "other": {
+        "label": "Something else",
+        "then": "is recorded as the finding",
+        "supports": [],
+        "against": []
+      }
+    }
+  }
 }
