@@ -5,7 +5,7 @@ Variables per day: rainfall, maximum temperature, mean relative humidity and ERA
 top 7 cm (hourly values are averaged to the day). The archive lags real time by a few days; the last
 days are filled from the forecast endpoint's past_days data when needed.
 
-Run:  python scripts/fetch_weather.py --lat 20.0775 --lon 74.115 --start 2026-06-01 --end 2026-10-12 --out data/weather/niphad.json
+Run:  python scripts/fetch_weather.py --lat 20.0775 --lon 74.115 --start 2026-06-01 --end 2026-10-12 --out data/areas/niphad/weather.json
 """
 from __future__ import annotations
 

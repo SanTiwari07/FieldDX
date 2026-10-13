@@ -1,4 +1,4 @@
-"""Detect alerts in the real data and write data/cases.json.
+"""Detect alerts in an area's real data and write its cases.json.
 
 This is the stage before the investigation: a plain NDVI-drop detector, the thing FieldDx is built to
 sit behind. A field raises an alert when, on any clear or partly clear pass in the last 21 days of
@@ -7,10 +7,11 @@ data, a zone is at least 0.10 NDVI below that field's own baseline (the median o
 Nothing is hand-picked: every field that trips the rule becomes a case, and the engine then decides
 whether it is a false alarm, an area event, or something to visit.
 
-Run:  python scripts/build_cases.py
+Run:  python scripts/build_cases.py --area data/areas/niphad
 """
 from __future__ import annotations
 
+import argparse
 import json
 import sys
 from datetime import timedelta
@@ -26,9 +27,9 @@ LOOKBACK_DAYS = 21
 MIN_VALID_PIXELS = 2
 
 
-def detect(field_id: str, as_of):
-    f = data.fields()[field_id]
-    for sc in data.scenes(field_id):
+def detect(area: str, field_id: str, as_of):
+    f = data.fields(area)[field_id]
+    for sc in data.scenes(area, field_id):
         if sc.date < as_of - timedelta(days=LOOKBACK_DAYS) or sc.date > as_of:
             continue
         ser = Series(f, sc.date)
@@ -43,25 +44,29 @@ def detect(field_id: str, as_of):
 
 
 def main():
-    as_of = max(s.date for fid in data.fields() for s in data.scenes(fid))
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--area", required=True, help="the area folder, e.g. data/areas/niphad")
+    folder = Path(ap.parse_args().area).resolve()
+    data.areas_root = lambda: folder.parent  # read the area through the app's own loader, wherever it lives
+    area = folder.name
+    as_of = max(s.date for fid in data.fields(area) for s in data.scenes(area, fid))
     cases = []
-    for fid in data.fields():
-        d = detect(fid, as_of)
+    for fid in data.fields(area):
+        d = detect(area, fid, as_of)
         if d:
             cases.append({"id": fid, "field_id": fid, "alert_date": d.isoformat()})
     cases.sort(key=lambda c: (c["alert_date"], c["id"]))
-    prov = data.provenance()
     out = {
         "as_of": as_of.isoformat(),
         "banner": ("Real data: Sentinel-2 imagery via Earth Engine with Cloud Score+ masking, field shapes from the "
                    "Fields of the World model, weather from Open-Meteo."),
         "detector": (f"A zone at least {abs(config.SIGNIFICANT_DROP):.2f} NDVI below the field's own baseline on any "
                      f"clear or partly clear pass in the last {LOOKBACK_DAYS} days."),
-        "fields_monitored": len(data.fields()),
+        "fields_monitored": len(data.fields(area)),
         "cases": cases,
     }
-    (ROOT / "data" / "cases.json").write_text(json.dumps(out, indent=1), encoding="utf-8")
-    print(f"{len(cases)} alerts from {len(data.fields())} fields, data to {as_of}")
+    (folder / "cases.json").write_text(json.dumps(out, indent=1), encoding="utf-8")
+    print(f"{len(cases)} alerts from {len(data.fields(area))} fields, data to {as_of}")
 
 
 if __name__ == "__main__":

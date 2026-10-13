@@ -12,7 +12,7 @@ Needs the CLI in its own environment, because ftw-tools pins heavy dependencies:
     python -m venv ftwenv --system-site-packages
     ftwenv/Scripts/python -m pip install "git+https://github.com/fieldsoftheworld/ftw-baselines.git"
 
-Run:  python scripts/ftw_fields.py --bbox 74.09 20.055 74.14 20.10 --year 2025
+Run:  python scripts/ftw_fields.py --bbox 74.07 20.04 74.16 20.12 --year 2025 --out data/areas/niphad/raw/ftw_b5
 """
 from __future__ import annotations
 
@@ -22,8 +22,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
-OUT = ROOT / "data" / "raw" / "ftw_b5"
 
 
 def main():
@@ -32,15 +30,17 @@ def main():
     ap.add_argument("--year", type=int, default=2025)
     ap.add_argument("--model", default="FTW_PRUE_EFNET_B5_CCBY")
     ap.add_argument("--ftw", default="ftw", help="path to the ftw executable")
+    ap.add_argument("--out", required=True, help="folder for polygons.parquet")
     a = ap.parse_args()
 
+    OUT = Path(a.out)
     work = OUT / "work"
     work.mkdir(parents=True, exist_ok=True)
     cmd = [
         a.ftw, "inference", "all", f"--bbox={','.join(map(str, a.bbox))}", f"--year={a.year}", f"--out={work}",
         f"--model={a.model}", "--cloud_cover_max=30", "--buffer_days=20", "--resize_factor=2", "--overwrite",
     ]
-    print(" ".join(cmd), file=sys.stderr)
+    print(" ".join(cmd), file=sys.stderr, flush=True)
     subprocess.run(cmd, check=True)
     shutil.copy(work / "polygons.parquet", OUT / "polygons.parquet")
     shutil.rmtree(work)
