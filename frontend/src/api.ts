@@ -207,4 +207,22 @@ export const api = {
       body: JSON.stringify(body),
     }).then((r) => json<CaseResult>(r)),
   reset: () => fetch("/api/admin/reset", { method: "POST" }).then((r) => json<{ ok: boolean }>(r)),
+  raster: (id: string, scene?: string) =>
+    fetch(`/api/cases/${id}/raster${scene ? `?scene=${scene}` : ""}`).then((r) => json<RasterData>(r)),
 };
+
+export interface RasterData {
+  date: string;
+  w: number;
+  h: number;
+  pixel_m: number;
+  bounds: [[number, number], [number, number]];
+  quality: Quality;
+  visible: number;
+  ndvi: (number | null)[][];
+  delta: (number | null)[][];
+  mask: number[][];
+  stats: { mean: number; p10: number; p90: number } | null;
+  zones: string[][];
+}
+

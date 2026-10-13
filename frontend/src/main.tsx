@@ -4,6 +4,7 @@ import { BrowserRouter } from "react-router-dom";
 import "@fontsource-variable/inter";
 import "./styles/tokens.css";
 import "./styles/app.css";
+import "./styles/workspace.css";
 import App from "./App";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(

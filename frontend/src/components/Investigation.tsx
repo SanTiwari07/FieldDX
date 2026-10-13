@@ -41,13 +41,13 @@ export function InvestigationRail({
   const visit = evidence.filter((e) => e.tool === "field_visit");
   return (
     <section aria-labelledby="inv-h" className="rail-section">
+      <h2 id="inv-h" className="sr-only">Investigation</h2>
       <div className="section-head">
-        <h2 id="inv-h">Investigation</h2>
+        <p className="section-sub">Each check runs on the cached data and leaves a piece of evidence. The diagnosis can only cite what is here.</p>
         <button type="button" className="btn btn-ghost" onClick={onReplay} disabled={phase === "running" || phase === "loading"}>
           <RotateCcw size={14} aria-hidden /> Replay
         </button>
       </div>
-      <p className="section-sub">Each check runs on the cached data and leaves a piece of evidence. The diagnosis can only cite what is here.</p>
       <div className="steps" aria-live="polite">
         {STEPS.map((s) => (
           <div key={s.tool} className={steps[s.tool].state === "queued" ? "" : "step-in"}>

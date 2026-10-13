@@ -388,7 +388,7 @@ An evidence line inside a hypothesis has a 3px left rule, a glyph and a word:
 A cloudy scene never shows NDVI 0 or a blank cell that reads as zero. In the timeline it's a hollow marker; on the map it's a grey hatch.
 
 ### Map: NDVI change
-The case map shows **change versus the field's own recent baseline**, not raw NDVI. Raw NDVI makes a young crop look "stressed"; change shows what actually moved.
+The case map is a **10 m pixel raster** on a real basemap, with three views: **NDVI** (the conventional scale, the default, so the map reads like the maps officers already know), **Change** (change versus the field's own recent baseline, the brown-to-teal ramp below) and **Satellite** (no overlay). Change is what the diagnosis reasons about: raw NDVI makes a young crop look "stressed", change shows what actually moved. The NDVI view carries a legend with interpretation bins and a numeric summary, so colour is never the only channel.
 
 `#7a3410 → #b8662a → #e7b98a → #f2f1ee → #a9d4cf → #4e9a93 → #145e59`
 (big loss → no change → big gain)
@@ -501,7 +501,11 @@ Steps reveal one by one (`{motion.stagger}` apart, `{motion.base}` fade + 4px ri
 **`check-candidates-table`**: sits under the slip, collapsed by default ("Why this check?"). Columns: check, cost, "splits A vs B?", score. The winner row is sunken and marked with a check icon and the word "Chosen".
 
 ### Map & timeline
-**`map-frame`**: Leaflet, with a muted satellite basemap. The field outline is 2px ink with a 1px white halo, so it reads on any imagery. Zones are outlined; the anomalous zone gets the ΔNDVI fill plus a selected outline in `{colors.overlay-zone-selected}`. A **"Show 10 m pixels"** toggle draws the Sentinel-2 grid in white at 35%, next to the `limits-note`. Cloudy areas get a grey hatch. Custom controls placed over the map need a z-index above Leaflet's panes (controls sit at 800–1000).
+**Case workspace**: the map fills the left of the screen under a slim case header (field, status, severity, headline ΔNDVI), and the case file is a fixed side panel with three tabs: Findings, Evidence, Trend. Nothing floats over the field itself. Layer controls sit along the top edge of the map, the scene picker and the legend share the bottom edge. The next best check is docked at the foot of the panel on every tab, so the one dark surface is always in view. On phones the map is above, the panel below, and the dock sticks to the bottom of the screen.
+
+**`map-frame`**: Leaflet, with a muted satellite basemap (street map as an option). The field outline is 2px ink with a 1px white halo, so it reads on any imagery. Pixels are painted from the zone values plus texture; zones are outlined, and the affected zone gets a selected outline in `{colors.overlay-zone-selected}`. A **"10 m grid"** toggle draws the Sentinel-2 grid. A pixel readout in the legend gives the value under the pointer. **Compare** puts two dates side by side with the maps panned together. Cloudy areas get a grey hatch and no value. Custom controls placed over the map need a z-index above Leaflet's panes (controls sit at 800–1000).
+
+**`scene-bar`**: a pill under the map listing every pass. Clear passes are selectable; cloudy and missing passes stay in the list, disabled and struck through with an icon, so a gap reads as "looked, could not see". The alert date carries a red mark.
 
 **`timeline-chart`**: one line per zone. The affected zone is ink, the others light grey, and the expected crop curve is a sunken band behind them. Usable scenes are solid dots, partial scenes half-filled, cloudy scenes hollow with no value line through them. A vertical marker shows the alert date, and management windows (e.g. a pruning window) appear as labelled shaded spans.
 
@@ -534,7 +538,7 @@ Steps reveal one by one (`{motion.stagger}` apart, `{motion.base}` fade + 4px ri
 
 ### Don't
 - Don't use green for buttons or links. Green on this product means vegetation.
-- Don't use a red-to-green NDVI ramp.
+- Don't use a red-to-green ramp for *change*. The NDVI view uses the conventional scale on purpose; it always has a legend, bins and a numeric summary, and the severity colours never appear on the map.
 - Don't show a number for a cloudy or missing scene, and never show NDVI 0 as a stand-in.
 - Don't let the LLM's prose appear without evidence chips.
 - Don't stack shadows or round corners beyond `{rounded.md}` on working surfaces.
@@ -543,4 +547,4 @@ Steps reveal one by one (`{motion.stagger}` apart, `{motion.base}` fade + 4px ri
 
 ## Provenance
 - This replaces an earlier draft that copied NerdWallet's brand language. Nothing here comes from NerdWallet.
-- Several principles are carried over from the author's earlier project, Pragya: quality classes that never show a value for cloudy scenes, icon + text for every status, tabular numbers, visible focus, and the Leaflet z-index rule. Those are design ideas only. No code from Pragya is used in this repository; FieldDx code is written fresh, as the hackathon rules require.
+- Several principles are carried over from the author's earlier project, Pragya: quality classes that never show a value for cloudy scenes, icon + text for every status, tabular numbers, visible focus, and the Leaflet z-index rule. The map interaction pattern (a floating legend with a numeric summary, a scene picker that keeps cloudy passes visible but disabled, side-by-side date comparison) and the NDVI colour scale with its interpretation bins (an EOS-style discrete colormap) are also carried over from Pragya, at the author's direction. The FieldDx code around them is written for this repository: Leaflet instead of MapLibre, and a pixel raster derived from zonal data instead of tiles from a tile gateway.

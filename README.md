@@ -18,7 +18,8 @@ The officer gets a **case file**, not a heatmap: ranked hypotheses where every l
 - **A rule table** (`backend/app/engine/rules.py`) scores ten hypotheses in three stages. Stage 1 and 2 gates dismiss the case with a reason; Stage 3 ranks field-specific causes. If nothing clears the evidence bar the answer is **"Unexplained, visit"**, never a forced guess.
 - **Next best check** (`backend/app/next_check.py`) is computed, not written by a model: `score = how cleanly a result splits the top two ÷ minutes on site`. The candidate table is shown under "Why this check?".
 - **The LLM never invents a cause.** Gemini (optional) only writes the plain-language case file from the evidence list. Its output is validated: every line must cite known evidence IDs, hypotheses must be in the engine's order. One retry, then a template narrative. With no key the app works the same.
-- **Honest about resolution.** Cloudy scenes never show a number, only a gap. The map can draw the 10 m pixel grid, and each case carries a limits note.
+- **A real map, at pixel level.** Each case opens on a Leaflet map (Esri satellite or OpenStreetMap) with the field painted as 10 m NDVI pixels. Switch between NDVI, Change against the field's baseline, and plain satellite; pick any pass from the scene bar; compare two dates side by side; hover a pixel to read it.
+- **Honest about resolution.** Cloudy passes stay in the scene bar but are disabled and never show a number. Hazy scenes mask the affected pixels. The map can draw the 10 m grid, and each case carries a limits note.
 
 Not modelled yet: red-edge (NDRE) evidence, real elevation for waterlogging, and live satellite ingestion. Storm/hail and waterlogging are scored from weather only.
 
@@ -68,7 +69,7 @@ They cover each tool on the simulated series, one golden outcome per scenario, c
 ## Layout
 
 ```
-backend/app   tools/ engine/ next_check.py pipeline.py narrative.py llm.py resolve.py db.py main.py
+backend/app   tools/ engine/ next_check.py pipeline.py raster.py narrative.py llm.py resolve.py db.py main.py
 backend/tests pytest suite
 frontend/src  pages/ components/ styles/ (design tokens from DESIGN.md)
 data/         simulated fields, scenes, weather, calendar, checks, scenarios
@@ -80,4 +81,5 @@ idea.md       the concept and the hypothesis table
 ## Sources and attribution
 
 - Basemaps: Esri World Imagery (satellite) and OpenStreetMap contributors (street), shown through Leaflet with their attributions.
+- The NDVI colour scale, its interpretation bins and the map interaction pattern come from the author's earlier project, Pragya (the scale follows the EOS NDVI colormap convention).
 - Imagery and weather values in the demo are simulated. A real build would use Copernicus Sentinel-2 L2A and the Open-Meteo historical archive.

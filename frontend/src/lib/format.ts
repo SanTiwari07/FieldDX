@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 export function fmtDate(iso: string): string {
@@ -38,4 +40,17 @@ export function sentence(text: string): string {
 
 export function idNum(id: string): number {
   return Number(id.replace(/\D/g, ""));
+}
+
+/** True while the media query matches. */
+export function useMedia(query: string): boolean {
+  const [match, setMatch] = useState(() => typeof window !== "undefined" && window.matchMedia(query).matches);
+  useEffect(() => {
+    const mq = window.matchMedia(query);
+    const on = () => setMatch(mq.matches);
+    on();
+    mq.addEventListener("change", on);
+    return () => mq.removeEventListener("change", on);
+  }, [query]);
+  return match;
 }

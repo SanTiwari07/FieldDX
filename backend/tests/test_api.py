@@ -47,3 +47,18 @@ def test_map_and_series(client):
     assert s["scenes"][0]["date"] == "2026-07-07" and s["expected"]
     cloudy = next(x for x in s["scenes"] if x["quality"] == "cloudy")
     assert all(v["ndvi"] is None for v in cloudy["zones"].values())
+
+
+def test_raster_masks_clouds_and_shows_the_edge(client):
+    r = client.get("/api/cases/C1/raster").json()
+    assert r["w"] >= 15 and r["h"] >= 10 and r["quality"] == "usable"
+    east = [row[-1] for row in r["ndvi"]]
+    west = [row[0] for row in r["ndvi"]]
+    assert sum(east) / len(east) < sum(west) / len(west) - 0.1  # the east edge drop is visible per pixel
+    cloudy = client.get("/api/cases/C1/raster?scene=2026-07-17").json()
+    assert cloudy["quality"] == "cloudy" and cloudy["stats"] is None
+    assert all(v is None for row in cloudy["ndvi"] for v in row)  # never a number for a cloudy scene
+    haze = client.get("/api/cases/C2/raster?scene=2026-10-05").json()
+    assert 0 < sum(map(sum, haze["mask"])) < haze["w"] * haze["h"]
+    assert client.get("/api/cases/C1/raster?scene=2026-07-18").status_code == 404
+    assert client.get("/api/cases/C1/raster?scene=nope").status_code == 422

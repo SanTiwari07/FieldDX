@@ -107,7 +107,7 @@ h1 { font-size: 22px; font-weight: 700; line-height: 1.25; letter-spacing: -0.01
 .group-title.divider { padding-top: 24px; border-top: 1px dashed var(--border-strong); }
 .count { font-size: 12px; font-weight: 600; color: var(--text-2); background: var(--canvas-sunken); border-radius: 9999px; padding: 1px 8px; }
 .group-note { color: var(--text-3); font-size: 12px; margin: -4px 0 10px; }
-.inbox-head, .inbox-row { display: grid; grid-template-columns: 96px minmax(150px, 1.2fr) minmax(130px, 1fr) minmax(190px, 1.6fr) 104px 128px; gap: 16px; align-items: center; padding: 12px 16px; }
+.inbox-head, .inbox-row { display: grid; grid-template-columns: 96px minmax(230px, 1.5fr) minmax(130px, 1fr) minmax(180px, 1.5fr) 104px 112px; gap: 16px; align-items: center; padding: 12px 16px; }
 .inbox-head { padding-block: 8px; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-2); background: var(--canvas-subtle); border: 1px solid var(--border); border-bottom: 0; border-radius: var(--r-md) var(--r-md) 0 0; }
 .rows { background: var(--canvas); border: 1px solid var(--border); border-radius: 0 0 var(--r-md) var(--r-md); overflow: hidden; }
 .group-title + .inbox-head + .rows { margin-top: 0; }
@@ -128,45 +128,8 @@ h1 { font-size: 22px; font-weight: 700; line-height: 1.25; letter-spacing: -0.01
 .inbox-row.is-dismissed strong { font-weight: 500; color: var(--text-2); }
 
 /* ---------- case page ---------- */
-.case-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; flex-wrap: wrap; }
-.case-title h1 { font-size: 28px; line-height: 1.2; letter-spacing: -0.022em; margin-top: 4px; }
-.meta { color: var(--text-2); margin-top: 2px; }
-.case-badges { display: flex; gap: 12px; align-items: center; margin-top: 10px; }
-.headline { background: var(--canvas); border: 1px solid var(--border); border-radius: var(--r-md); padding: 12px 16px; min-width: 220px; }
-.headline .caption { margin-top: 2px; color: var(--text); }
-.headline .caption.muted { color: var(--text-3); }
 
-.case-grid { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); grid-template-areas: "map rail" "timeline rail"; grid-template-rows: auto 1fr; gap: 24px; align-items: start; margin-top: 8px !important; }
-.area-map { grid-area: map; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
-.area-rail { grid-area: rail; display: flex; flex-direction: column; gap: 40px; min-width: 0; }
-.area-timeline { grid-area: timeline; min-width: 0; }
-.area-timeline > .timeline { position: sticky; top: 72px; }
 
-/* map */
-.map-frame { position: relative; background: var(--canvas-sunken); border: 1px solid var(--border); border-radius: var(--r-md); overflow: hidden; }
-.map-frame.skeleton { height: 480px; }
-.map { height: 420px; width: 100%; background: var(--canvas-sunken); z-index: 0; }
-.map .leaflet-tile-pane { filter: saturate(0.5) contrast(0.92) brightness(1.06); }
-.map .leaflet-control-attribution { font-size: 10px; }
-.map-overlay { position: absolute; z-index: 900; }
-.map-controls { top: 12px; right: 12px; display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
-.base-street .map .leaflet-tile-pane { filter: saturate(0.7); }
-.seg { display: inline-flex; align-items: center; gap: 2px; background: var(--canvas); border: 1px solid var(--border-strong); border-radius: var(--r-sm); padding: 2px 2px 2px 8px; box-shadow: var(--raised); min-height: 34px; color: var(--text-2); }
-.seg button { border: 0; background: transparent; border-radius: 4px; padding: 6px 10px; font-size: 12px; font-weight: 600; color: var(--text-2); }
-.seg button:hover { background: var(--canvas-sunken); }
-.seg button.on { background: var(--ink); color: var(--on-ink); }
-.toggle { display: inline-flex; align-items: center; gap: 7px; background: var(--canvas); border: 1px solid var(--border-strong); border-radius: var(--r-sm); padding: 7px 11px; font-size: 12px; font-weight: 600; box-shadow: var(--raised); min-height: 34px; }
-.toggle:hover { background: var(--canvas-subtle); }
-.toggle.on { background: var(--ink); color: var(--on-ink); border-color: var(--ink); }
-.map-legend { background: var(--canvas); border-top: 1px solid var(--border); padding: 10px 14px 12px; }
-.legend-title { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: 12px; margin-bottom: 8px; }
-.legend-bins { display: flex; flex-wrap: wrap; gap: 6px 14px; }
-.legend-bins span { display: inline-flex; align-items: center; gap: 6px; }
-.legend-bins i { width: 16px; height: 12px; border-radius: 3px; border: 1px solid rgba(16, 28, 22, 0.14); display: inline-block; }
-.legend-bins i.hatch { background: repeating-linear-gradient(45deg, #e5e7eb 0 3px, #9aa0a6 3px 5px); }
-.legend-bins small { color: var(--text-2); font-weight: 500; }
-.zone-nodata { fill: url(#nodata-hatch) !important; }
-.leaflet-tooltip { font-family: var(--font); font-size: 12px; border-radius: var(--r-sm); border-color: var(--border); box-shadow: var(--overlay); }
 
 /* timeline */
 .timeline { background: var(--canvas); border: 1px solid var(--border); border-radius: var(--r-md); padding: 14px 16px 12px; }
@@ -383,9 +346,6 @@ textarea:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 
 /* ---------- responsive ---------- */
 @media (max-width: 1023px) {
-  .case-grid { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; grid-template-areas: "map" "rail" "timeline"; }
-  .area-timeline > .timeline { position: static; }
-  .area-rail { gap: 32px; }
 }
 
 @media (max-width: 860px) {
@@ -408,9 +368,6 @@ textarea:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
   .inbox-row .c-change { grid-area: change; flex-direction: row; gap: 8px; align-items: baseline; }
   .inbox-row .c-conf { grid-area: conf; align-items: flex-end; }
   .inbox-row .chev { display: none; }
-  .case-title h1 { font-size: 24px; }
-  .headline { width: 100%; }
-  .map { height: 320px; }
   .mv-bar-row { grid-template-columns: minmax(80px, 110px) 1fr 42px; }
   .slip, .close-form { padding: 20px; }
   .tally div { min-width: 0; flex: 1; }

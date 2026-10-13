@@ -13,6 +13,7 @@ from . import config, data, db, llm, service
 from .models import CaseResult, CloseRequest
 from .pipeline import build_case, iter_events
 from .resolve import CloseError, apply_outcome
+from .raster import raster as build_raster
 from .tools.common import build_ctx, quality_of
 
 app = FastAPI(title="FieldDx", version="0.1.0")
@@ -161,6 +162,21 @@ def case_series(case_id: str):
         "alert_date": r.alert_date.isoformat(), "as_of": r.as_of.isoformat(),
         "baseline": ctx.series.baseline_label(),
     }
+
+
+@app.get("/api/cases/{case_id}/raster")
+def case_raster(case_id: str, scene: str | None = None):
+    """10 m pixels for one scene date (defaults to the headline scene)."""
+    r = _case_or_404(case_id)
+    ctx = build_ctx(r.field.id, r.alert_date, r.as_of)
+    try:
+        day = date.fromisoformat(scene) if scene else (r.headline.date if r.headline else r.as_of)
+    except ValueError:
+        raise HTTPException(422, "scene must be an ISO date")
+    out = build_raster(data.fields()[r.field.id], ctx.series, day)
+    if out is None:
+        raise HTTPException(404, f"No scene on {day}")
+    return out
 
 
 @app.post("/api/cases/{case_id}/close")

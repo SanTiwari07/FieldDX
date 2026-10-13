@@ -1,9 +1,20 @@
 import { useEffect, useState } from "react";
+import { paintRaster } from "../components/RasterOverlay";
 import { Link } from "react-router-dom";
 import { ChevronRight } from "lucide-react";
 import { api, InboxRow } from "../api";
 import { CROP_LABEL, fmtDate, fmtDelta } from "../lib/format";
 import { ConfidenceMeter, ScenarioBanner, SeverityBadge, StatusBadge } from "../components/ui";
+
+function Thumb({ id }: { id: string }) {
+  const [url, setUrl] = useState("");
+  useEffect(() => {
+    let live = true;
+    api.raster(id).then((r) => live && setUrl(paintRaster(r, "ndvi", false, 6))).catch(() => undefined);
+    return () => { live = false; };
+  }, [id]);
+  return <span className="thumb" aria-hidden>{url && <img src={url} alt="" />}</span>;
+}
 
 function Row({ row }: { row: InboxRow }) {
   const muted = row.outcome === "auto_dismissed";
@@ -14,14 +25,17 @@ function Row({ row }: { row: InboxRow }) {
         {muted ? <StatusBadge outcome="auto_dismissed" /> : <SeverityBadge level={row.severity} />}
       </span>
       <span role="cell" className="c-field">
-        <strong>{row.field.name}</strong>
-        <small>{CROP_LABEL[row.field.crop]} · {row.field.area_ha} ha</small>
+        <Thumb id={row.id} />
+        <span className="c-field-text">
+          <strong>{row.field.name}</strong>
+          <small>{CROP_LABEL[row.field.crop]}, {row.field.area_ha} ha</small>
+        </span>
       </span>
       <span role="cell" className="c-change">
         {h ? (
           <>
             <span className="num">&Delta;NDVI {fmtDelta(h.delta)}</span>
-            <small>{h.zone_label} · {fmtDate(h.date)}</small>
+            <small>{h.zone_label}, {fmtDate(h.date)}</small>
           </>
         ) : (
           <small>No change measured</small>
