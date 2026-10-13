@@ -1,0 +1,25 @@
+# secrets
+.env
+.env.*
+!.env.example
+
+# private planning notes
+IMPLEMENTATION_PLAN.md
+devpost/learner-profile.md
+
+# python
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.db
+
+# node
+node_modules/
+dist/
+
+# os / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
