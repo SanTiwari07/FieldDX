@@ -131,12 +131,13 @@ def boundaries(folder: Path, meta: dict, p: Progress, year: int) -> tuple[str, s
         p.step("boundaries", detail=f"Reading the published Fields of the World map ({meta['partition']['code']})")
 
         def line(s):
-            m = re.match(r"(\d+) polygons touch the area; (\d+) from (\d+)", s)
+            m = re.match(r"(\d+) polygons touch the area; (\d+) inside it from (\d+)", s)
             if m:
                 p.step("boundaries", detail=f"{int(m[2]):,} fields from {m[3]} inside the area ({int(m[1]):,} nearby)")
         run(py("ftw_global.py", "--area", str(folder)), line)
         src = json.loads((folder / "raw" / "ftw_global" / "source.json").read_text(encoding="utf-8"))
-        p.step("boundaries", state="done", detail=f"{src['fields']:,} fields from Fields of the World {src['year']}")
+        filled = f", {src['filled']:,} of them from earlier years filling gaps" if src.get("filled") else ""
+        p.step("boundaries", state="done", detail=f"{src['fields']:,} fields from Fields of the World {src['year']}{filled}")
         return "raw/ftw_global/polygons.parquet", src["source"]
 
     exe = config.ftw_cli()
