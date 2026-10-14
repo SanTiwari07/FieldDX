@@ -206,6 +206,29 @@ dialog.sheet::backdrop { background: rgba(16, 28, 22, 0.5); }
 .fieldsmap-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 10px 2px 0; font-size: 12px; color: var(--text-2); }
 .fieldsmap-legend span { display: inline-flex; align-items: center; gap: 6px; }
 .fieldsmap-legend i { width: 14px; height: 14px; border-radius: 3px; border: 2px solid; display: inline-block; opacity: 0.9; }
+.fieldsmap-legend b { font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums; }
+.fieldsmap-legend i.lg-dashed { background: #4b5560; border: 1.5px dashed #ffffff; outline: 1px solid #4b5560; }
+.fieldsmap-legend i.lg-dotted { background: #4b5560; border: 1.5px dotted #c3c8cc; outline: 1px solid #4b5560; }
+.fieldsmap-legend i.lg-hatch { border: 1px solid #38d9f5; background: repeating-linear-gradient(45deg, #38d9f5 0 2px, #4b5560 2px 6px); }
+.fieldsmap-legend .lg-edge i { width: 18px; height: 0; border: 0; border-top: 3px solid var(--ink); border-radius: 0; }
+.fieldsmap .map.is-drawing { cursor: crosshair; }
+.fieldsmap.is-busy .map { filter: saturate(0.6); pointer-events: none; }
+.fm-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-bottom: 8px; padding: 8px 10px; background: var(--canvas); border: 1px solid var(--border); border-radius: var(--r-md); }
+.fm-tools .btn-ghost { border: 1px solid var(--border-strong); color: var(--text); }
+.fm-instr { flex: 1 1 220px; font-size: 13px; color: var(--text-2); }
+.fm-actions { display: inline-flex; gap: 6px; margin-left: auto; }
+.fm-actions .spinner { width: 12px; height: 12px; border-color: rgba(255, 255, 255, 0.4); border-top-color: #fff; }
+.fm-note { margin: 0 0 8px; padding: 8px 12px; border-radius: var(--r-sm); background: var(--brand-wash); color: var(--brand); font-size: 13px; line-height: 1.45; }
+.fm-note.is-error { background: var(--sev-high-soft); color: var(--sev-high); }
+.fm-pop { max-width: 240px; font-family: var(--font); }
+.fm-pop strong { display: block; font-size: 13px; margin-bottom: 4px; }
+.fm-pop p { margin: 0 0 4px; font-size: 12px; line-height: 1.45; color: var(--text); }
+.fm-pop small { display: block; font-size: 11px; color: var(--text-3); margin-top: 4px; }
+@media (max-width: 640px) {
+  .fm-tools .seg { flex-wrap: wrap; }
+  .fm-tools .seg button span { display: none; }
+  .fm-actions { margin-left: 0; }
+}
 .about { margin-top: 48px; padding: 20px 24px; background: var(--canvas); border: 1px solid var(--border); border-radius: var(--r-md); }
 .about h2 { font-size: 15px; font-weight: 600; }
 .about dl { margin-top: 12px; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px 28px; }

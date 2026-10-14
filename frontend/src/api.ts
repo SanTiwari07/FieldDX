@@ -142,7 +142,13 @@ export interface InboxRow {
   reason: string | null;
   stage_title: string | null;
   alert_date: string;
+  /** why a dismissed case was thrown out: a harvest, another management event, a data artefact or boundary mixing */
+  kind: DismissalKind | null;
+  /** the field's highest monthly NDVI in the two months before the alert's month */
+  green_before: number | null;
 }
+
+export type DismissalKind = "harvest" | "management" | "artefact" | "boundary";
 
 export interface MapZone {
   id: string;
@@ -226,6 +232,7 @@ export const api = {
   home: () => fetch("/api/home").then((r) => json<HomeData>(r)),
   inbox: () => fetch("/api/cases").then((r) => json<{ banner: string; as_of: string; area: string; provenance: Provenance; cases: InboxRow[] }>(r)),
   fieldsGeoJson: () => fetch("/api/fields.geojson").then((r) => json<FieldsGeoJson>(r)),
+  editFields: (edit: FieldEdit) => post("/api/area/fields", edit).then((r) => json<FieldEditResult>(r)),
   getCase: (id: string) => fetch(`/api/cases/${id}`).then((r) => json<CaseResult>(r)),
   map: (id: string) => fetch(`/api/cases/${id}/map`).then((r) => json<MapData>(r)),
   series: (id: string) => fetch(`/api/cases/${id}/series`).then((r) => json<SeriesData>(r)),
@@ -268,8 +275,39 @@ export interface FieldsGeoJson {
   features: {
     type: "Feature";
     geometry: { type: "Polygon"; coordinates: [number, number][][] };
-    properties: { id: string; name: string; class: string; area_ha: number; case_outcome: Outcome | null };
+    properties: {
+      id: string; name: string; class: string; area_ha: number; mode: "zoned" | "whole";
+      case_outcome: Outcome | null; case_reason: DismissalKind | null;
+      key: string | null; ndvi_month: string | null; ndvi: number | null;
+    };
   }[];
+  provenance?: Provenance;
+  /** every other field shape in the area and why it is not watched, and the land where no shape was found */
+  others?: OtherShape[];
+  /** the signed-in officer can correct the shapes in this area */
+  editable?: boolean;
+}
+
+export type ShapeStatus = "small" | "tiny_core" | "cropland" | "edge" | "large" | "over_limit" | "gap";
+
+export interface OtherShape {
+  type: "Feature";
+  geometry: GeoPolygon;
+  properties: { key: string; source: string; area_ha: number; status: ShapeStatus; field_id: null };
+}
+
+export type FieldEdit =
+  | { op: "add"; geometry: { type: "Polygon"; coordinates: number[][][] } }
+  | { op: "split"; key: string; line: number[][] }
+  | { op: "merge"; keys: string[] }
+  | { op: "remove"; key: string };
+
+export interface FieldEditResult {
+  ok: boolean;
+  message: string;
+  added: { key: string; status: string; field_id: string | null; area_ha: number }[];
+  removed: string[];
+  removed_fields: string[];
 }
 
 export type GeoPolygon = { type: "Polygon"; coordinates: number[][][] } | { type: "MultiPolygon"; coordinates: number[][][][] };
@@ -409,7 +447,7 @@ export interface HomeData {
   last_pass: string | null;
   fields: number;
   alerts: number;
-  counts: { visit: number; watch: number; area_alert: number; dismissed: number; resolved: number };
+  counts: { visit: number; watch: number; area_alert: number; dismissed: number; harvest: number; resolved: number };
   top: InboxRow[];
   detector: string;
   provenance: Provenance;
