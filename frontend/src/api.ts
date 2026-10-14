@@ -144,7 +144,7 @@ export interface InboxRow {
   alert_date: string;
   /** why a dismissed case was thrown out: a harvest, another management event, a data artefact or boundary mixing */
   kind: DismissalKind | null;
-  /** the field's highest monthly NDVI in the two months before the alert's month */
+  /** the field's highest monthly NDVI in the alert's month and the two before it */
   green_before: number | null;
 }
 

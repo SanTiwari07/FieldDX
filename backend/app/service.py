@@ -9,6 +9,7 @@ from .models import CaseFile, CaseResult
 from .narrative import template_narrative
 from .pipeline import build_case, inbox_sort_key
 from .resolve import apply_outcome
+from .tools import crop_calendar
 
 
 def effective_case(area: str, case_id: str) -> CaseResult:
@@ -55,19 +56,15 @@ def dismissal_kind(r: CaseResult) -> str | None:
     if r.outcome != "auto_dismissed" or not r.stage_outcome:
         return None
     rid, reason = r.stage_outcome.hypothesis_id, (r.stage_outcome.reason or "").lower()
-    if rid == "H4" or (rid == "H3" and "harvest" in reason):
+    if rid in ("H4", "H11") or (rid == "H3" and "harvest" in reason):
         return "harvest"
     return {"H1": "artefact", "H2": "boundary", "H3": "management"}.get(rid)
 
 
 def green_before(area: str, field_id: str, day) -> float | None:
-    """The field's highest monthly NDVI in the two months before the alert's month: was there a green
-    crop to harvest?"""
-    m = data.fields(area)[field_id].monthly
-    y, mo = day.year, day.month
-    prev = [f"{y if mo - k > 0 else y - 1}-{(mo - k - 1) % 12 + 1:02d}" for k in (1, 2)]
-    vals = [m[k] for k in prev if k in m]
-    return max(vals) if vals else None
+    """The field's highest monthly NDVI in the alert's month and the two before it."""
+    g = crop_calendar.green_before(data.fields(area)[field_id].monthly, day)
+    return g[0] if g else None
 
 
 def inbox(area: str) -> list[dict]:

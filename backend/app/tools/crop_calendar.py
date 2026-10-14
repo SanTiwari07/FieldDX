@@ -12,6 +12,15 @@ from .. import config, data
 from .common import Ctx, ToolResult, fmt_date
 
 
+def green_before(monthly: dict[str, float], day: date) -> tuple[float, str] | None:
+    """The highest monthly NDVI in `day`'s month and the two before it, and that month: was there a
+    green crop to harvest? The onset month counts because a slow drop can begin while the crop is still
+    at its peak (onset Aug 24, peak in August)."""
+    prev = [f"{day.year if day.month - k > 0 else day.year - 1}-{(day.month - k - 1) % 12 + 1:02d}" for k in (0, 1, 2)]
+    vals = [(monthly[m], m) for m in prev if m in monthly]
+    return max(vals) if vals else None
+
+
 def year_before(day: date) -> str:
     """First month (YYYY-MM) of the twelve full months before `day`'s month."""
     y, m = (day.year - 1, day.month + 1) if day.month < 12 else (day.year, 1)
@@ -46,6 +55,10 @@ def run(ctx: Ctx) -> ToolResult:
     else:
         kind = "The crop could not be identified from a year of NDVI."
 
+    green = green_before(monthly, onset)
+    if green and green[0] >= config.GREEN_CROP_NDVI:
+        kind += f" It carried a green crop just before the drop (NDVI {green[0]:.2f} in {date.fromisoformat(green[1] + '-01'):%B})."
+
     if window:
         verified = window.get("verified", False)
         finding = (
@@ -61,11 +74,13 @@ def run(ctx: Ctx) -> ToolResult:
 
     return ToolResult(
         tool="crop_calendar", title="Crop calendar", finding=finding,
-        facts={"in_window": window is not None, "expected_drop": None},
+        facts={"in_window": window is not None, "expected_drop": None,
+               "green_before": (green[0] >= config.GREEN_CROP_NDVI) if green else None},
         vars={
             "window_label": window["label"] if window else "",
             "window_verified": "verified" if (window and window.get("verified")) else "assumed",
             "window_ask": window.get("ask", "") if window else "",
+            "green_before": f"{green[0]:.2f}" if green else "",
         },
         data={"window": window, "onset": onset.isoformat(), "class": f.klass, "monthly": monthly},
         as_of=onset, quality="n/a",

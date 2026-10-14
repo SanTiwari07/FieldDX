@@ -100,6 +100,7 @@ RAIN_RECENT_MM = 5.0        # a day at or above this counts as rain for "days si
 # ---- crop calendar
 EXPECTED_DROP = -0.08
 MANAGEMENT_SLACK_DAYS = 5
+GREEN_CROP_NDVI = 0.45      # a monthly NDVI this high in the drop's month or the two before: a crop stood there
 
 # ---- engine
 GATE_FIRE = 0.60            # stage 1 and 2 hypotheses fire at this score

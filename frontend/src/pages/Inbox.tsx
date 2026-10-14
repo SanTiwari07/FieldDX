@@ -90,12 +90,16 @@ function Group({ title, note, rows, divider }: { title: string; note?: string; r
 
 const GREEN = 0.45; // a monthly NDVI this high before the drop means a crop stood there to harvest
 
-/** Drops in the inferred harvest season, shown as one event: a harvest is not a field problem, but the
- * season is an assumption, so the card says how to confirm it and keeps every field one tap away. */
+/** Drops read as a harvest, shown as one event: inside the season inferred from last year, or a green crop
+ * dropping together with most fields around it (a harvest that came early or late). A harvest is not a
+ * field problem, but both readings are inferred, so the card says how to confirm it and keeps every field
+ * one tap away. */
 function Harvest({ rows }: { rows: InboxRow[] }) {
   if (!rows.length) return null;
   const green = rows.filter((r) => (r.green_before ?? 0) >= GREEN).length;
-  const season = (rows[0].reason ?? "").replace(/, expected$/, "").replace(/^Harvest season \((.*), inferred\)$/, "$1");
+  const inSeason = rows.filter((r) => /^Harvest season \(/.test(r.reason ?? ""));
+  const season = (inSeason[0]?.reason ?? "").replace(/, expected$/, "").replace(/^Harvest season \((.*), inferred\)$/, "$1");
+  const across = rows.length - inSeason.length;
   return (
     <section className="harvest-card" aria-labelledby="harvest-h">
       <div className="harvest-head">
@@ -103,11 +107,12 @@ function Harvest({ rows }: { rows: InboxRow[] }) {
         <div>
           <h2 id="harvest-h">Harvest under way <span className="count">{rows.length} fields</span></h2>
           <p>
-            These fields dropped inside the harvest season FieldDx inferred from last year's NDVI{season ? ` (${season})` : ""}.
-            {" "}{green === rows.length ? "Every one" : `${green} of them`} had a green crop (NDVI {GREEN} or more) in the two months before,
+            {inSeason.length > 0 && <>{inSeason.length === rows.length ? "These fields" : `${inSeason.length} of these fields`} dropped inside the harvest season FieldDx inferred from last year's NDVI{season ? ` (${season})` : ""}. </>}
+            {across > 0 && <>{across === rows.length ? "These fields" : `${across}`} dropped together with most fields around them, with no rain or heat to explain it: a harvest that came {inSeason.length ? "outside that season" : "earlier or later than last year"}. </>}
+            {green === rows.length ? "Every one" : `${green} of them`} had a green crop (NDVI {GREEN} or more) just before,
             so the drop looks like a harvest, not damage.
           </p>
-          <p className="muted small">The season is inferred, not verified. One call to two or three of these farmers confirms it.</p>
+          <p className="muted small">This is inferred, not verified. One call to two or three of these farmers confirms it.</p>
         </div>
       </div>
       <details>

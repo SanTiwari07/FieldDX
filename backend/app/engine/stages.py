@@ -181,6 +181,10 @@ def _stage_outcome(w: Scored, outcome: str, vars_: dict, facts: dict) -> StageOu
     elif rid == "H4":
         reason, title = "Normal crop cycle", "Auto-dismissed: normal crop cycle"
         confirm = "Ask the farmer: has the crop been harvested? One phone call settles it."
+    elif rid == "H11":
+        reason = f"Harvest or field work across the area: {v['n_dropped']} of {v['n_neighbours']} plots nearby dropped together"
+        title = "Auto-dismissed: harvest or field work across the area"
+        confirm = "Ask one or two farmers here whether the harvest has started. One call settles it for the whole area."
     elif rid == "H5":
         reason = f"{v['n_dropped']} of {v['n_neighbours']} {v['crop']} plots nearby dropped in a dry or hot spell"
         title = "Area alert: regional dry or hot spell"

@@ -44,7 +44,7 @@ FACT_SOURCE = {
     "dry_spell": "weather", "heavy_rain": "weather", "heat_stress": "weather", "dry_or_hot": "weather",
     "rain_in_window": "weather", "soil_moisture_low": "weather", "soil_moisture_normal": "weather",
     "humid_after_rain": "weather", "no_weather_trigger": "weather",
-    "in_window": "crop_calendar", "expected_drop": "crop_calendar",
+    "in_window": "crop_calendar", "expected_drop": "crop_calendar", "green_before": "crop_calendar",
     "ndre_low": "red_edge", "ndmi_high": "red_edge",
 }
 
@@ -128,6 +128,25 @@ RULES: tuple[Rule, ...] = (
         against=(Cond("heavy_rain", "No heavy rain day in the window", 0.60, want=False),),
         requires=("heavy_rain",),
         short="Storm or hail damage",
+    ),
+    # A harvest does not keep last year's dates: in Punjab the paddy harvest can start weeks before the
+    # season inferred from the year before. A green crop that drops together with most fields around it,
+    # with no weather to explain it, is the area harvesting (or ploughing), wherever the calendar says.
+    Rule(
+        "H11", "Harvest or field work across the area", 2,
+        supports=(
+            Cond("neighbours_dropped", "Most similar plots nearby dropped in the same window", 0.35),
+            Cond("green_before", "The field carried a green crop (NDVI {green_before}) just before the drop", 0.30),
+            Cond("pattern_fieldwide", "The loss covers most of the field", 0.20),
+            Cond("drop_sudden", "The drop is sudden", 0.15),
+        ),
+        against=(
+            Cond("dry_or_hot", "The window is dry or hot, which could explain a shared drop", 0.40),
+            Cond("heavy_rain", "A heavy rain day fell inside the window", 0.40),
+            Cond("pattern_localised", "The loss is localised, not field-wide", 0.40),
+        ),
+        requires=("neighbours_dropped", "green_before"),
+        short="Harvest or field work across the area",
     ),
     # ---- Stage 3: field-specific differential
     Rule(

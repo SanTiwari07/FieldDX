@@ -163,7 +163,8 @@
         "label": "Crop was harvested",
         "then": "explains the drop as a harvest",
         "supports": [
-          "H3"
+          "H3",
+          "H11"
         ],
         "against": [
           "H7",

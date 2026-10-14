@@ -250,3 +250,20 @@ def test_a_small_field_is_read_as_one_zone_and_never_overclaims(ds):
 def test_a_small_field_still_has_its_cloud_artefacts_dismissed(ds):
     r = case("SMALLHAZE")
     assert r.outcome == "auto_dismissed" and r.stage_outcome.hypothesis_id == "H1"
+
+
+def test_a_green_crop_dropping_with_the_whole_area_reads_as_harvest_whatever_the_calendar_says():
+    from app.engine.stages import diagnose
+    ev = {"neighbour_compare": "E1", "crop_calendar": "E2", "ndvi_series": "E3", "weather": "E4", "scene_quality": "E5"}
+    facts = {"drop_significant": True, "drop_confirmed": True, "drop_sudden": True, "in_window": False,
+             "neighbours_dropped": True, "neighbours_fine": False, "green_before": True,
+             "dry_or_hot": False, "heavy_rain": False, "rain_in_window": True}
+    d = diagnose(facts, {"n_dropped": "120", "n_neighbours": "200", "green_before": "0.74"}, ev)
+    assert d.outcome == "auto_dismissed" and d.stage_outcome.hypothesis_id == "H11"
+    assert "120 of 200" in d.stage_outcome.reason
+    # no green crop before: nothing to harvest, so not a harvest
+    assert diagnose({**facts, "green_before": False}, {}, ev).stage_outcome is None or \
+        diagnose({**facts, "green_before": False}, {}, ev).stage_outcome.hypothesis_id != "H11"
+    # a dry, hot window shared by the area is a regional spell, not a harvest
+    hot = diagnose({**facts, "dry_or_hot": True, "soil_moisture_low": True}, {}, ev)
+    assert hot.outcome == "area_alert" and hot.stage_outcome.hypothesis_id == "H5"
