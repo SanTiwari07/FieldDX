@@ -17,6 +17,7 @@ from pydantic import BaseModel, Field
 
 from . import areas, config, data, db, llm, overview, places, service
 from .models import CaseResult, CloseRequest
+from . import pipeline
 from .pipeline import build_case, iter_events
 from .raster import raster as build_raster
 from .resolve import CloseError, apply_outcome
@@ -34,6 +35,13 @@ def _warm(area: str) -> None:
     threading.Thread(target=run, daemon=True).start()
 
 
+def _rebuilt(area: str) -> None:
+    """An area was built again or its fields were corrected: its cached cases are stale (a case also
+    reads its neighbours), so drop them all and compute the area again."""
+    pipeline._cached.cache_clear()
+    _warm(area)
+
+
 def _seed_demo() -> None:
     """The officer behind "Explore the demo": works in the area shipped with the repository."""
     if not data.is_ready(config.DEMO_AREA):
@@ -48,7 +56,7 @@ def _seed_demo() -> None:
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     _seed_demo()
-    areas.on_ready(_warm)
+    areas.on_ready(_rebuilt)
     areas.resume_interrupted()
     for a in areas.list_areas():
         if a["status"] == "ready":
@@ -347,7 +355,9 @@ def home(area: str = Depends(current_area), officer: dict = Depends(current_offi
         "as_of": cf["as_of"], "last_pass": last_pass.isoformat() if last_pass else None,
         "fields": len(data.fields(area)), "alerts": len(rows),
         "counts": {"visit": count("field_case", "unexplained"), "watch": count("watch"),
-                   "area_alert": count("area_alert"), "dismissed": count("auto_dismissed"),
+                   "area_alert": count("area_alert"),
+                   "harvest": sum(1 for r in rows if r["kind"] == "harvest"),
+                   "dismissed": sum(1 for r in rows if r["outcome"] == "auto_dismissed" and r["kind"] != "harvest"),
                    "resolved": count("resolved")},
         "top": [r for r in rows if r["outcome"] in ("field_case", "unexplained")][:3],
         "detector": cf.get("detector"), "provenance": data.provenance(area),
@@ -513,20 +523,60 @@ def list_checks(_o: dict = Depends(current_officer)):
 
 
 @app.get("/api/fields.geojson")
-def fields_geojson(area: str = Depends(current_area)):
-    """The area's monitored field shapes as GeoJSON, with the current case outcome where there is one."""
-    outcome = {c["field_id"]: service.effective_case(area, c["id"]).outcome for c in data.case_specs(area)}
+def fields_geojson(area: str = Depends(current_area), officer: dict = Depends(current_officer)):
+    """The area's monitored field shapes as GeoJSON, with the current case outcome where there is one,
+    then every other field shape in the area and why it is not watched, and the land where no field
+    shape was found (`others`)."""
+    cases = {c["field_id"]: service.effective_case(area, c["id"]) for c in data.case_specs(area)}
+    shapes = data.shapes(area)
+    shape_of = {s["properties"]["field_id"]: s for s in shapes if s["properties"].get("field_id")}
     feats = []
     for f in data.fields(area).values():
-        ring = f.outline[0] if f.outline else []
+        r = cases.get(f.id)
+        s = shape_of.get(f.id)
+        # draw the shape as clipped to the area where there is one; the analysis keeps the whole field
+        ring = (s["geometry"]["coordinates"][0] if s and s["geometry"]["type"] == "Polygon"
+                else f.outline[0] if f.outline else [])
+        last = max(f.monthly) if f.monthly else None
         feats.append({
             "type": "Feature", "geometry": {"type": "Polygon", "coordinates": [ring]},
             "properties": {"id": f.id, "name": f.name, "class": f.klass, "area_ha": f.area_ha, "mode": f.mode,
-                           "case_outcome": outcome.get(f.id)},
+                           "case_outcome": r.outcome if r else None,
+                           "case_reason": service.dismissal_kind(r) if r else None,
+                           "key": s["properties"]["key"] if s else None,
+                           "ndvi_month": last, "ndvi": f.monthly.get(last) if last else None},
         })
+    others = [s for s in shapes if s["properties"]["status"] != "watched"]
     meta = areas.load(area) or {}
-    return {"type": "FeatureCollection", "provenance": data.provenance(area), "features": feats,
+    return {"type": "FeatureCollection", "provenance": data.provenance(area), "features": feats, "others": others,
+            "editable": officer["username"] != "demo" and areas.can_edit(area),
             "area": {"geometry": meta.get("geometry"), "bbox": meta.get("bbox")}}
+
+
+class FieldEdit(BaseModel):
+    op: str = Field(max_length=8)
+    geometry: dict | None = None                       # add: the field as drawn, a GeoJSON Polygon
+    line: list[list[float]] | None = Field(None, max_length=200)  # split: the cut, [lon, lat] points
+    key: str | None = Field(None, max_length=80)       # split, remove: the shape
+    keys: list[str] | None = Field(None, max_length=50)  # merge: the shapes
+
+
+@app.post("/api/area/fields")
+def edit_fields(body: FieldEdit, area: str = Depends(current_area), officer: dict = Depends(current_officer)):
+    """Correct the area's field shapes: draw a missed field, split or merge shapes, or remove one."""
+    if officer["username"] == "demo":
+        raise HTTPException(403, "The demo area cannot be changed")
+    op = {k: v for k, v in body.model_dump().items() if v is not None}
+    if op["op"] == "add":
+        g = op.get("geometry") or {}
+        ring = (g.get("coordinates") or [[]])[0] if g.get("type") == "Polygon" else []
+        if len(ring) < 4 or len(ring) > 500:
+            raise HTTPException(422, "Draw the field with at least three corners")
+    try:
+        result = areas.edit_fields(area, op)
+    except areas.AreaError as e:
+        raise HTTPException(422, str(e))
+    return result
 
 
 @app.post("/api/admin/reset")

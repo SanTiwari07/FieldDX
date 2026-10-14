@@ -171,6 +171,18 @@ def fields(area: str) -> dict[str, FieldRec]:
 
 
 @lru_cache(maxsize=None)
+def _shapes(area: str) -> tuple:
+    path = area_dir(area) / "shapes.geojson"
+    return tuple(_read(path)["features"]) if path.exists() else ()
+
+
+def shapes(area: str) -> list[dict]:
+    """Every field shape in the area, watched or not and why, and the gaps where no field was found
+    (scripts/build_dataset.py). Empty for an area built before this file existed."""
+    return list(_shapes(area))
+
+
+@lru_cache(maxsize=None)
 def grid(area: str, field_id: str) -> Grid:
     g = _read(area_dir(area) / "grids" / f"{field_id}.json")
     nr, nc = g["nr"], g["nc"]
@@ -271,7 +283,7 @@ def is_ready(area: str) -> bool:
 
 
 def clear_caches() -> None:
-    for fn in (provenance, fields, grid, scenes, weather, weather_meta, calendar, checks, cases_file):
+    for fn in (provenance, fields, _shapes, grid, scenes, weather, weather_meta, calendar, checks, cases_file):
         fn.cache_clear()
 
 

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import math
+import os
 import re
 import secrets
 import subprocess
@@ -260,6 +261,54 @@ def _work() -> None:
 
 def on_ready(fn) -> None:
     _on_ready.append(fn)
+
+
+# ---- the officer's corrections to the field shapes
+
+EDIT_OPS = ("add", "split", "merge", "remove")
+_edit_lock = threading.Lock()
+
+
+def can_edit(area_id: str) -> bool:
+    """Shapes can be corrected in an area built with the shapes file, and never in the shipped demo."""
+    return area_id != config.DEMO_AREA and (data.area_dir(area_id) / "shapes.geojson").exists()
+
+
+def edit_fields(area_id: str, op: dict) -> dict:
+    """Apply one correction (scripts/edit_fields.py) and return its result. Only the shapes it touches
+    are read again from the downloaded imagery, then the area's alerts are detected again."""
+    if op.get("op") not in EDIT_OPS:
+        raise AreaError("Unknown correction")
+    if not can_edit(area_id):
+        raise AreaError("Fields in this area cannot be corrected. Rebuild it first." if area_id != config.DEMO_AREA
+                        else "The demo area cannot be changed")
+    if area_id in _running or area_id in _queue:
+        raise AreaError("The area is being built; correct its fields once the build is done")
+    if not _edit_lock.acquire(timeout=1):
+        raise AreaError("Another correction is still being applied; try again in a moment")
+    try:
+        proc = subprocess.run(
+            [config.PYTHON, str(config.SCRIPTS_DIR / "edit_fields.py"), "--area", str(data.area_dir(area_id)),
+             "--op", json.dumps(op)],
+            capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=str(config.ROOT), timeout=300,
+            env={**os.environ, "PYTHONIOENCODING": "utf-8"},
+        )
+    except (OSError, subprocess.TimeoutExpired) as e:
+        raise AreaError(f"Could not apply the correction: {e}")
+    finally:
+        _edit_lock.release()
+        data.clear_caches()
+    lines = [ln for ln in proc.stdout.splitlines() if ln.strip().startswith("{")]
+    try:
+        result = json.loads(lines[-1])
+    except (IndexError, ValueError):
+        tail = (proc.stderr or proc.stdout).strip().splitlines()[-1:] or [f"exit code {proc.returncode}"]
+        raise AreaError(f"Could not apply the correction: {tail[0][:200]}")
+    if not result.get("ok"):
+        raise AreaError(result.get("message") or "Could not apply the correction")
+    for fn in list(_on_ready):  # the area's data changed under its cached cases
+        fn(area_id)
+    return result
 
 
 def resume_interrupted() -> None:

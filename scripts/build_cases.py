@@ -43,11 +43,11 @@ def detect(area: str, field_id: str, as_of):
     return None
 
 
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--area", required=True, help="the area folder, e.g. data/areas/niphad")
-    folder = Path(ap.parse_args().area).resolve()
+def write_cases(folder: Path) -> str:
+    """Detect every field's alert and write cases.json; returns the summary line."""
+    folder = folder.resolve()
     data.areas_root = lambda: folder.parent  # read the area through the app's own loader, wherever it lives
+    data.clear_caches()
     area = folder.name
     as_of = max(s.date for fid in data.fields(area) for s in data.scenes(area, fid))
     cases = []
@@ -65,8 +65,16 @@ def main():
         "fields_monitored": len(data.fields(area)),
         "cases": cases,
     }
-    (folder / "cases.json").write_text(json.dumps(out, indent=1), encoding="utf-8")
-    print(f"{len(cases)} alerts from {len(data.fields(area))} fields, data to {as_of}")
+    tmp = folder / "cases.json.tmp"
+    tmp.write_text(json.dumps(out, indent=1), encoding="utf-8")
+    tmp.replace(folder / "cases.json")
+    return f"{len(cases)} alerts from {len(data.fields(area))} fields, data to {as_of}"
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--area", required=True, help="the area folder, e.g. data/areas/niphad")
+    print(write_cases(Path(ap.parse_args().area)))
 
 
 if __name__ == "__main__":

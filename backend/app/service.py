@@ -48,6 +48,28 @@ def ensure_narrative(area: str, r: CaseResult) -> CaseResult:
     return attach_stored_narrative(area, r)
 
 
+def dismissal_kind(r: CaseResult) -> str | None:
+    """Why a dismissed case was thrown out, as one word the inbox groups by: a harvest (an expected
+    management window that is a harvest, or the crop's normal cycle), another management event, a data
+    artefact or boundary mixing."""
+    if r.outcome != "auto_dismissed" or not r.stage_outcome:
+        return None
+    rid, reason = r.stage_outcome.hypothesis_id, (r.stage_outcome.reason or "").lower()
+    if rid == "H4" or (rid == "H3" and "harvest" in reason):
+        return "harvest"
+    return {"H1": "artefact", "H2": "boundary", "H3": "management"}.get(rid)
+
+
+def green_before(area: str, field_id: str, day) -> float | None:
+    """The field's highest monthly NDVI in the two months before the alert's month: was there a green
+    crop to harvest?"""
+    m = data.fields(area)[field_id].monthly
+    y, mo = day.year, day.month
+    prev = [f"{y if mo - k > 0 else y - 1}-{(mo - k - 1) % 12 + 1:02d}" for k in (1, 2)]
+    vals = [m[k] for k in prev if k in m]
+    return max(vals) if vals else None
+
+
 def inbox(area: str) -> list[dict]:
     rows = []
     results = sorted((effective_case(area, c["id"]) for c in data.case_specs(area)), key=inbox_sort_key)
@@ -71,5 +93,6 @@ def inbox(area: str) -> list[dict]:
             "leading": lead_name, "confidence": conf, "reason": reason,
             "stage_title": r.stage_outcome.title if r.stage_outcome else None,
             "alert_date": r.alert_date.isoformat(),
+            "kind": dismissal_kind(r), "green_before": green_before(area, r.field.id, r.alert_date),
         })
     return rows
