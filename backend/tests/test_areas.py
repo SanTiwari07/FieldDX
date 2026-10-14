@@ -154,3 +154,21 @@ def test_the_region_overview_checks_its_input_before_asking_earth_engine():
     assert r.status_code == 422 and "district" in r.json()["detail"]
     assert c.get("/api/overview/tiles/not-a-key/5/1/1.png").status_code == 400
     assert c.get("/api/overview/tiles/0123456789abcdef/5/1/1.png").status_code == 404
+
+
+def test_a_network_blip_is_not_read_as_a_state_without_fields(monkeypatch):
+    import urllib.error
+    from app import places
+    monkeypatch.setattr(places.time, "sleep", lambda s: None)
+    monkeypatch.setattr(places, "_partitions", {})
+
+    def down(req, timeout=0):
+        raise urllib.error.URLError("timed out")
+    monkeypatch.setattr(places.urllib.request, "urlopen", down)
+    with pytest.raises(places.PartitionUnreachable):
+        places.ftw_partition("IN", "BR")
+
+    def missing(req, timeout=0):
+        raise urllib.error.HTTPError(req.full_url, 404, "Not Found", {}, None)
+    monkeypatch.setattr(places.urllib.request, "urlopen", missing)
+    assert places.ftw_partition("IN", "LD") is None

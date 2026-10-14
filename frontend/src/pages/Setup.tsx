@@ -279,8 +279,9 @@ export default function Setup() {
     api.overviewSummary(region).then(setOvSummary).catch((e) => setOvError((e as Error).message));
     try {
       setSource(await api.fieldsSource(p.country, p.subdivision));
-    } catch {
+    } catch (e) {
       setSource({ partition: null, model_available: false, max_km2: MAX_KM2_FALLBACK });
+      setError(`Could not check the published field shapes: ${(e as Error).message}`);
     }
   };
 

@@ -175,7 +175,10 @@ def search_places(q: str = Query(..., min_length=2, max_length=120), _o: dict = 
 def fields_source(country: str = Query(..., max_length=3), subdivision: str = Query("", max_length=8),
                   _o: dict = Depends(current_officer)):
     """Where the published field shapes for a region live, and whether the model can be run here."""
-    part = places.ftw_partition(country.upper(), subdivision.upper())
+    try:
+        part = places.ftw_partition(country.upper(), subdivision.upper())
+    except places.PartitionUnreachable:
+        raise HTTPException(502, "Fields of the World is not reachable right now. Choose the region again in a moment.")
     return {"partition": part, "model_available": config.ftw_cli() is not None,
             "max_km2": config.AREA_MAX_KM2}
 
@@ -280,7 +283,10 @@ def create_area(body: NewArea, officer: dict = Depends(current_officer)):
         # trust only a partition this server can find, never a URL sent by the browser
         code = (body.partition or {}).get("code", "")
         country, _, sub = code.partition("_")
-        part = places.ftw_partition(country, sub) if code else None
+        try:
+            part = places.ftw_partition(country, sub) if code else None
+        except places.PartitionUnreachable:
+            raise HTTPException(502, "Fields of the World is not reachable right now. Try again in a moment.")
     try:
         meta = areas.create(name=body.name, region=body.region, geometry=body.geometry, mode=body.mode,
                             field_source=body.field_source, boundary=body.boundary, partition=part,

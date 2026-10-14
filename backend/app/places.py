@@ -43,23 +43,43 @@ def _polite_get(url: str) -> bytes:
     return _get(url)
 
 
-@lru_cache(maxsize=512)
+_partitions: dict[str, dict] = {}  # published partitions found so far; one does not disappear
+
+
+class PartitionUnreachable(OSError):
+    """Source Cooperative did not answer, so whether the state is published is not known."""
+
+
 def ftw_partition(country: str, subdivision: str) -> dict | None:
-    """The FTW global partition for a state, or None when it has not been published."""
+    """The FTW global partition for a state, or None when it has not been published. Raises
+    PartitionUnreachable when Source Cooperative cannot be reached after a few tries: a network blip
+    must not read as "this state has no fields"."""
     if not country or not subdivision:
         return None
     code = f"{country}_{subdivision}"
+    if code in _partitions:
+        return _partitions[code]
     base = f"{config.FTW_GLOBAL_BASE}/admin:country_code={country}/{code}"
-    try:
-        req = urllib.request.Request(f"{base}.pmtiles", method="HEAD", headers={"User-Agent": config.HTTP_USER_AGENT})
-        with urllib.request.urlopen(req, timeout=15) as r:
-            size = int(r.headers.get("Content-Length") or 0)
-    except (urllib.error.URLError, TimeoutError, ValueError):
-        return None
+    req = urllib.request.Request(f"{base}.pmtiles", method="HEAD", headers={"User-Agent": config.HTTP_USER_AGENT})
+    for attempt in range(3):
+        try:
+            with urllib.request.urlopen(req, timeout=15) as r:
+                size = int(r.headers.get("Content-Length") or 0)
+            break
+        except urllib.error.HTTPError as e:
+            if e.code in (403, 404):
+                return None
+            last: Exception = e
+        except (urllib.error.URLError, TimeoutError, ValueError) as e:
+            last = e
+        time.sleep(0.6 * (attempt + 1))
+    else:
+        raise PartitionUnreachable(f"Fields of the World is not reachable right now ({last})")
     if size < 1024:  # an empty partition: the state has no predicted fields
         return None
-    return {"code": code, "country": country, "parquet": f"{base}.parquet", "pmtiles": f"{base}.pmtiles",
-            "layers": ["2025", "2024"]}
+    _partitions[code] = {"code": code, "country": country, "parquet": f"{base}.parquet", "pmtiles": f"{base}.pmtiles",
+                         "layers": ["2025", "2024"]}
+    return _partitions[code]
 
 
 class NotPublished(LookupError):
