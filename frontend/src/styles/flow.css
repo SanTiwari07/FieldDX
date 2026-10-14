@@ -187,6 +187,7 @@ body:has(.case-shell) .appbar-inner { max-width: none; }
 .funnel-note { grid-area: note; color: var(--text-3); font-size: 12px; padding-left: 23px; }
 .funnel-fields .funnel-bar span { background: var(--text-3); }
 .funnel-dismissed .funnel-bar span { background: #c3c8cc; }
+.funnel-harvest .funnel-bar span { background: #d9b26a; }
 .funnel-area .funnel-bar span { background: var(--area); }
 .funnel-watch .funnel-bar span { background: #e09a0d; }
 .funnel-visit .funnel-bar span { background: var(--ink); }

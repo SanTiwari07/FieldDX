@@ -105,6 +105,14 @@ h1 { font-size: 22px; font-weight: 700; line-height: 1.25; letter-spacing: -0.01
 .group-title { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 600; letter-spacing: -0.011em; margin: 28px 0 10px; }
 .group-title:first-child { margin-top: 0; }
 .group-title.divider { padding-top: 24px; border-top: 1px dashed var(--border-strong); }
+.harvest-card { margin-top: 28px; padding: 16px 18px; background: #fbf6ec; border: 1px solid #ecdcb8; border-radius: var(--r-md); }
+.harvest-head { display: flex; gap: 12px; align-items: flex-start; }
+.harvest-head > svg { flex: none; color: #6b4d16; margin-top: 2px; }
+.harvest-head h2 { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 600; margin: 0 0 6px; }
+.harvest-head p { margin: 0 0 4px; font-size: 13px; line-height: 1.5; color: var(--text); max-width: 72ch; }
+.harvest-card details { margin-top: 10px; }
+.harvest-card summary { cursor: pointer; font-size: 13px; font-weight: 600; color: #6b4d16; padding: 6px 0; min-height: 32px; }
+.harvest-card details[open] summary { margin-bottom: 8px; }
 .count { font-size: 12px; font-weight: 600; color: var(--text-2); background: var(--canvas-sunken); border-radius: 9999px; padding: 1px 8px; }
 .group-note { color: var(--text-3); font-size: 12px; margin: -4px 0 10px; }
 .inbox-head, .inbox-row { display: grid; grid-template-columns: 96px minmax(230px, 1.5fr) minmax(130px, 1fr) minmax(180px, 1.5fr) 104px 112px; gap: 16px; align-items: center; padding: 12px 16px; }

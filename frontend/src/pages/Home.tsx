@@ -2,7 +2,7 @@ import { lazy, Suspense, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   AlertTriangle, ArrowRight, Check, ChevronRight, CircleDashed, EyeOff, Eye, MapPinned, RefreshCw, Satellite,
-  Stethoscope, Tractor, X,
+  Stethoscope, Tractor, Wheat, X,
 } from "lucide-react";
 import { api, BuildState, BuildStep, HomeData } from "../api";
 import { useSession } from "../session";
@@ -125,7 +125,8 @@ function Funnel({ h }: { h: HomeData }) {
   const rows = [
     { key: "fields", label: "Fields watched", n: h.fields, Icon: Satellite, note: "Every clear pass, every 10 m pixel" },
     { key: "alerts", label: "Raised an alert", n: h.alerts, Icon: AlertTriangle, note: h.detector },
-    { key: "dismissed", label: "Dismissed with a reason", n: h.counts.dismissed, Icon: EyeOff, note: "Cloud, boundary pixels, harvest or pruning" },
+    ...(h.counts.harvest ? [{ key: "harvest", label: "Harvest under way", n: h.counts.harvest, Icon: Wheat, note: "Dropped in the inferred harvest season after a green crop" }] : []),
+    { key: "dismissed", label: "Dismissed with a reason", n: h.counts.dismissed, Icon: EyeOff, note: h.counts.harvest ? "Cloud, boundary pixels or other field work" : "Cloud, boundary pixels, harvest or pruning" },
     { key: "area", label: "Area-wide events", n: h.counts.area_alert, Icon: MapPinned, note: "Neighbours changed too, so not one farm's problem" },
     { key: "watch", label: "Waiting for another pass", n: h.counts.watch, Icon: Eye, note: "Seen once; FieldDx waits before sending anyone" },
     { key: "visit", label: "Need a call or a visit", n: h.counts.visit, Icon: Stethoscope, note: "Ranked causes and one cheapest check each" },

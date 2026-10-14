@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { ChevronRight, List, Map as MapIcon } from "lucide-react";
+import { ChevronRight, List, Map as MapIcon, Wheat } from "lucide-react";
 import { api, InboxRow, Provenance } from "../api";
 import { fmtDate, fmtDelta } from "../lib/format";
 import { ConfidenceMeter, SeverityBadge, StatusBadge } from "../components/ui";
@@ -88,6 +88,39 @@ function Group({ title, note, rows, divider }: { title: string; note?: string; r
   );
 }
 
+const GREEN = 0.45; // a monthly NDVI this high before the drop means a crop stood there to harvest
+
+/** Drops in the inferred harvest season, shown as one event: a harvest is not a field problem, but the
+ * season is an assumption, so the card says how to confirm it and keeps every field one tap away. */
+function Harvest({ rows }: { rows: InboxRow[] }) {
+  if (!rows.length) return null;
+  const green = rows.filter((r) => (r.green_before ?? 0) >= GREEN).length;
+  const season = (rows[0].reason ?? "").replace(/, expected$/, "").replace(/^Harvest season \((.*), inferred\)$/, "$1");
+  return (
+    <section className="harvest-card" aria-labelledby="harvest-h">
+      <div className="harvest-head">
+        <Wheat size={20} aria-hidden />
+        <div>
+          <h2 id="harvest-h">Harvest under way <span className="count">{rows.length} fields</span></h2>
+          <p>
+            These fields dropped inside the harvest season FieldDx inferred from last year's NDVI{season ? ` (${season})` : ""}.
+            {" "}{green === rows.length ? "Every one" : `${green} of them`} had a green crop (NDVI {GREEN} or more) in the two months before,
+            so the drop looks like a harvest, not damage.
+          </p>
+          <p className="muted small">The season is inferred, not verified. One call to two or three of these farmers confirms it.</p>
+        </div>
+      </div>
+      <details>
+        <summary>Show the {rows.length} fields</summary>
+        <div className="inbox-head" role="row" aria-hidden>
+          <span>Priority</span><span>Field</span><span>What changed</span><span>Leading explanation</span><span>Confidence</span><span>Status</span>
+        </div>
+        <div className="rows">{rows.map((r) => <Row key={r.id} row={r} />)}</div>
+      </details>
+    </section>
+  );
+}
+
 function About({ p }: { p: Provenance }) {
   return (
     <section className="about" aria-labelledby="about-h">
@@ -121,7 +154,8 @@ export default function Inbox() {
   const watching = by("watch");
   const area = by("area_alert");
   const resolved = by("resolved");
-  const dismissed = by("auto_dismissed");
+  const harvest = by("auto_dismissed").filter((c) => c.kind === "harvest");
+  const dismissed = by("auto_dismissed").filter((c) => c.kind !== "harvest");
 
   return (
     <main className="page">
@@ -136,6 +170,7 @@ export default function Inbox() {
           <div><dt>Ask or visit</dt><dd>{open.length}</dd></div>
           <div><dt>Watching</dt><dd>{watching.length}</dd></div>
           <div><dt>Area alerts</dt><dd>{area.length}</dd></div>
+          {harvest.length > 0 && <div><dt>Harvest</dt><dd>{harvest.length}</dd></div>}
           <div><dt>Dismissed</dt><dd>{dismissed.length}</dd></div>
         </dl>
       </header>
@@ -155,6 +190,7 @@ export default function Inbox() {
           <Group title="Watching" rows={watching} note="Seen on one clear pass only. FieldDx waits for the next pass before asking anyone to go out." divider />
           <Group title="Area alerts" rows={area} note="Similar fields nearby changed at the same time, so this is an area event and not a field problem." divider />
           <Group title="Resolved" rows={resolved} divider />
+          <Harvest rows={harvest} />
           <Group title="Dismissed automatically" rows={dismissed} note="Never hidden. Each one shows the reason it was thrown out, so you can check the check." divider />
           {!data.cases.length && <p className="lede">No alerts in this window.</p>}
         </section>
