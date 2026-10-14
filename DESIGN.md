@@ -411,6 +411,18 @@ Published Fields of the World shapes are drawn in three tiers, by the size Field
 
 A key under the pick help names the three tiers. Yellow appears nowhere else, so the shapes read as reference, not as a result.
 
+### Map: every field shape in the area
+The fields map on Today and Cases draws **every** field shape inside the area, not only the watched ones, so a blank patch always means something:
+- **The area boundary** is a solid 3px white line over a 7px dark halo, and everything outside it is dimmed. It reads on any imagery.
+- **Watched fields** carry their case colour (ink for ask or visit, amber for watching, area blue, brand green for resolved). A field with no alert is a white outline with a faint white fill.
+- **Harvest (expected)** is wheat, `#d9b26a` with a `#6b4d16` outline: a dismissal, but one the officer can see is seasonal, not a grey "error".
+- **Shapes not watched** are white dashed outlines (too small or too thin to read from 10 m pixels) or grey dotted ones (not cropland).
+- **No field found**, the land inside the area that no shape covers, is a cyan hatch. Cyan is used nowhere else, so missing coverage never looks like a result.
+
+Every shape answers a tap: a case opens; anything else opens a short popup saying what it is and why it is or is not watched, in words an officer can act on ("If it belongs with its neighbour, merge them"). The legend counts each kind and gives the hectares with no field found. At district size (over 2,000 unwatched shapes) those shapes move to one canvas and the cyan hatch becomes a flat tint.
+
+**Correct fields** sits above the map where the officer may edit (never in the demo area): a segmented control with Draw a field, Split, Merge and Not a field, one line saying what to do next, then Undo, Save and Done. What the officer marks is white and ink, as on the setup map: a drawn outline is a white line, its corners white dots with an ink ring, and a picked shape is ink at 50% with a white outline. While a correction is read from the downloaded passes the map desaturates and stops taking clicks; the result is one line above the map in brand green, or severity red if it could not be applied.
+
 The **region overview** uses the same brown-to-teal change ramp as the case map, on cropland only, so "loss" looks the same at district scale and at field scale. Hotspots are dashed amber rectangles at district zoom.
 
 ### Timeline: absolute NDVI
@@ -456,10 +468,10 @@ The panel is numbered in the order of the work: 1 find your region, 2 what is ch
 One narrow column: the area's name, a progress bar, and the six build steps (field shapes, Sentinel-2 passes, weather, fields and pixel zones, harvest season, alerts), each with a state icon, a one-line detail and its elapsed time. A stopped build says why. A retry is offered only when it can help; otherwise the action is "Mark the area again".
 
 **Today's briefing** (home, once the area is built)
-A greeting with the area and the date of the last satellite pass, then two cards: a funnel from fields watched to fields that need a visit, showing what was dismissed, what is area-wide and what is waiting for another pass; and "Start here", the top cases with one line each. The fields map of the area sits below. The one primary action is "Open today's cases".
+A greeting with the area and the date of the last satellite pass, then two cards: a funnel from fields watched to fields that need a visit, showing what is a harvest, what was dismissed, what is area-wide and what is waiting for another pass; and "Start here", the top cases with one line each. The fields map of the area sits below. The one primary action is "Open today's cases".
 
 **Cases** (desktop-first, works on tablet)
-A single table, not cards. Columns: severity, field + village, crop, what changed (ΔNDVI + date), leading hypothesis, confidence, status. Open cases sit on top in severity × confidence order. Dismissed cases sit below a "Dismissed automatically (2)" divider, muted, each with its reason. Area alerts appear as one grouped row, not as one row per field.
+A single table, not cards. Columns: severity, field + village, crop, what changed (ΔNDVI + date), leading hypothesis, confidence, status. Open cases sit on top in severity × confidence order. Drops inside the inferred harvest season are one wheat-tinted **Harvest under way** card, not a long grey list: how many fields, how many had a green crop (monthly NDVI 0.45 or more) in the two months before, that the season is inferred, and that one call to two or three farmers confirms it. The fields are one tap away under "Show the fields". Other dismissed cases sit below a "Dismissed automatically (2)" divider, muted, each with its reason. Area alerts appear as one grouped row, not as one row per field.
 
 **Case** (two columns at 1024px and wider)
 - Left: the map fills the space under a slim case header.

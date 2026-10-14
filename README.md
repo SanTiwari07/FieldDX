@@ -33,7 +33,8 @@ Sign in
   -> Find your region          the map locks to the district and shows what changed there this fortnight
   -> Go to the land, mark it   coordinates or a hotspot take you there; draw a polygon or pick fields
   -> FieldDx builds it         real field shapes, a year of Sentinel-2, weather, then the alerts
-  -> Today's briefing          what was thrown out, what is area-wide, which fields need you
+  -> Today's briefing          what was thrown out, what is a harvest, what is area-wide, which fields need you
+  -> Check the fields map      every shape in the area, why each is or is not watched; fix what the model got wrong
   -> Case                      the investigation replays, then the diagnosis and the next check
   -> Visit and close           the finding becomes evidence and the ranking updates
 ```
@@ -47,8 +48,9 @@ Sign in
 
    An area a colleague has already set up can be joined instead.
 4. **FieldDx builds it.** For that polygon only, from real sources, with progress shown step by step: field shapes, about 13 months of Sentinel-2 passes, weather, 10 m pixel zones per field, the harvest season, then the alerts. A few square kilometres take five to ten minutes, and the officer can leave the page while it runs.
-5. **Today's briefing.** Fields watched, alerts raised, how many were dismissed and why, area-wide events, fields waiting for another clear pass, and the few that need a call or a visit, with where to start.
-6. **Cases.** Each case replays its investigation step by step, then shows the ranked diagnosis and the next best check on a phone-friendly checklist. Recording what was found closes the case and re-ranks the causes.
+5. **Today's briefing.** Fields watched, alerts raised, how many are a harvest, how many were dismissed and why, area-wide events, fields waiting for another clear pass, and the few that need a call or a visit, with where to start. Drops inside the inferred harvest season are one *Harvest under way* card, which says how many of those fields had a green crop just before and that one call to a few farmers confirms it.
+6. **Check the fields map, and correct it.** The map draws every field shape inside the area, not only the watched ones: watched fields in their case colour, harvest in wheat, shapes too small or too thin to read from 10 m pixels as dashed outlines, shapes that are not cropland as dotted ones, and land where no field shape was found as a cyan hatch. The area boundary is a solid line and the land outside it is dimmed. Every shape answers a tap. **Correct fields** lets the officer draw a field the model missed, split a shape that joins two farms, merge shapes that are one farm, or mark a shape as not a field. Only that field is read again from the passes already downloaded (seconds, not a rebuild); the alerts are then detected again, and every other field keeps its id and its closed cases.
+7. **Cases.** Each case replays its investigation step by step, then shows the ranked diagnosis and the next best check on a phone-friendly checklist. Recording what was found closes the case and re-ranks the causes.
 
 Every route reads only the signed-in officer's area. A case ID from another area answers "not found".
 
@@ -87,7 +89,8 @@ Nothing in the app is simulated. Every number traces back to a real source.
 
 | What | Source |
 |---|---|
-| Field shapes | **Fields of the World** (FTW). Either the published FTW Global map (PRUE model, 2024 and 2025, about 3.2 billion fields, read per state from Source Cooperative), or the FTW model (PRUE EfficientNet-B5, CC-BY weights) run on fresh Sentinel-2 scenes of the area, as for the Niphad demo. A shape is a remote-sensing field unit, not a legal parcel. |
+| Field shapes | **Fields of the World** (FTW). Either the published FTW Global map (PRUE model, 2024 and 2025, about 3.2 billion fields, read per state from Source Cooperative), or the FTW model (PRUE EfficientNet-B5, CC-BY weights) run on fresh Sentinel-2 scenes of the area, as for the Niphad demo. From the published map, the latest year is the base and an earlier year's field is added where it fills a gap (at most a quarter of it under a latest-year field). A shape is a remote-sensing field unit, not a legal parcel. |
+| Corrections | The **field officer**: fields drawn, split, merged or removed on the map. They are kept in the area's `edits.json`, applied again on every rebuild, and named in the provenance. |
 | Places | **OpenStreetMap** through Nominatim: the region's name and real boundary. |
 | Imagery | Copernicus **Sentinel-2 L2A** at 10 m through Google Earth Engine. Cloud, shadow and cirrus are masked per pixel with **Cloud Score+** (0.60) and the scene classification layer. |
 | Cropland | **ESA WorldCover 2021** keeps only cropland: no river, town or trees. |
@@ -122,6 +125,8 @@ The full hypothesis table and the reasoning behind it are in [idea.md](idea.md).
 |---|---|
 | `area.json` | The polygon, how it was marked, the region it sits in |
 | `fields.geojson` | The monitored field shapes, their zones, whether each is read in eight zones or as one, and the inferred class |
+| `shapes.geojson` | Every field shape in the area, watched or not and why, and the land where no shape was found, for the map |
+| `edits.json` | The officer's corrections to the shapes, applied again on a rebuild |
 | `grids/`, `scenes/` | Each field's 10 m pixel grid, and its NDVI on every pass |
 | `weather.json` | Daily weather for the area centre |
 | `calendar.json` | Management windows (inferred, or placeholders for Niphad) |
@@ -146,6 +151,7 @@ Only `data/areas/niphad` is in git. Areas built at runtime stay on the machine t
 | `GET /api/area/build`; `POST /api/area/retry` | Build progress, and retrying a stopped build |
 | `GET /api/home` | Today's briefing for the officer's area |
 | `GET /api/cases`, `/api/cases/{id}` and `/investigate`, `/map`, `/series`, `/raster` | Cases, the live investigation stream, map and timeline data |
+| `GET /api/fields.geojson`; `POST /api/area/fields` | Every field shape on the map; correct them (add, split, merge, remove) |
 | `POST /api/cases/{id}/close`; `POST /api/admin/reset` | Record a finding; reopen closed cases in the area |
 
 ## Building an area by hand
@@ -176,6 +182,9 @@ python scripts/build_dataset.py --area data/areas/niphad
 
 # detect the alerts
 python scripts/build_cases.py --area data/areas/niphad
+
+# correct one field shape; only what it touches is read again, then the alerts
+python scripts/edit_fields.py --area data/areas/<id> --op '{"op": "remove", "key": "ftw-4110685"}'
 ```
 
 ## Configuration
@@ -210,6 +219,7 @@ python -m pytest
 - **Engine logic** is tested on a small hand-built fixture with known answers: an edge drop, a hazy pass, a boundary artefact, a pruning wave, a spreading patch, standing water.
 - **The real Niphad data** is tested for invariants: polygons, grids and scenes line up, cloudy passes carry no values, every case cites only evidence it has, and the API serves a whole case.
 - **Accounts and areas** are tested for sign-in, area scoping (one officer never sees another area's cases or findings), area validation, the inferred harvest season, and input checks on the tile and overview routes.
+- **Field shapes** are tested for the gap fill between Fields of the World years, the land with no shape (without the slivers between shapes), each correction (draw, split, merge, remove, and the ones that must be refused), and that the demo area cannot be corrected.
 
 The fixture exists only for tests. The product never reads it.
 
@@ -219,6 +229,7 @@ The fixture exists only for tests. The product never reads it.
 - **Cloud gaps.** In the monsoon, days can pass without a clear view. Those passes are shown as gaps, never as numbers.
 - **Not modelled yet:** red-edge (NDRE) evidence, elevation for waterlogging, and a real crop calendar. Storm damage and waterlogging are scored from weather only.
 - **The region overview is a screen.** It shows where greenness dropped, not why. The diagnosis comes from marking the land and building it.
+- **Field shapes are not complete.** No automatic map finds every smallholder field. Around Vairag (Solapur), Fields of the World puts a shape on under half the land; most of the rest is roads, houses and trees, but some is fields the model missed or joined together. The map shows those gaps, and the officer closes them with **Correct fields**. A field the officer draws under 0.2 ha is shown but, like any field that small, not watched.
 - **Accounts are deliberately simple:** a username and PIN, with no password reset or roles.
 
 ## Project layout
@@ -231,7 +242,7 @@ backend/tests    engine logic on a fixture, invariants on the real data, account
 frontend/src     pages/ (SignIn, Setup, Home, Inbox, Case, Checklist), components/, styles/, session.tsx, api.ts
 data/            checks.json, areas/niphad/ (the shipped demo area), areas/<id>/ built at runtime
 scripts/         build_area.py, ftw_global.py, ftw_fields.py, export_s2.py, fetch_weather.py,
-                 build_dataset.py, build_cases.py
+                 build_dataset.py, build_cases.py, edit_fields.py
 DESIGN.md        the visual language
 idea.md          the concept, the hypothesis table and the reasoning behind it
 ```
