@@ -101,7 +101,7 @@ export function Diagnosis({ r }: { r: CaseResult }) {
       {r.outcome === "unexplained" && (
         <div className="outcome-card outcome-unexplained">
           <div className="eyebrow">Unexplained</div>
-          <h3>Visit: no cause clears the evidence bar</h3>
+          <h3>{r.update ? "None of the current explanations fits well" : "Visit: no cause clears the evidence bar"}</h3>
           <p className="outcome-reason">The drop is real, but the evidence does not separate the causes well enough to name one. FieldDx would rather say so than guess.</p>
         </div>
       )}

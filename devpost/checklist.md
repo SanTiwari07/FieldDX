@@ -39,7 +39,7 @@ Build mode: fast (switched from learn after slice 1, at the learner's request)
   Learner check: Record Leaves clean on Field 128 and read the case top to bottom. Can you tell at a glance what changed, why, and what to do next, without anything saying confirmed?
   Commit: `Show the investigation update after a finding`
 
-- [ ] **4. Honest edge cases: no cause fits, and a drip line found working**
+- [x] **4. Honest edge cases: no cause fits, and a drip line found working**
   Becomes usable: A finding that leaves every cause ruled out shows that none of the current explanations fits well and suggests a call or visit. Recording Drip line working on its own rules out irrigation failure without reviving nutrient deficiency. The phone dock and inbox read correctly.
   Why now: These protect the principles (no forced diagnosis, reversible but never arbitrary) once the main loop is solid. They are not in the video, so they come after it works.
   PRD ref: `prd.md > When No Cause Fits`, `prd.md > Reversible but Never Arbitrary`, `prd.md > States and Boundaries`
@@ -75,3 +75,5 @@ Activity mode: not started
 - The test fixture's irrigation-led case (HERO) now also starts at the leaf undersides rather than the drip line — the corrected evidence rules apply to every field, so the test was updated to the computed answer instead of special-casing it.
 - The check's on-screen label is "Photograph leaf undersides in the affected patch" (its existing wording in `data/checks.json`); the planning docs' "inspect the leaf undersides" refers to this same check.
 - Early hands-on checkpoint folded into the final review — the learner switched to fast mode after slice 1 and asked for all slices quickly, so the loop is tried once, end to end, at the final checkpoint.
+- Drip line working as a first finding is tested by pointing the case at the drip-line check in the test, because the API (like the checklist) only accepts the check the case is waiting for. On screen it is shown as the second step after Leaves clean.
+- The page text after an update contains the phrase still leading, not confirmed. That is the PRD's own wording, so the mechanical check reads: no cause is labelled confirmed.

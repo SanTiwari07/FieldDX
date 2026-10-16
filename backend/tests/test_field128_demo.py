@@ -73,3 +73,46 @@ def test_the_update_says_what_moved_what_did_not_and_never_confirms():
     text = cf.summary.text + " ".join(ln.text for h in cf.hypotheses for ln in h.why)
     assert "Investigation updated" in cf.summary.text and "stays open" in cf.summary.text
     assert "confirmed" not in text.lower()
+
+
+def test_drip_line_working_next_rules_out_irrigation_without_reviving_nutrients():
+    r = after(("leaf_undersides", "clean"), ("drip_line", "wet"))
+    s = scores(r)
+    assert s["H7"] == (0.0, "ruled_out")             # irrigation failure ruled out by the working drip line
+    assert s["H9"] == (0.0, "ruled_out")             # nutrient deficiency is not revived by it
+    assert s["H8"] == (0.2, "leading")               # the one cause left: best remaining fit, still weak
+    assert {m.id: m.movement for m in r.update.moves}["H9"] == "unchanged"
+    assert r.outcome == "field_case" and r.next_check.check_id == "visit"
+    assert "call the farmer or visit" in r.next_check.reason
+
+
+def test_drip_line_working_as_a_first_finding_only_counts_against_irrigation():
+    # the checklist only offers the recommended check, so point the case at the drip line to test the rule alone
+    base = build_case(AREA, "F128")
+    drip = next(c for c in base.next_check.candidates if c.check_id == "drip_line")
+    base.next_check = base.next_check.model_copy(update={"check_id": "drip_line", "label": drip.label})
+    from datetime import datetime
+    from app.resolve import apply_finding
+    r = apply_finding(base, "drip_line", "wet", "", datetime(2026, 10, 16, 10, 0))
+    s = scores(r)
+    assert s["H7"] == (0.0, "ruled_out") and s["H8"] == (0.7, "leading") and s["H9"] == (0.0, "ruled_out")
+
+
+def test_a_finding_that_leaves_no_cause_standing_says_none_fits():
+    # a constructed starting point: pests is the only live cause, and clean leaves count against it
+    from datetime import datetime
+    from app.narrative import template_narrative, validate_narrative
+    from app.resolve import apply_finding
+    base = build_case(AREA, "F128")
+    for h in base.hypotheses:
+        if h.id == "H7":
+            h.score, h.status = 0.0, "ruled_out"
+        if h.id == "H8":
+            h.score = 0.5
+    r = apply_finding(base, "leaf_undersides", "clean", "", datetime(2026, 10, 16, 10, 0))
+    assert all(h.status == "ruled_out" for h in r.hypotheses if h.stage == 3)
+    assert r.outcome == "unexplained" and r.next_check.check_id == "visit"
+    cf = template_narrative(r)
+    assert validate_narrative(cf, r) == []
+    assert "None of the current explanations fits well" in cf.summary.text
+    assert "confirmed" not in cf.summary.text.lower()

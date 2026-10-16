@@ -27,7 +27,7 @@ function Verdict({ r }: { r: CaseResult }) {
   if (r.outcome === "unexplained" || !lead) {
     return (
       <div className="verdict v-unexplained">
-        <p className="v-kicker">The drop is real, the cause is not clear yet</p>
+        <p className="v-kicker">{r.update ? "None of the current explanations fits well" : "The drop is real, the cause is not clear yet"}</p>
         <h2>Ask the farmer or visit</h2>
         <p>{said || "The satellite data does not separate the possible causes well enough to name one. FieldDx would rather say so than guess."}</p>
       </div>

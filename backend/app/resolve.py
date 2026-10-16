@@ -84,6 +84,9 @@ def apply_finding(base: CaseResult, check_id: str, outcome_key: str, note: str, 
     # the next check is chosen again from what is still live, skipping checks already done
     done = {e.data.get("check_id") for e in r.evidence if e.tool == "field_visit"}
     live = [h.id for h in ordered if h.status != "ruled_out"]
+    if not live:
+        # none of the current explanations fits: keep the finding, force no diagnosis, ask or visit
+        r.outcome = "unexplained"
     new = choose(live, r.check_context, done)
     if new is None and "visit" not in done:
         new = visit_check(r.field.klass)

@@ -63,13 +63,22 @@ def template_narrative(r: CaseResult) -> CaseFile:
     ranked = [by_id[i] for i in explained_ids(r)]
     if r.outcome == "unexplained" or not ranked:
         ids = _tool_ids(r, "ndvi_series", "spatial_pattern", "neighbour_compare") or _tool_ids(r, "ndvi_series")
-        summary = CaseFileLine(
-            text=(
-                "The drop is real and confirmed, but no hypothesis clears the evidence bar, so FieldDx will not guess. "
-                "A visit is needed, and the checklist below covers the usual suspects."
-            ),
-            evidence_ids=ids,
-        )
+        if r.update is not None:
+            u = r.update
+            summary = CaseFileLine(
+                text=(f"Investigation updated after a field visit: {u.outcome_label.lower()} ({u.evidence_id}). "
+                      "None of the current explanations fits well, so FieldDx will not force a diagnosis. "
+                      "A call or a visit is the next step, and the case stays open."),
+                evidence_ids=[u.evidence_id],
+            )
+        else:
+            summary = CaseFileLine(
+                text=(
+                    "The drop is real and confirmed, but no hypothesis clears the evidence bar, so FieldDx will not guess. "
+                    "A visit is needed, and the checklist below covers the usual suspects."
+                ),
+                evidence_ids=ids,
+            )
         expl = [
             HypothesisExplainer(
                 id=h.id,
