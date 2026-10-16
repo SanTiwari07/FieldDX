@@ -219,7 +219,7 @@ export default function FieldsMap({ fieldId }: { fieldId?: string }) {
   shapesOut.forEach((o) => bump(`o:${o.properties.status}`));
   const gapHa = gaps.reduce((a, g) => a + g.properties.area_ha, 0);
 
-  // what the officer marks is white and ink, as on the setup map (DESIGN.md): a picked shape is ink at 50%
+  // what the officer marks is white and ink, as on the setup map (docs/DESIGN.md): a picked shape is ink at 50%
   const selStyle = { color: "#ffffff", weight: 3.5, opacity: 1, dashArray: undefined, fillColor: "#101c16", fillOpacity: 0.5 };
   const interactiveKey = `${tool ?? "view"}-${drawing ? "d" : "s"}`;
 

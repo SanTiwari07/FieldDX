@@ -19,7 +19,7 @@ the downloaded area, and up to 12 ha. A field of 0.8 ha or more with a compact s
 least 2 pixels is read in eight zones ("zoned"). A smaller, thinner or irregular field of at least 0.2 ha
 is read as one zone ("whole"): its core pixels, the shape shrunk half a pixel, at least 10 of them.
 
-Zones follow idea.md section 4.2: the analysis area is the shape shrunk 10 m (drops boundary-mixed
+Zones follow docs/idea.md section 4.2: the analysis area is the shape shrunk 10 m (drops boundary-mixed
 pixels), the interior is shrunk a further 20 m split into four quadrants, the edge ring between them is
 split into N, E, S, W, and the unshrunk 20 m ring (raw_edge_*) exists only for the boundary check.
 

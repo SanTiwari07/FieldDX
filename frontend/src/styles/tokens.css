@@ -1,4 +1,4 @@
-/* Design tokens from DESIGN.md. Chrome stays quiet; colour is for data and for what needs the officer.
+/* Design tokens from docs/DESIGN.md. Chrome stays quiet; colour is for data and for what needs the officer.
    Lichen canvas, monsoon-teal ink, turmeric for "needs you". Display: Bricolage Grotesque. Body: Figtree. */
 :root {
   --canvas: #ffffff;

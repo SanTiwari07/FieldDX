@@ -6,7 +6,7 @@
 
 **Hackathon:** Devpost — Build With AI: Basics · Category: Agriculture · Deadline: Oct 26, 2026, 5:00 pm EDT (Oct 27, 2:30 am IST)
 
-> **Status.** This is the concept the project started from. The [README](README.md) describes what is built. The main change since: FieldDx is no longer one fixed cluster near Nashik. An officer signs in, picks their region anywhere, sees what is changing across it, marks the land they look after, and FieldDx builds that area from real data on demand. Sections 4, 8 and 10 are updated to match.
+> **Status.** This is the concept the project started from. The [README](../README.md) describes what is built. The main change since: FieldDx is no longer one fixed cluster near Nashik. An officer signs in, picks their region anywhere, sees what is changing across it, marks the land they look after, and FieldDx builds that area from real data on demand. Sections 4, 8 and 10 are updated to match.
 
 ---
 

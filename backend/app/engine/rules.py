@@ -1,4 +1,4 @@
-"""The hypothesis table (idea.md section 6) as data.
+"""The hypothesis table (docs/idea.md section 6) as data.
 
 A rule is a list of weighted conditions over facts the tools produce. Supports sum to at most 1.
 A condition whose fact is missing is "unknown": it counts neither way and is shown as unknown.

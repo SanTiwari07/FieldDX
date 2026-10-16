@@ -355,7 +355,7 @@ Sign in                        the demo area is one tap; an account is a usernam
 
 The map paints the field as its real 10 m pixels on satellite imagery: NDVI, change against each pixel's own baseline, or plain satellite. Any pass can be picked from the scene bar, two dates compared side by side, and a pixel inspected under the pointer. Cloudy passes stay in the scene bar, disabled, and never show a number. Zones follow the real shape: the shape shrunk 10 m for analysis, four interior quadrants, four edges, and an unshrunk 20 m ring used only by the boundary check.
 
-The full hypothesis table and the reasoning behind it are in [idea.md](idea.md). The visual language is in [DESIGN.md](DESIGN.md).
+The full hypothesis table and the reasoning behind it are in [docs/idea.md](docs/idea.md). The visual language is in [docs/DESIGN.md](docs/DESIGN.md).
 
 </details>
 
@@ -492,9 +492,10 @@ frontend/src     pages/ (SignIn, Setup, Home, Inbox, Case, Checklist), component
 data/            checks.json, areas/niphad/ (the shipped demo area), areas/<id>/ built at runtime
 scripts/         build_area.py, ftw_global.py, ftw_fields.py, export_s2.py, fetch_weather.py,
                  build_dataset.py, build_cases.py, edit_fields.py
-docs/            brand/ (logo, banner, triage graphic), screenshots/
-DESIGN.md        the visual language
-idea.md          the concept, the hypothesis table and the reasoning behind it
+docs/            brand/ (logo, banner, triage graphic), screenshots/,
+                 DESIGN.md (the visual language), idea.md (the concept, the hypothesis table and the reasoning behind it)
+devpost/         scope.md, prd.md, spec.md: the hackathon planning docs from the Devpost Learn skills
+.agents/skills/  the Devpost Learn skill pack (1-start to 6-ship)
 ```
 
 </details>

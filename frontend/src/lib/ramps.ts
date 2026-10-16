@@ -4,7 +4,7 @@
  * NDVI: the discrete 0.05-step scale and the interpretation bins are carried over from the author's
  * earlier project (Pragya), which follows the EOS NDVI colormap convention: each colour applies from
  * its threshold up to the next one. Change: FieldDx's own brown-to-teal ramp for change against the
- * field's baseline (see DESIGN.md).
+ * field's baseline (see docs/DESIGN.md).
  */
 
 export type Stop = [number, string];

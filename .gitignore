@@ -42,3 +42,6 @@ data/areas/*/build.json
 # copies of the skill pack the installer makes for other agents (.agents/skills is the one in git)
 agent/
 data/skills/
+
+# local agent settings and test accounts
+.claude/
