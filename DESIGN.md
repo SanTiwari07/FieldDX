@@ -361,7 +361,8 @@ Three rules shape everything:
 - **Text secondary / tertiary** #5c6670 / #737b82: labels, metadata, dismissed rows. Tertiary is the lightest grey that still passes 4.5:1 on white.
 
 ### Brand
-- **Brand** `{colors.brand}` #065f2c: the wordmark and "resolved" status only. Never a button, never a map colour.
+- **Brand** `{colors.brand}` #123232: the wordmark and "resolved" status only. Never a button, never a map colour.
+- **Mark**: a field read as a 3 by 3 grid of zones on a #123232 rounded square, the eight outer zones white at 50%, the centre one turmeric (the flagged zone). One drawing everywhere: `components/Mark.tsx` in the app, `public/favicon.svg` for the tab, `public/apple-touch-icon.png` for a phone home screen.
 
 ### Severity (inbox)
 | Level | Text | Fill | Icon | Word |
