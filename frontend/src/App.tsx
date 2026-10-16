@@ -61,7 +61,7 @@ function OfficerMenu() {
         <div className="menu-pop" role="menu">
           <div className="menu-who"><strong>{me.officer.name}</strong><small>@{me.officer.username}</small></div>
           {!me.officer.demo && <button type="button" role="menuitem" onClick={changeArea}><MapPinned size={14} aria-hidden /> Change area</button>}
-          {ready && <button type="button" role="menuitem" onClick={reset} title="Reopen closed cases and clear stored narratives in this area"><RotateCcw size={14} aria-hidden /> Reset closed cases</button>}
+          {ready && <button type="button" role="menuitem" onClick={reset} title="Clear recorded findings and stored narratives in this area"><RotateCcw size={14} aria-hidden /> Reset findings</button>}
           <button type="button" role="menuitem" onClick={out}><LogOut size={14} aria-hidden /> Sign out</button>
         </div>
       )}

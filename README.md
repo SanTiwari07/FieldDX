@@ -166,13 +166,17 @@ A doctor orders the one test that separates the top two diagnoses, not ten tests
 
 | Check | Minutes | Splits the two? | Score | |
 |---|---:|---|---:|---|
-| Check the drip line and valve on the south edge | 5 | cleanly | 0.20 | **chosen** |
-| Photograph leaf undersides in the affected patch | 4 | one way only | 0.125 | |
-| Dig 10 cm in the affected zone and feel the soil | 10 | cleanly | 0.10 | |
-| Note which leaves are yellowing, old or new | 2 | no | 0 | |
-| Look for standing water and check the soil | 2 | no | 0 | |
+| Photograph leaf undersides in the affected patch | 4 | one way only | 0.125 | **chosen** |
+| Check the drip line and valve on the south edge | 5 | one way only | 0.1 |  |
+| Dig 10 cm in the affected zone and feel the soil | 10 | one way only | 0.05 |  |
+| Note which leaves are yellowing, old or new | 2 | no | 0 |  |
+| Look for standing water and check how wet the soil is | 2 | no | 0 |  |
 
-The officer sees the same table under *Why this check?*. Drip line dry points to irrigation failure; wet means inspect the leaf undersides for thrips and mildew.
+The officer sees the same table under *Why this check?*. A result only separates two causes if it supports one and counts against the other: a working drip line counts against irrigation failure but is not evidence for pests, so the leaf check is as informative and a minute cheaper.
+
+### A finding updates the investigation, it does not close it
+
+The officer records what they found at the recommended check. The finding becomes evidence, moves only the causes `data/checks.json` says it supports or contradicts, and the next check is chosen again from what is still live (`backend/app/resolve.py`). For Field 128, *Leaves clean* makes pest or disease spread less likely (0.7 to 0.2). Irrigation failure is unchanged at 0.4 and now ranks first because pests weakened, and the next check becomes the drip line on the south edge. The case shows *Investigation updated · still open*, with a word label and a reason for every cause. No cause is ever marked confirmed by ruling another out. If a finding leaves no cause standing, the case says none of the current explanations fits well and asks for a call or visit.
 
 ### Where the language model sits, and where it does not
 
@@ -259,7 +263,7 @@ FieldDx starts in India because that is where the gap between imagery and action
 | **AgriStack** Digital Crop Survey, 23.90 crore plots across 461 districts in Rabi 2024-25<sup>[4]</sup> | The crop sown registry would replace FieldDx's biggest assumption, *the crop is not known*, with the crop the surveyor recorded. |
 | **PMFBY** and **YES-TECH**, with a 30 % weightage on remote-sensing yields for paddy and wheat since Kharif 2023<sup>[5]</sup> | Triage before a loss assessment: which drops are cloud, harvest or area-wide, and which fields need a person on the ground. |
 | **10,000 FPOs** under the national scheme<sup>[3]</sup> | One officer, one area, one inbox per FPO, with cases and findings shared between colleagues in the same area. |
-| **Krishi Vigyan Kendras** and state extension | The closed cases become a record of what officers actually found, field by field, season by season. |
+| **Krishi Vigyan Kendras** and state extension | Recorded findings become a record of what officers actually found, field by field, season by season. |
 
 ## Then the world
 
@@ -296,7 +300,7 @@ The people who would use it are the same everywhere: an extension worker with a 
 - The crop from AgriStack's crop sown registry instead of *perennial or seasonal*.
 - Elevation for waterlogging, and rainfall from the area's own gauges where they exist.
 - More Indian languages for the case file and Ask FieldDx, starting with Kannada, Telugu and Punjabi.
-- Learning from closed cases: what officers found, used as priors for the next case in the same area.
+- Learning from past findings: what officers found, used as priors for the next case in the same area.
 
 ## Run it
 
@@ -327,7 +331,9 @@ pip install -r scripts/requirements.txt
 earthengine authenticate
 ```
 
-Run the tests with `python -m pytest` in `backend/`.
+Run the tests with `python -m pytest` in `backend/`. `tests/test_field128_demo.py` checks the demo case on the real data: the first check, and what *Leaves clean* changes.
+
+For a demo recording, set `FIELDDX_LLM=off` so the case file always comes from the template, and run `python scripts/reset_demo.py` before each take.
 
 ## Reference
 
@@ -341,7 +347,7 @@ Sign in                        the demo area is one tap; an account is a usernam
   -> FieldDx builds it         real field shapes, a year of Sentinel-2, weather, then the alerts
   -> Today                     how many fields need you, where every other alert went, the fields to start with
   -> A field                   the likely cause in plain words, what else it could be, and the one check
-  -> Visit and close           the finding becomes evidence and the ranking updates
+  -> Record a finding          it becomes evidence, the ranking updates, the next check is chosen again
   Ask FieldDx, anywhere        questions about any field, answered from the area's own records
 ```
 
@@ -398,7 +404,7 @@ Only `data/areas/niphad` is in git. Areas built at runtime stay on the machine t
 | `GET /api/cases`, `/api/cases/{id}` and `/investigate`, `/map`, `/series`, `/raster` | Cases, the live investigation stream, map and timeline data |
 | `GET /api/fields.geojson`; `POST /api/area/fields` | Every field shape on the map; correct them (add, split, merge, remove) |
 | `POST /api/ask` | Ask FieldDx: `question`, an optional `case_id` and the last turns |
-| `POST /api/cases/{id}/close`; `POST /api/admin/reset` | Record a finding; reopen closed cases in the area |
+| `POST /api/cases/{id}/findings`; `POST /api/admin/reset` | Record a finding at the recommended check (the case stays open); clear the area's findings |
 
 </details>
 
@@ -459,7 +465,7 @@ Set these in the environment or in a `.env` file at the repository root (see `.e
 | `FIELDDX_FTW_GLOBAL` | Source Cooperative | Base URL of the FTW Global partitions. |
 | `FIELDDX_API` | `http://127.0.0.1:8000` | Frontend only: where the dev server proxies `/api`. |
 
-*Reset closed cases* in the officer menu clears closed cases and stored narratives in the signed-in officer's area, so a demo can start clean.
+The reset in the officer menu clears recorded findings and stored narratives in the signed-in officer's area, so a demo can start clean. From a terminal, `python scripts/reset_demo.py` does the same for the Niphad demo area.
 
 </details>
 
