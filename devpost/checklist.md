@@ -51,24 +51,26 @@ Build mode: fast (switched from learn after slice 1, at the learner's request)
 
 ## Hands-on Checkpoints
 
-- [ ] Early usable behavior explored — folded into the final kick-the-tires session (fast mode, learner asked to build all slices quickly)
-- [ ] Final kick-the-tires exploration and feedback completed
+- [x] Early usable behavior explored — folded into the final kick-the-tires session (fast mode, learner asked to build all slices quickly)
+- [x] Final kick-the-tires exploration and feedback completed — learner ran Leaves clean, then Drip line working, on Field 128; no issues reported
 
 ## Final Review
 
-- [ ] Final review complete — feedback resolved and learner confirms ready to ship
+No changes requested: the learner ran the full demo and found everything right.
+
+- [x] Final review complete — feedback resolved and learner confirms ready to ship
 
 ## Code Tour and App Map
 
-- [ ] Learning activity complete — guided route, focused alternative, prior practice connected, or brief recap
-- [ ] Optional edit and transfer reflection addressed — offered/declined/already covered/not applicable as appropriate
-- [ ] `devpost/app-map.html` generated from finished code, checked, and shown, including a project-grounded practice to reuse
+- [x] Learning activity complete — prior practice connected (the spec's evidence-rule simulation on Field 128)
+- [x] Optional edit and transfer reflection addressed — edit not applicable (fast mode, learner asked for a quick finish); reflection question offered
+- [x] `devpost/app-map.html` generated from finished code, checked, and shown, including a project-grounded practice to reuse
 
-Activity and evidence: not started
-Route and stops: not started
-Edit outcome: not started
-Reflection: not started
-Activity mode: not started
+Activity and evidence: connected an existing moment instead of a new exercise. In `4-spec`, simulating the corrected evidence rule on the real Field 128 case changed the computed first check from the drip line to the leaf undersides, and a looser scoring rule was rejected after simulation (`spec.md > Decisions and Open Issues`). `test_before_any_finding_the_leaf_undersides_come_first` pins it.
+Route and stops: reference route only, not toured live: `NextCheck.tsx` CloseCaseForm / `Checklist.tsx` saved → `main.py` record_finding, `db.py` add_finding, `service.py` effective_case → `resolve.py` apply_finding, _moves; `next_check.py` choose
+Edit outcome: not applicable
+Reflection: offered
+Activity mode: prior practice connected, with a reference app map
 
 ## Revisions
 

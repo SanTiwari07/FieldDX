@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FieldDx App Map</title>
+<meta name="description" content="A compact guide to how FieldDx turns an officer's finding into an updated investigation: the pieces, one action traced through the code, where to start a change, and a practice to reuse.">
+<style>
+  :root {
+    --canvas: #ffffff; --canvas-subtle: #f2f4ee; --canvas-sunken: #e8ece4;
+    --border: #dfe4da; --border-strong: #c7cfc2;
+    --ink: #123232; --text: #142222; --text-2: #4d5c58; --text-3: #6c7a76; --on-ink: #ffffff;
+    --brand-wash: #e3ece8; --turmeric: #d99a1e; --turmeric-soft: #fbf1dc; --turmeric-ink: #7a5208;
+    --r-sm: 8px; --r-md: 12px;
+    --font: Figtree, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --display: "Bricolage Grotesque", var(--font);
+    --mono: ui-monospace, "Cascadia Code", Consolas, monospace;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --canvas: #142020; --canvas-subtle: #0e1717; --canvas-sunken: #1a2828; --border: #2a3a38; --border-strong: #3a4c4a;
+      --ink: #cfe3dc; --text: #e6eeea; --text-2: #a9bab4; --text-3: #84958f; --on-ink: #0e1717; --brand-wash: #1d2f2c;
+      --turmeric: #e5ad3e; --turmeric-soft: #2e2512; --turmeric-ink: #f0c66e; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --canvas: #142020; --canvas-subtle: #0e1717; --canvas-sunken: #1a2828; --border: #2a3a38; --border-strong: #3a4c4a;
+    --ink: #cfe3dc; --text: #e6eeea; --text-2: #a9bab4; --text-3: #84958f; --on-ink: #0e1717; --brand-wash: #1d2f2c;
+    --turmeric: #e5ad3e; --turmeric-soft: #2e2512; --turmeric-ink: #f0c66e; color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--canvas-subtle); color: var(--text); font: 16px/1.6 var(--font); }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 32px 16px 64px; }
+  h1, h2, h3 { font-family: var(--display); line-height: 1.2; margin: 0; }
+  h1 { font-size: clamp(1.9rem, 5vw, 2.5rem); letter-spacing: -.02em; }
+  h2 { font-size: 1.25rem; margin-bottom: 8px; }
+  h3 { font-size: 1rem; }
+  p { margin: 0 0 10px; }
+  code { font-family: var(--mono); font-size: .86em; background: var(--canvas-sunken); padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; }
+  pre { font-family: var(--mono); font-size: .84rem; background: var(--canvas-sunken); border: 1px solid var(--border); border-radius: var(--r-sm); padding: 10px 12px; overflow-x: auto; margin: 6px 0 10px; }
+  .eyebrow { font-size: .76rem; letter-spacing: .08em; text-transform: uppercase; color: var(--text-3); font-weight: 600; }
+  .sub { color: var(--text-2); }
+  section { background: var(--canvas); border: 1px solid var(--border); border-radius: var(--r-md); padding: 22px; margin-bottom: 14px; }
+  header.top { margin-bottom: 22px; }
+  header.top .sub { max-width: 62ch; margin-top: 8px; font-size: 1.08rem; }
+  ul.pieces { margin: 0; padding-left: 18px; }
+  ul.pieces li { margin-bottom: 6px; }
+  .diagram-scroll { overflow-x: auto; }
+  .diagram-scroll svg { display: block; min-width: 560px; width: 100%; height: auto; }
+  svg .n rect { fill: var(--canvas); stroke: var(--border-strong); stroke-width: 1.2; }
+  svg .n.k rect { fill: var(--ink); stroke: var(--ink); }
+  svg .n.k text { fill: var(--on-ink); }
+  svg .n.s rect { fill: var(--canvas-subtle); }
+  svg text { fill: var(--text); font: 600 13px var(--font); }
+  svg text.f { fill: var(--text-3); font: 11px var(--mono); }
+  svg .n.k text.f { fill: var(--on-ink); opacity: .75; }
+  svg .w { stroke: var(--text-3); stroke-width: 1.4; fill: none; }
+  svg .ah { fill: var(--text-3); }
+  ol.route { margin: 0; padding: 0; list-style: none; counter-reset: s; display: grid; gap: 10px; }
+  ol.route li { counter-increment: s; position: relative; padding: 12px 14px 12px 48px; background: var(--canvas-subtle); border-radius: var(--r-sm); }
+  ol.route li::before { content: counter(s); position: absolute; left: 14px; top: 12px; width: 24px; height: 24px; border-radius: 50%; background: var(--ink); color: var(--on-ink); font: 700 13px/24px var(--font); text-align: center; }
+  ol.route .where { font-size: .86rem; color: var(--text-3); }
+  table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { font-size: .78rem; text-transform: uppercase; letter-spacing: .06em; color: var(--text-3); font-weight: 600; }
+  .practice { border-left: 4px solid var(--turmeric); background: var(--turmeric-soft); }
+  .practice h2 { color: var(--turmeric-ink); }
+  details { border: 1px solid var(--border); border-radius: var(--r-sm); margin-top: 10px; background: var(--canvas); }
+  details summary { cursor: pointer; padding: 10px 12px; font-weight: 600; }
+  details > div { padding: 0 12px 12px; }
+  summary:focus-visible, a:focus-visible { outline: 2px solid var(--turmeric); outline-offset: 2px; }
+  .foot { font-size: .85rem; color: var(--text-3); }
+  @media (max-width: 600px) { th:nth-child(3), td:nth-child(3) { display: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="eyebrow">FieldDx · App map</div>
+    <h1>How a finding becomes an updated investigation</h1>
+    <p class="sub">A take-home guide to the proof of concept: the main pieces, one action traced through the real code, where to start a change, and one practice worth reusing.</p>
+  </header>
+
+  <section>
+    <h2>The pieces</h2>
+    <ul class="pieces">
+      <li><b>The engine</b> (<code>backend/app</code>, Python and FastAPI) builds each case from the shipped Niphad satellite and weather data, scores the causes and picks the next check. Plain rules, so the same field always gives the same answer.</li>
+      <li><b>The check list</b> (<code>data/checks.json</code>) says what each field result supports and what it counts against. The evidence rules live here.</li>
+      <li><b>The findings store</b> (<code>case_findings</code> in SQLite, via <code>backend/app/db.py</code>) keeps every finding an officer records, in order.</li>
+      <li><b>The screens</b> (<code>frontend/src</code>, React and TypeScript) show the case and the field checklist.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>One action: recording Leaves clean on Field 128</h2>
+    <div class="diagram-scroll">
+      <svg viewBox="0 0 860 200" role="img" aria-label="Field checklist posts the finding; the API stores it; the case is rebuilt by replaying findings, which moves only the named causes and recomputes the next check; the case screen shows the update">
+        <defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+        <g class="n"><rect x="10" y="20" width="170" height="64" rx="10"/><text x="24" y="46">Field checklist</text><text class="f" x="24" y="68">Checklist.tsx</text></g>
+        <g class="n"><rect x="230" y="20" width="170" height="64" rx="10"/><text x="244" y="46">Findings API</text><text class="f" x="244" y="68">main.record_finding</text></g>
+        <g class="n s"><rect x="450" y="20" width="170" height="64" rx="10"/><text x="464" y="46">Findings store</text><text class="f" x="464" y="68">db.add_finding</text></g>
+        <g class="n k"><rect x="230" y="118" width="210" height="64" rx="10"/><text x="244" y="144">Replay and re-assess</text><text class="f" x="244" y="166">resolve.apply_finding</text></g>
+        <g class="n s"><rect x="490" y="118" width="150" height="64" rx="10"/><text x="504" y="144">Check list</text><text class="f" x="504" y="166">data/checks.json</text></g>
+        <g class="n"><rect x="680" y="118" width="170" height="64" rx="10"/><text x="694" y="144">Case screen</text><text class="f" x="694" y="166">InvestigationUpdate</text></g>
+        <path class="w" d="M180 52 H228" marker-end="url(#a)"/>
+        <path class="w" d="M400 52 H448" marker-end="url(#a)"/>
+        <path class="w" d="M315 84 V116" marker-end="url(#a)"/>
+        <path class="w" d="M488 150 H442" marker-end="url(#a)"/>
+        <path class="w" d="M440 132 C 560 100, 640 100, 678 140" marker-end="url(#a)"/>
+      </svg>
+    </div>
+    <p class="sub" style="margin-top:10px">Result on screen: <i>Investigation updated · still open</i>. Pest or disease spread is less likely (0.7 → 0.2). Irrigation failure is unchanged at 0.4 and now first. The slip moves to the drip line on the south edge.</p>
+  </section>
+
+  <section>
+    <h2>The route through the code</h2>
+    <p class="sub">A reference route: three stops, with real paths and search anchors.</p>
+    <ol class="route">
+      <li><b>The officer saves a result.</b> <code>CloseCaseForm</code> posts it with <code>api.recordFinding</code>, and <code>saved</code> sends the officer back to the case.
+        <div class="where"><code>frontend/src/components/NextCheck.tsx</code> · search <code>CloseCaseForm</code> · <code>frontend/src/pages/Checklist.tsx</code> · search <code>const saved</code></div></li>
+      <li><b>The engine checks it, stores it, and rebuilds the case.</b> <code>record_finding</code> refuses a check the case isn't waiting for, then <code>add_finding</code> saves the row. <code>effective_case</code> rebuilds from shipped data and replays every finding in order.
+        <div class="where"><code>backend/app/main.py</code> · <code>record_finding</code> · <code>backend/app/db.py</code> · <code>add_finding</code> · <code>backend/app/service.py</code> · <code>effective_case</code></div></li>
+      <li><b>Only the named causes move, and the next check is chosen again.</b> <code>apply_finding</code> adjusts the causes in the result's <code>supports</code> and <code>against</code> lists and nothing else. <code>choose</code> skips done checks, and <code>_moves</code> writes each cause's word label and reason.
+        <div class="where"><code>backend/app/resolve.py</code> · <code>apply_finding</code>, <code>_moves</code>, <code>_reason</code> · <code>backend/app/next_check.py</code> · <code>choose</code>, <code>split_score</code></div></li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>To change this, start here</h2>
+    <table>
+      <thead><tr><th>You want to…</th><th>Start in</th><th>Then check</th></tr></thead>
+      <tbody>
+        <tr><td>Change what a field result counts for or against</td><td><code>data/checks.json</code></td><td><code>backend/tests/test_field128_demo.py</code></td></tr>
+        <tr><td>Add a new field check</td><td><code>data/checks.json</code> (<code>checks</code> list)</td><td>Which check <code>choose</code> now picks for Field 128</td></tr>
+        <tr><td>Reword a movement label or reason</td><td><code>backend/app/resolve.py</code> · <code>_moves</code>; chips in <code>NextCheck.tsx</code> · <code>MOVES</code></td><td><code>test_the_update_says_what_moved_what_did_not_and_never_confirms</code></td></tr>
+        <tr><td>Change the case-file summary after a finding</td><td><code>backend/app/narrative.py</code> · <code>_updated</code></td><td>The same test, and <code>validate_narrative</code></td></tr>
+        <tr><td>Restyle the update panel</td><td><code>frontend/src/styles/app.css</code> · <code>.update</code></td><td><code>npm run build</code>, then a look at Field 128</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="practice">
+    <h2>A practice to reuse</h2>
+    <p><b>Write the evidence rule down, then simulate it on the real case before you build.</b> The spec set the rule that a working drip line counts only against irrigation failure. Simulating Field 128 under that rule showed something nobody had planned: the computed first check changed from the drip line to the leaf undersides, and the demo script had to change with it. Trying a looser scoring rule also showed it would treat "not pests" as evidence for irrigation, so the strict rule was kept.</p>
+    <p>Evidence: <code>devpost/spec.md</code> › <i>Decisions and Open Issues</i> (the useful unknown), pinned by <code>test_before_any_finding_the_leaf_undersides_come_first</code> in <code>backend/tests/test_field128_demo.py</code>.</p>
+    <p><b>On another project:</b> whenever a rule decides what a user sees, write the rule down in plain words, run it on one real example before coding, and turn the expected output into a test. Surprises then show up in the plan, while they're still cheap to change.</p>
+  </section>
+
+  <section>
+    <h2>Run it again</h2>
+<pre>cd backend
+pip install -e ".[dev]"
+python -m uvicorn app.main:app --port 8000    # with FIELDDX_LLM=off
+
+cd frontend
+npm install
+npm run dev                                    # open http://localhost:5173, choose Try the demo area
+
+python scripts/reset_demo.py                   # before each demo take
+cd backend
+python -m pytest tests/test_field128_demo.py   # confirms the before-and-after</pre>
+    <details><summary>About this map</summary><div>
+      <p>A snapshot made from commit <code>c144290</code> on main. The code may drift after that. If a path or name here no longer matches, search the repository for the anchor.</p>
+      <p>Planning documents: <code>devpost/scope.md</code>, <code>devpost/prd.md</code>, <code>devpost/spec.md</code>. Build record: <code>devpost/checklist.md</code>.</p>
+    </div></details>
+  </section>
+
+  <p class="foot">FieldDx · Sanskar Tiwari and Shambhavi Patil · Built With AI: Basics</p>
+</div>
+</body>
+</html>
