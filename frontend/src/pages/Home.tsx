@@ -1,13 +1,10 @@
 import { lazy, Suspense, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import {
-  AlertTriangle, ArrowRight, Check, ChevronRight, CircleDashed, EyeOff, Eye, MapPinned, RefreshCw, Satellite,
-  Stethoscope, Tractor, Wheat, X,
-} from "lucide-react";
+import { AlertTriangle, Check, ChevronRight, CircleDashed, MapPin, RefreshCw, Stethoscope, Tractor, X } from "lucide-react";
 import { api, BuildState, BuildStep, HomeData } from "../api";
 import { useSession } from "../session";
-import { fmtDate, fmtDelta } from "../lib/format";
-import { ConfidenceMeter, SeverityBadge, Spinner } from "../components/ui";
+import { fmtDate, plainDrop, sureWord } from "../lib/format";
+import { SeverityBadge, Spinner } from "../components/ui";
 
 const FieldsMap = lazy(() => import("../components/FieldsMap"));
 
@@ -120,37 +117,50 @@ function Building() {
   );
 }
 
-function Funnel({ h }: { h: HomeData }) {
-  const max = Math.max(1, h.fields);
-  const rows = [
-    { key: "fields", label: "Fields watched", n: h.fields, Icon: Satellite, note: "Every clear pass, every 10 m pixel" },
-    { key: "alerts", label: "Raised an alert", n: h.alerts, Icon: AlertTriangle, note: h.detector },
-    ...(h.counts.harvest ? [{ key: "harvest", label: "Harvest under way", n: h.counts.harvest, Icon: Wheat, note: "Dropped in the inferred harvest season after a green crop" }] : []),
-    { key: "dismissed", label: "Dismissed with a reason", n: h.counts.dismissed, Icon: EyeOff, note: h.counts.harvest ? "Cloud, boundary pixels or other field work" : "Cloud, boundary pixels, harvest or pruning" },
-    { key: "area", label: "Area-wide events", n: h.counts.area_alert, Icon: MapPinned, note: "Neighbours changed too, so not one farm's problem" },
-    { key: "watch", label: "Waiting for another pass", n: h.counts.watch, Icon: Eye, note: "Seen once; FieldDx waits before sending anyone" },
-    { key: "visit", label: "Need a call or a visit", n: h.counts.visit, Icon: Stethoscope, note: "Ranked causes and one cheapest check each" },
-  ];
+type Seg = { key: string; label: string; n: number; note: string; to: string };
+
+/** Every alert of the window in one bar: the few that need the officer first, then what FieldDx set aside and why. */
+function Triage({ h }: { h: HomeData }) {
+  const segs: Seg[] = [
+    { key: "visit", label: "Need you", n: h.counts.visit, note: "a call or a visit", to: "/cases#visit" },
+    { key: "watch", label: "Watching", n: h.counts.watch, note: "seen once, waiting for the next pass", to: "/cases#watching" },
+    { key: "area", label: "Area-wide", n: h.counts.area_alert, note: "neighbours changed too", to: "/cases#area" },
+    { key: "harvest", label: "Harvest", n: h.counts.harvest, note: "looks like a crop being cut", to: "/cases#harvest" },
+    { key: "dismissed", label: "Set aside", n: h.counts.dismissed, note: "cloud, field edges or field work", to: "/cases#dismissed" },
+    { key: "resolved", label: "Resolved", n: h.counts.resolved, note: "checked on the ground", to: "/cases#resolved" },
+  ].filter((s) => s.n > 0);
+  const total = Math.max(1, segs.reduce((a, s) => a + s.n, 0));
+  const aside = h.alerts - h.counts.visit;
   return (
-    <ol className="funnel" aria-label="From fields watched to fields that need you">
-      {rows.map(({ key, label, n, Icon, note }) => (
-        <li key={key} className={`funnel-${key}`}>
-          <div className="funnel-label"><Icon size={15} aria-hidden /> <span>{label}</span></div>
-          <div className="funnel-bar" aria-hidden><span style={{ width: `${Math.max(n ? 2 : 0, (n / max) * 100)}%` }} /></div>
-          <div className="funnel-n">{n}</div>
-          <small className="funnel-note">{note}</small>
-        </li>
-      ))}
-    </ol>
+    <section className="triage" aria-labelledby="triage-h">
+      <h2 id="triage-h">
+        {h.alerts} of {h.fields} fields lost green in the last three weeks. {aside > 0 ? `${aside} of them were explained without a visit.` : ""}
+      </h2>
+      <div className="triage-bar" role="img" aria-label={segs.map((s) => `${s.label} ${s.n}`).join(", ")}>
+        {segs.map((s) => <span key={s.key} className={`tb-${s.key}`} style={{ flexGrow: s.n }} />)}
+      </div>
+      <ul className="triage-keys">
+        {segs.map((s) => (
+          <li key={s.key}>
+            <Link to={s.to} className={`tk tk-${s.key}`}>
+              <i aria-hidden />
+              <strong>{s.n}</strong>
+              <span>{s.label}<small>{s.note}</small></span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+      <p className="sr-only">{Math.round((h.counts.visit / total) * 100)}% of alerts need a person.</p>
+    </section>
   );
 }
 
 function greeting(): string {
-  const h = new Date().getHours();
-  return h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
+  const hr = new Date().getHours();
+  return hr < 12 ? "Good morning" : hr < 17 ? "Good afternoon" : "Good evening";
 }
 
-/** Today's briefing: what the satellites saw in your area, what was thrown out, and where to start. */
+/** Today's briefing: one sentence on the area, where the alerts went, and the fields to start with beside the map. */
 function Briefing() {
   const { me } = useSession();
   const [h, setH] = useState<HomeData | null>(null);
@@ -160,61 +170,58 @@ function Briefing() {
   if (error) return <main className="page"><p className="form-error" role="alert">Could not load your area: {error}</p></main>;
   if (!h) return <main className="page"><div className="skeleton-rows" aria-busy="true">{[0, 1, 2].map((i) => <span key={i} />)}</div></main>;
 
+  const v = h.counts.visit;
   return (
     <main className="page home">
       <header className="home-head">
         <div>
-          <div className="eyebrow">{h.area.region || "Your area"}</div>
-          <h1>{greeting()}{me?.officer.demo ? "" : `, ${h.officer.name.split(" ")[0]}`}. Here is {h.area.name}.</h1>
-          <p className="lede">
-            Satellite data to {fmtDate(h.as_of)}{h.last_pass ? `, last pass ${fmtDate(h.last_pass)}` : ""}. Of {h.fields} fields, {h.counts.visit === 0 ? "none need" : h.counts.visit === 1 ? "one needs" : `${h.counts.visit} need`} you today.
-          </p>
+          <p className="home-where"><MapPin size={14} aria-hidden /> {h.area.name}{h.area.region ? `, ${h.area.region.split(",")[0]}` : ""}</p>
+          <h1>
+            {greeting()}{me?.officer.demo ? "" : `, ${h.officer.name.split(" ")[0]}`}.{" "}
+            <span className="h-quiet">{v === 0 ? "No field needs you today." : v === 1 ? "One field needs you today." : `${v} fields need you today.`}</span>
+          </h1>
+          <p className="lede">Satellite passes up to {fmtDate(h.as_of)}{h.last_pass ? `, the latest on ${fmtDate(h.last_pass)}` : ""}. {h.fields} fields watched.</p>
         </div>
-        <Link to="/cases" className="btn btn-primary">Open today's cases <ArrowRight size={15} aria-hidden /></Link>
+        {v > 0 && <Link to="/cases#visit" className="btn btn-primary btn-lg">See the {v} fields</Link>}
       </header>
 
-      <div className="home-grid">
-        <section className="card" aria-labelledby="funnel-h">
-          <h2 id="funnel-h" className="card-h">What FieldDx did with this week's passes</h2>
-          <Funnel h={h} />
-        </section>
+      <Triage h={h} />
 
-        <section className="card" aria-labelledby="start-h">
-          <h2 id="start-h" className="card-h">Start here</h2>
+      <div className="home-work">
+        <section className="start" aria-labelledby="start-h">
+          <h2 id="start-h">Start with these</h2>
           {h.top.length ? (
-            <ul className="start-list">
+            <ol className="start-list">
               {h.top.map((r) => (
                 <li key={r.id}>
                   <Link to={`/case/${r.id}`}>
-                    <SeverityBadge level={r.severity} />
-                    <span className="start-main">
+                    <span className="start-top">
                       <strong>{r.field.name}</strong>
-                      <small>{r.leading}{r.headline ? ` · ΔNDVI ${fmtDelta(r.headline.delta)}, ${r.headline.zone_label.toLowerCase()}` : ""}</small>
+                      <SeverityBadge level={r.severity} />
                     </span>
-                    {r.confidence ? <ConfidenceMeter level={r.confidence} label={false} /> : null}
-                    <ChevronRight size={16} aria-hidden className="chev" />
+                    <span className="start-cause">{r.leading}{r.confidence ? <em className={`sure sure-${r.confidence}`}>{sureWord(r.confidence)}</em> : null}</span>
+                    {r.headline && <small>{plainDrop(r.headline.delta, r.headline.zone_label)}, {fmtDate(r.headline.date)}</small>}
                   </Link>
                 </li>
               ))}
-            </ul>
+            </ol>
           ) : (
             <p className="empty"><Tractor size={18} aria-hidden /> Nothing needs a visit. Every alert was explained by the data.</p>
           )}
-          <Link to="/cases" className="more">All {h.alerts} alerts, including the dismissed ones <ArrowRight size={14} aria-hidden /></Link>
-          <ol className="how">
-            <li><span><strong>Open a case.</strong> The investigation replays: scene quality, the drop, boundary, neighbours, pattern, weather, season.</span></li>
-            <li><span><strong>Read the diagnosis.</strong> Each cause lists evidence for and against, with IDs you can tap.</span></li>
-            <li><span><strong>Do the one check.</strong> Record what you found; the ranking updates and the case closes.</span></li>
-          </ol>
+          <Link to="/cases" className="more">All {h.alerts} fields with an alert <ChevronRight size={14} aria-hidden /></Link>
+          <div className="how-tip">
+            <Stethoscope size={16} aria-hidden />
+            <p>Open a field to see the likely cause in plain words and the one quick check that settles it. Ask FieldDx anything about a field from the button at the bottom right.</p>
+          </div>
+        </section>
+
+        <section className="home-map" aria-labelledby="map-h">
+          <h2 id="map-h" className="sr-only">Your fields on the map</h2>
+          <Suspense fallback={<div className="fieldsmap skeleton" aria-busy="true" />}>
+            <FieldsMap />
+          </Suspense>
         </section>
       </div>
-
-      <section aria-labelledby="map-h">
-        <h2 id="map-h" className="card-h">Your fields on the map</h2>
-        <Suspense fallback={<div className="fieldsmap skeleton" aria-busy="true" />}>
-          <FieldsMap />
-        </Suspense>
-      </section>
     </main>
   );
 }

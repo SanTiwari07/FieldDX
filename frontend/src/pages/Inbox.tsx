@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { ChevronRight, List, Map as MapIcon, Wheat } from "lucide-react";
 import { api, InboxRow, Provenance } from "../api";
 import { fmtDate, fmtDelta } from "../lib/format";
@@ -45,7 +45,7 @@ function Row({ row }: { row: InboxRow }) {
       <span role="cell" className="c-change">
         {h ? (
           <>
-            <span className="num">&Delta;NDVI {fmtDelta(h.delta)}</span>
+            <span className="num">{fmtDelta(h.delta)} green</span>
             <small>{h.zone_label}, {fmtDate(h.date)}</small>
           </>
         ) : (
@@ -74,14 +74,14 @@ function Row({ row }: { row: InboxRow }) {
   );
 }
 
-function Group({ title, note, rows, divider }: { title: string; note?: string; rows: InboxRow[]; divider?: boolean }) {
+function Group({ id, title, note, rows, divider }: { id: string; title: string; note?: string; rows: InboxRow[]; divider?: boolean }) {
   if (!rows.length) return null;
   return (
     <>
-      <h2 className={`group-title ${divider ? "divider" : ""}`}>{title} <span className="count">{rows.length}</span></h2>
+      <h2 id={id} className={`group-title ${divider ? "divider" : ""}`}>{title} <span className="count">{rows.length}</span></h2>
       {note && <p className="group-note">{note}</p>}
       <div className="inbox-head" role="row" aria-hidden>
-        <span>Priority</span><span>Field</span><span>What changed</span><span>Leading explanation</span><span>Confidence</span><span>Status</span>
+        <span>Priority</span><span>Field</span><span>Change</span><span>Likely cause</span><span>How sure</span><span>Status</span>
       </div>
       <div className="rows">{rows.map((r) => <Row key={r.id} row={r} />)}</div>
     </>
@@ -101,7 +101,7 @@ function Harvest({ rows }: { rows: InboxRow[] }) {
   const season = (inSeason[0]?.reason ?? "").replace(/, expected$/, "").replace(/^Harvest season \((.*), inferred\)$/, "$1");
   const across = rows.length - inSeason.length;
   return (
-    <section className="harvest-card" aria-labelledby="harvest-h">
+    <section className="harvest-card" id="harvest" aria-labelledby="harvest-h">
       <div className="harvest-head">
         <Wheat size={20} aria-hidden />
         <div>
@@ -118,7 +118,7 @@ function Harvest({ rows }: { rows: InboxRow[] }) {
       <details>
         <summary>Show the {rows.length} fields</summary>
         <div className="inbox-head" role="row" aria-hidden>
-          <span>Priority</span><span>Field</span><span>What changed</span><span>Leading explanation</span><span>Confidence</span><span>Status</span>
+          <span>Priority</span><span>Field</span><span>Change</span><span>Likely cause</span><span>How sure</span><span>Status</span>
         </div>
         <div className="rows">{rows.map((r) => <Row key={r.id} row={r} />)}</div>
       </details>
@@ -147,9 +147,21 @@ export default function Inbox() {
   const [error, setError] = useState("");
   const [view, setView] = useState<"list" | "map">("list");
 
+  const { hash } = useLocation();
+
   useEffect(() => {
     api.inbox().then(setData).catch((e) => setError(e.message));
   }, []);
+
+  // the briefing links straight to a group: open it and bring it into view
+  useEffect(() => {
+    if (!data || !hash) return;
+    const el = document.getElementById(hash.slice(1));
+    if (el instanceof HTMLElement) {
+      el.querySelector("details")?.setAttribute("open", "");
+      el.scrollIntoView({ block: "start" });
+    }
+  }, [data, hash]);
 
   if (error) return <main className="page"><p className="form-error" role="alert">Could not load the cases: {error}</p></main>;
   if (!data) return <main className="page"><div className="skeleton-rows" aria-busy="true">{[0, 1, 2, 3].map((i) => <span key={i} />)}</div></main>;
@@ -191,12 +203,12 @@ export default function Inbox() {
         </Suspense>
       ) : (
         <section className="inbox" role="table" aria-label="Flagged fields">
-          <Group title="Needs a call or a visit" rows={open} />
-          <Group title="Watching" rows={watching} note="Seen on one clear pass only. FieldDx waits for the next pass before asking anyone to go out." divider />
-          <Group title="Area alerts" rows={area} note="Similar fields nearby changed at the same time, so this is an area event and not a field problem." divider />
-          <Group title="Resolved" rows={resolved} divider />
+          <Group id="visit" title="Needs a call or a visit" rows={open} />
+          <Group id="watching" title="Watching" rows={watching} note="Seen on one clear pass only. FieldDx waits for the next pass before asking anyone to go out." divider />
+          <Group id="area" title="Area alerts" rows={area} note="Similar fields nearby changed at the same time, so this is an area event and not a field problem." divider />
+          <Group id="resolved" title="Resolved" rows={resolved} divider />
           <Harvest rows={harvest} />
-          <Group title="Dismissed automatically" rows={dismissed} note="Never hidden. Each one shows the reason it was thrown out, so you can check the check." divider />
+          <Group id="dismissed" title="Dismissed automatically" rows={dismissed} note="Never hidden. Each one shows the reason it was thrown out, so you can check the check." divider />
           {!data.cases.length && <p className="lede">No alerts in this window.</p>}
         </section>
       )}

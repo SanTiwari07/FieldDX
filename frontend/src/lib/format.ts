@@ -54,3 +54,12 @@ export function useMedia(query: string): boolean {
   }, [query]);
   return match;
 }
+
+/** A drop in NDVI said in words: how much greenness was lost, and where. */
+export function plainDrop(delta: number, zone: string): string {
+  const size = delta <= -0.3 ? "Sharp" : delta <= -0.15 ? "Clear" : "Slight";
+  return `${size} loss of green (${fmtDelta(delta)}), ${zone.toLowerCase()}`;
+}
+
+/** Confidence as an officer would say it. */
+export const sureWord = (c: "high" | "medium" | "low") => (c === "high" ? "Likely" : c === "medium" ? "Possible" : "Weak lead");
