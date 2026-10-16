@@ -38,3 +38,7 @@ data/areas/*/raw/*.npy
 data/areas/*/raw/ftw_*/inference_*
 data/areas/*/build.log
 data/areas/*/build.json
+
+# copies of the skill pack the installer makes for other agents (.agents/skills is the one in git)
+agent/
+data/skills/
