@@ -62,6 +62,8 @@ Set `FIELDDX_LLM=off` before starting the engine (PowerShell: `$env:FIELDDX_LLM=
 
 Submission needs the demo video on YouTube and the public GitHub repo. No deployment for now.
 
+**Public repository:** <https://github.com/SanTiwari07/FieldDX> (public, MIT license, checked for secrets and private files before submission).
+
 **Current demo video:** <https://youtu.be/LRmjZv-JO-s>. It was recorded before this build, so it shows the app's previous behaviour, not the changes proposed in this spec. After the build, the workflow is checked against the real app and the video is re-recorded if it no longer matches.
 
 ## Look and Feel
