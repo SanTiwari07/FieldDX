@@ -121,7 +121,10 @@ def test_edge_drop_in_a_harvest_window_is_still_a_field_case(ds):
     r = case("HERO")
     assert r.outcome == "field_case"
     assert r.hypotheses[0].id == "H7" and r.hypotheses[0].confidence == "high"
-    assert r.next_check.check_id == "drip_line" and "east" in r.next_check.label
+    # a working drip line only counts against irrigation, so the leaf check splits the pair as well and costs less
+    assert r.next_check.check_id == "leaf_undersides"
+    drip = next(c for c in r.next_check.candidates if c.check_id == "drip_line")
+    assert "east" in drip.label and drip.split == 0.5
     assert r.severity in ("high", "medium")
 
 

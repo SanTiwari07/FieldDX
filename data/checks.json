@@ -9,7 +9,7 @@
       "applies_when": "edge_zone",
       "outcomes": {
         "dry": {
-          "label": "Drip line dry",
+          "label": "Drip line not working",
           "then": "points to irrigation failure",
           "supports": [
             "H7"
@@ -20,12 +20,9 @@
           ]
         },
         "wet": {
-          "label": "Drip line wet",
-          "then": "inspect leaf undersides for thrips and mildew",
-          "supports": [
-            "H8",
-            "H9"
-          ],
+          "label": "Drip line working",
+          "then": "counts against irrigation failure; look at the leaf undersides for thrips and mildew",
+          "supports": [],
           "against": [
             "H7"
           ]
@@ -52,10 +49,7 @@
         "moist": {
           "label": "Soil moist",
           "then": "water is reaching the roots, so look for pests or nutrients",
-          "supports": [
-            "H8",
-            "H9"
-          ],
+          "supports": [],
           "against": [
             "H7"
           ]
