@@ -5,7 +5,7 @@ status: approved
 
 # Build Checklist
 
-Build mode: learn
+Build mode: fast (switched from learn after slice 1, at the learner's request)
 
 ## Slices
 
@@ -19,7 +19,7 @@ Build mode: learn
   Learner check: Start the app, choose Try the demo area, open Field 128, and confirm the dark slip now says to inspect the leaf undersides, with pests or lesions visible and leaves clean as the results.
   Commit: `Count working drip lines and moist soil only against irrigation failure`
 
-- [ ] **2. Recording Leaves clean keeps the case open and recalculates the next check**
+- [x] **2. Recording Leaves clean keeps the case open and recalculates the next check**
   Becomes usable: On the field checklist, recording Leaves clean returns to an open case. Pest or disease spread drops to less likely, irrigation failure is unchanged but first, and the slip moves to the drip line on the south edge. The finding survives a reload, and one command resets it.
   Why now: This is the kernel, the feedback loop itself. It needs storage, replay, scoring and the next check working together, so it comes before any presentation work.
   PRD ref: `prd.md > Recording a Finding`, `prd.md > Next Check Responds to the Finding`, `prd.md > States and Boundaries` (persistence)
@@ -51,7 +51,7 @@ Build mode: learn
 
 ## Hands-on Checkpoints
 
-- [ ] Early usable behavior explored — after slice 2, when the feedback loop works end to end, before the presentation work in slice 3
+- [ ] Early usable behavior explored — folded into the final kick-the-tires session (fast mode, learner asked to build all slices quickly)
 - [ ] Final kick-the-tires exploration and feedback completed
 
 ## Final Review
@@ -74,3 +74,4 @@ Activity mode: not started
 
 - The test fixture's irrigation-led case (HERO) now also starts at the leaf undersides rather than the drip line — the corrected evidence rules apply to every field, so the test was updated to the computed answer instead of special-casing it.
 - The check's on-screen label is "Photograph leaf undersides in the affected patch" (its existing wording in `data/checks.json`); the planning docs' "inspect the leaf undersides" refers to this same check.
+- Early hands-on checkpoint folded into the final review — the learner switched to fast mode after slice 1 and asked for all slices quickly, so the loop is tried once, end to end, at the final checkpoint.

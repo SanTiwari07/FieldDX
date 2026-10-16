@@ -85,10 +85,11 @@ def test_an_officer_never_sees_another_areas_cases(two_areas):
         assert here.get(f"/api/cases/{other}{path}").status_code == 404
     assert len(here.get("/api/fields.geojson").json()["features"]) == len(data.fields(fx.AREA))
     # a finding in one area does not leak into the other, and a reset stays in its own area
-    assert here.post("/api/cases/HERO/close", json={"check_id": "drip_line", "outcome": "dry"}).status_code == 200
-    assert db.get_outcome(fx.AREA, "HERO") and db.get_outcome("niphad", "HERO") is None
+    first = here.get("/api/cases/HERO").json()["next_check"]["check_id"]
+    assert here.post("/api/cases/HERO/findings", json={"check_id": first, "outcome": "clean"}).status_code == 200
+    assert db.list_findings(fx.AREA, "HERO") and db.list_findings("niphad", "HERO") == []
     there.post("/api/admin/reset")
-    assert db.get_outcome(fx.AREA, "HERO")
+    assert db.list_findings(fx.AREA, "HERO")
 
 
 def test_an_area_is_created_from_a_drawn_polygon_and_queued(two_areas, monkeypatch):

@@ -183,34 +183,44 @@ def test_every_line_cites_evidence_and_the_template_narrative_validates(ds, cid)
     assert validate_narrative(template_narrative(r), r) == []
 
 
-def test_closing_a_field_case_adds_evidence_and_reranks(ds):
-    from app.main import app
+def test_a_finding_adds_evidence_moves_only_the_causes_it_names_and_keeps_the_case_open(ds):
     c = signed_in(fx.AREA)
-    j = c.post("/api/cases/HERO/close", json={"check_id": "drip_line", "outcome": "dry", "note": "Valve blocked"}).json()
-    assert j["outcome"] == "resolved" and j["evidence"][-1]["source"] == "Officer field visit"
-    assert j["resolution"]["confirmed_id"] == "H7"
-    assert c.post("/api/cases/HERO/close", json={"check_id": "drip_line", "outcome": "dry"}).status_code == 409
-    before = next(h for h in case("PEST").hypotheses if h.id == "H8").score
-    clean = c.post("/api/cases/PEST/close", json={"check_id": "leaf_undersides", "outcome": "clean"}).json()
-    after = next(h for h in clean["hypotheses"] if h["id"] == "H8")
-    assert clean["resolution"]["ranking_before"][0] == "H8"
-    assert after["score"] == pytest_approx(before - config.OUTCOME_WEIGHT)  # clean leaves lower pests, not erase them
-    assert any("clean" in ln["text"].lower() for ln in after["against_lines"])
+    base = {h.id: h.score for h in case("PEST").hypotheses}
+    clean = c.post("/api/cases/PEST/findings", json={"check_id": "leaf_undersides", "outcome": "clean"}).json()
+    assert clean["outcome"] == "field_case" and clean["evidence"][-1]["source"] == "Officer field visit"
+    after = {h["id"]: h for h in clean["hypotheses"]}
+    assert after["H8"]["score"] == pytest_approx(max(0.0, base["H8"] - config.OUTCOME_WEIGHT))
+    assert any("clean" in ln["text"].lower() for ln in after["H8"]["against_lines"])
+    for hid, score in base.items():  # leaves clean only counts against pests
+        if hid != "H8":
+            assert after[hid]["score"] == pytest_approx(score)
+    nc = clean["next_check"]
+    assert nc is None or (nc["check_id"] != "leaf_undersides" and nc["reason"].startswith("Leaves clean"))
+    # the same check again is refused: the case is no longer waiting for it
+    assert c.post("/api/cases/PEST/findings", json={"check_id": "leaf_undersides", "outcome": "clean"}).status_code == 422
 
 
-def test_an_unexplained_case_can_be_closed_with_what_the_officer_found(ds):
-    from app.main import app
+def test_findings_replay_in_order_and_survive_a_reload(ds):
     c = signed_in(fx.AREA)
-    j = c.post("/api/cases/ODD/close", json={"check_id": "visit", "outcome": "harvested", "note": "Cut last week"}).json()
-    assert j["outcome"] == "resolved" and j["resolution"]["confirmed_id"] == "H3"
-    none = c.post("/api/cases/ODD/close", json={"check_id": "visit", "outcome": "other"})
-    assert none.status_code == 409
+    first = c.get("/api/cases/HERO").json()["next_check"]["check_id"]
+    j = c.post("/api/cases/HERO/findings", json={"check_id": first, "outcome": "clean", "note": "No thrips"}).json()
+    second = j["next_check"]["check_id"]
+    assert second != first
+    again = c.get("/api/cases/HERO").json()
+    assert again["next_check"]["check_id"] == second and again["evidence"][-1]["data"]["note"] == "No thrips"
+    assert "resolution" not in again or again["resolution"] is None
 
 
-def test_a_watch_case_cannot_be_closed(ds):
-    from app.main import app
+def test_an_unexplained_case_takes_a_visit_finding_without_closing(ds):
     c = signed_in(fx.AREA)
-    assert c.post("/api/cases/WAIT/close", json={"check_id": "visit", "outcome": "harvested"}).status_code == 422
+    j = c.post("/api/cases/ODD/findings", json={"check_id": "visit", "outcome": "harvested", "note": "Cut last week"}).json()
+    assert j["outcome"] == "unexplained" and j["evidence"][-1]["data"]["outcome"] == "harvested"
+    assert c.post("/api/cases/ODD/findings", json={"check_id": "visit", "outcome": "other"}).status_code == 422
+
+
+def test_a_watch_case_takes_no_finding(ds):
+    c = signed_in(fx.AREA)
+    assert c.post("/api/cases/WAIT/findings", json={"check_id": "visit", "outcome": "harvested"}).status_code == 422
 
 
 def test_cloudy_scenes_never_carry_a_number(ds):

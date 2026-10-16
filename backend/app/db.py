@@ -24,6 +24,10 @@ CREATE TABLE IF NOT EXISTS case_outcomes(
   area_id TEXT NOT NULL, case_id TEXT NOT NULL, check_id TEXT NOT NULL, outcome TEXT NOT NULL,
   note TEXT NOT NULL DEFAULT '', closed_at TEXT NOT NULL, closed_by INTEGER,
   PRIMARY KEY (area_id, case_id));
+CREATE TABLE IF NOT EXISTS case_findings(
+  id INTEGER PRIMARY KEY, area_id TEXT NOT NULL, case_id TEXT NOT NULL, check_id TEXT NOT NULL,
+  outcome TEXT NOT NULL, note TEXT NOT NULL DEFAULT '', recorded_at TEXT NOT NULL, recorded_by INTEGER);
+CREATE INDEX IF NOT EXISTS case_findings_case ON case_findings(area_id, case_id, id);
 CREATE TABLE IF NOT EXISTS narratives(
   key TEXT PRIMARY KEY, json TEXT NOT NULL, source TEXT NOT NULL, model TEXT, created_at TEXT NOT NULL);
 -- findings from before areas existed; they cannot be placed in an area
@@ -120,20 +124,25 @@ def close_session(token: str) -> None:
 
 # ---- findings and narratives
 
-def get_outcome(area_id: str, case_id: str) -> dict | None:
-    with conn() as c:
-        row = c.execute("SELECT * FROM case_outcomes WHERE area_id=? AND case_id=?", (area_id, case_id)).fetchone()
-    return dict(row) if row else None
+# case_outcomes held one closing finding per case; findings are now a list that keeps the case open,
+# so that table is no longer read or written.
 
-
-def save_outcome(area_id: str, case_id: str, check_id: str, outcome: str, note: str, closed_at: datetime,
-                 closed_by: int | None = None) -> None:
+def add_finding(area_id: str, case_id: str, check_id: str, outcome: str, note: str, recorded_at: datetime,
+                recorded_by: int | None = None) -> None:
     with conn() as c:
         c.execute(
-            "INSERT OR REPLACE INTO case_outcomes(area_id, case_id, check_id, outcome, note, closed_at, closed_by) "
+            "INSERT INTO case_findings(area_id, case_id, check_id, outcome, note, recorded_at, recorded_by) "
             "VALUES (?,?,?,?,?,?,?)",
-            (area_id, case_id, check_id, outcome, note, closed_at.isoformat(timespec="seconds"), closed_by),
+            (area_id, case_id, check_id, outcome, note, recorded_at.isoformat(timespec="seconds"), recorded_by),
         )
+
+
+def list_findings(area_id: str, case_id: str) -> list[dict]:
+    """The officer's findings on a case, in the order they were recorded."""
+    with conn() as c:
+        rows = c.execute("SELECT * FROM case_findings WHERE area_id=? AND case_id=? ORDER BY id",
+                         (area_id, case_id)).fetchall()
+    return [dict(r) for r in rows]
 
 
 def get_narrative(key: str) -> tuple[str, str] | None:
@@ -151,11 +160,13 @@ def save_narrative(key: str, json_text: str, source: str, model: str | None) -> 
 
 
 def reset(area_id: str | None = None) -> None:
-    """Clear closed cases and stored narratives: for one area, or everywhere when no area is given."""
+    """Clear findings and stored narratives: for one area, or everywhere when no area is given."""
     with conn() as c:
         if area_id is None:
             c.execute("DELETE FROM case_outcomes")
+            c.execute("DELETE FROM case_findings")
             c.execute("DELETE FROM narratives")
         else:
             c.execute("DELETE FROM case_outcomes WHERE area_id=?", (area_id,))
+            c.execute("DELETE FROM case_findings WHERE area_id=?", (area_id,))
             c.execute("DELETE FROM narratives WHERE key LIKE ?", (f"{area_id}:%",))

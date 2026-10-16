@@ -70,6 +70,7 @@ export interface NextCheck {
   outcomes: CheckOutcome[];
   hypotheses: string[];
   candidates: Candidate[];
+  reason?: string | null; // why the recommendation changed after a finding
 }
 
 export interface CaseFile {
@@ -236,8 +237,8 @@ export const api = {
   getCase: (id: string) => fetch(`/api/cases/${id}`).then((r) => json<CaseResult>(r)),
   map: (id: string) => fetch(`/api/cases/${id}/map`).then((r) => json<MapData>(r)),
   series: (id: string) => fetch(`/api/cases/${id}/series`).then((r) => json<SeriesData>(r)),
-  close: (id: string, body: { check_id: string; outcome: string; note: string }) =>
-    fetch(`/api/cases/${id}/close`, {
+  recordFinding: (id: string, body: { check_id: string; outcome: string; note: string }) =>
+    fetch(`/api/cases/${id}/findings`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),

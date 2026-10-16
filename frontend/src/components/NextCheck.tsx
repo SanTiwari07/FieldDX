@@ -4,8 +4,15 @@ import { ArrowRight, Check, CheckCircle2, Clock } from "lucide-react";
 import { api, CaseResult, NextCheck } from "../api";
 import { Refs, Spinner } from "./ui";
 
+/** What the check is for: separating two causes, testing the one left, or (for a call or visit) nothing named. */
+export function checkPurpose(nc: NextCheck, names: Record<string, string>): string {
+  const [a, b] = nc.hypotheses.map((h) => names[h]?.toLowerCase());
+  if (a && b) return `Separates ${a} from ${b}.`;
+  if (a) return `Can support or count against ${a}.`;
+  return "";
+}
+
 export function NextCheckSlip({ caseId, nc, names }: { caseId: string; nc: NextCheck; names: Record<string, string> }) {
-  const [a, b] = nc.hypotheses;
   return (
     <section className="slip" aria-labelledby="slip-h">
       <div className="eyebrow slip-eyebrow" id="slip-h">Next best check</div>
@@ -17,7 +24,7 @@ export function NextCheckSlip({ caseId, nc, names }: { caseId: string; nc: NextC
           </li>
         ))}
       </ul>
-      <p className="slip-cost"><Clock size={13} aria-hidden /> About {nc.cost_min} minutes on site. Separates {names[a]?.toLowerCase()} from {names[b]?.toLowerCase()}.</p>
+      <p className="slip-cost"><Clock size={13} aria-hidden /> About {nc.cost_min} minutes on site. {checkPurpose(nc, names)}</p>
       <Link to={`/case/${caseId}/check`} className="btn btn-inverse">
         Open field checklist <ArrowRight size={15} aria-hidden />
       </Link>
@@ -94,7 +101,7 @@ export function CloseCaseForm({ r, onSaved, large = false }: { r: CaseResult; on
     setBusy(true);
     setError("");
     try {
-      onSaved(await api.close(r.case_id, { check_id: nc.check_id, outcome: choice, note }));
+      onSaved(await api.recordFinding(r.case_id, { check_id: nc.check_id, outcome: choice, note }));
     } catch (err: any) {
       setError(err.message || "Could not save the finding.");
       setBusy(false);
@@ -105,7 +112,7 @@ export function CloseCaseForm({ r, onSaved, large = false }: { r: CaseResult; on
     <form className={`close-form ${large ? "large" : ""}`} onSubmit={submit} aria-labelledby="close-h">
       <div>
         <h3 id="close-h">Record what you found</h3>
-        <p className="close-sub">It is saved with the case as new evidence, and the likely cause is updated.</p>
+        <p className="close-sub">It is saved with the case as new evidence. The causes are re-assessed and the case stays open.</p>
       </div>
       <fieldset>
         <legend>What did you find?{!large && <small>{nc.label}</small>}</legend>
@@ -125,7 +132,7 @@ export function CloseCaseForm({ r, onSaved, large = false }: { r: CaseResult; on
       </label>
       {error && <p className="form-error" role="alert">{error}</p>}
       <button className="btn btn-primary" disabled={!choice || busy}>
-        {busy ? <Spinner /> : <CheckCircle2 size={16} aria-hidden />} {choice ? "Save and close the case" : "Choose what you found first"}
+        {busy ? <Spinner /> : <CheckCircle2 size={16} aria-hidden />} {choice ? "Save the finding" : "Choose what you found first"}
       </button>
     </form>
   );

@@ -77,8 +77,9 @@ class NextCheck(BaseModel):
     label: str
     cost_min: int
     outcomes: list[CheckOutcome]
-    hypotheses: list[str]  # the two being separated
+    hypotheses: list[str]  # the two being separated (one when a single cause is still live)
     candidates: list[CandidateCheck]
+    reason: str | None = None  # why the recommendation changed after an officer finding
 
 
 class CaseFileLine(BaseModel):
@@ -147,10 +148,11 @@ class CaseResult(BaseModel):
     narrative: CaseFile | None = None
     narrative_source: Literal["gemini", "template"] | None = None
     resolution: Resolution | None = None
+    check_context: dict[str, Any] = Field(default_factory=dict)  # what decides which checks apply, kept for replays
     limits: str = ""
 
 
-class CloseRequest(BaseModel):
+class FindingRequest(BaseModel):
     check_id: str
     outcome: str
     note: str = Field(default="", max_length=600)

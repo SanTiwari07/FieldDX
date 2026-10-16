@@ -8,22 +8,27 @@ from .llm import generate_narrative
 from .models import CaseFile, CaseResult
 from .narrative import template_narrative
 from .pipeline import build_case, inbox_sort_key
-from .resolve import apply_outcome
+from .resolve import apply_finding
 from .tools import crop_calendar
 
 
 def effective_case(area: str, case_id: str) -> CaseResult:
-    """Pipeline result with the officer's finding applied, if there is one."""
-    base = build_case(area, case_id)
-    row = db.get_outcome(area, case_id)
-    if row:
-        base = apply_outcome(base, row["check_id"], row["outcome"], row["note"],
-                             datetime.fromisoformat(row["closed_at"]))
-    return base
+    """Pipeline result with every officer finding replayed on top, in the order they were recorded."""
+    r = build_case(area, case_id)
+    for row in db.list_findings(area, case_id):
+        r = apply_finding(r, row["check_id"], row["outcome"], row["note"],
+                          datetime.fromisoformat(row["recorded_at"]))
+    return r
+
+
+def findings_count(r: CaseResult) -> int:
+    return sum(1 for e in r.evidence if e.tool == "field_visit")
 
 
 def phase(r: CaseResult) -> str:
-    return "closed" if r.outcome == "resolved" else "open"
+    """Which narrative a case needs: a new one after every finding."""
+    n = findings_count(r)
+    return f"finding{n}" if n else "open"
 
 
 def narrative_key(area: str, r: CaseResult) -> str:

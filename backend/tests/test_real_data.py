@@ -116,15 +116,15 @@ def test_api_serves_the_whole_workspace(client):
     assert len(gj["features"]) == len(data.fields(AREA))
 
 
-def test_an_open_case_can_be_closed_with_a_finding(client):
+def test_an_open_case_takes_a_finding_and_stays_open(client):
     open_case = next(c for c in client.get("/api/cases").json()["cases"] if c["outcome"] in ("field_case", "unexplained"))
     r = client.get(f"/api/cases/{open_case['id']}").json()
     nc = r["next_check"]
     key = nc["outcomes"][0]["key"]
-    j = client.post(f"/api/cases/{open_case['id']}/close", json={"check_id": nc["check_id"], "outcome": key, "note": "test"}).json()
-    assert j["outcome"] == "resolved" and j["evidence"][-1]["source"] == "Officer field visit"
+    j = client.post(f"/api/cases/{open_case['id']}/findings", json={"check_id": nc["check_id"], "outcome": key, "note": "test"}).json()
+    assert j["outcome"] == r["outcome"] and j["evidence"][-1]["source"] == "Officer field visit"
     assert client.post("/api/admin/reset").json() == {"ok": True}
-    assert client.get(f"/api/cases/{open_case['id']}").json()["outcome"] != "resolved"
+    assert len(client.get(f"/api/cases/{open_case['id']}").json()["evidence"]) == len(r["evidence"])
 
 
 def test_no_evidence_is_labelled_as_simulated():

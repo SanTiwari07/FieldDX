@@ -1,9 +1,9 @@
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { ArrowLeft, ArrowRight, ClipboardList, Clock, Eye, EyeOff, MapPinned } from "lucide-react";
 import { api, CaseResult } from "../api";
 import { fmtDate } from "../lib/format";
-import { CloseCaseForm, ResolutionCard, VisitChecklist } from "../components/NextCheck";
+import { checkPurpose, CloseCaseForm, ResolutionCard, VisitChecklist } from "../components/NextCheck";
 
 const cap = (t: string) => t.replace(/^./, (c) => c.toUpperCase());
 
@@ -12,6 +12,9 @@ export default function Checklist() {
   const { id = "" } = useParams();
   const [r, setR] = useState<CaseResult | null>(null);
   const [error, setError] = useState("");
+  const navigate = useNavigate();
+  // a saved finding sends the officer back to the case, where the update is shown
+  const saved = () => navigate(`/case/${id}`);
 
   useEffect(() => {
     api.getCase(id).then(setR).catch((e) => setError(e.message));
@@ -41,7 +44,7 @@ export default function Checklist() {
             <p className="cl-kicker" id="cl-h">Do this at the field</p>
             <p className="slip-instruction">{nc.label}</p>
             <p className="slip-cost">
-              <Clock size={14} aria-hidden /> About {nc.cost_min} minutes. It tells {names[nc.hypotheses[0]]} apart from {names[nc.hypotheses[1]]}.
+              <Clock size={14} aria-hidden /> About {nc.cost_min} minutes. {checkPurpose(nc, names)}
             </p>
           </section>
 
@@ -57,7 +60,7 @@ export default function Checklist() {
             </ul>
           </section>
 
-          <CloseCaseForm r={r} onSaved={setR} large />
+          <CloseCaseForm r={r} onSaved={saved} large />
         </>
       )}
 
@@ -71,7 +74,7 @@ export default function Checklist() {
       {r.outcome === "unexplained" && (
         <>
           <VisitChecklist items={r.visit_checklist} />
-          <CloseCaseForm r={r} onSaved={setR} large />
+          <CloseCaseForm r={r} onSaved={saved} large />
         </>
       )}
 

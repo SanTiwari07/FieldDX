@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, CheckCircle2, ClipboardList, Clock, Eye, EyeOff, MapPinned, Pencil, X } from "lucide-react";
 import type { CaseResult } from "../api";
-import { CloseCaseForm } from "./NextCheck";
+import { checkPurpose, CloseCaseForm } from "./NextCheck";
 import { Refs } from "./ui";
 
 /** The one place the next best check lives. It stays docked under the panel on every tab. */
@@ -34,7 +34,7 @@ export function Dock({ r, onRecord }: { r: CaseResult; onRecord: () => void }) {
           ))}
         </ul>
         <p className="dock-cost">
-          <Clock size={13} aria-hidden /> About {nc.cost_min} minutes. Separates {names[nc.hypotheses[0]]?.toLowerCase()} from {names[nc.hypotheses[1]]?.toLowerCase()}.
+          <Clock size={13} aria-hidden /> About {nc.cost_min} minutes. {checkPurpose(nc, names)}
         </p>
         <div className="dock-actions">
           <button type="button" className="btn btn-inverse" onClick={onRecord}><Pencil size={15} aria-hidden /> Record finding</button>

@@ -12,8 +12,8 @@ from typing import Iterator
 from . import config, data
 from .data import ZONE_LABEL
 from .engine.stages import diagnose
-from .models import (CaseResult, CheckOutcome, Evidence, FieldInfo, Headline, HypothesisResult, NextCheck)
-from .next_check import choose
+from .models import CaseResult, Evidence, FieldInfo, Headline, HypothesisResult
+from .next_check import choose, visit_check
 from .tools import PIPELINE
 from .tools.common import ToolResult, build_ctx
 
@@ -110,12 +110,7 @@ def iter_events(area: str, case_id: str) -> Iterator[tuple[str, dict]]:
     if diag.outcome == "field_case" and len(diag.ranking) >= 2:
         next_check = choose(diag.ranking[:2], ctx.state)
     if diag.outcome == "unexplained":
-        v = data.checks()["visit"]
-        next_check = NextCheck(
-            check_id="visit", label=v["label"], cost_min=v["cost_min"], hypotheses=[], candidates=[],
-            outcomes=[CheckOutcome(key=k, label=o["label"], then=o["then"], supports=o["supports"], against=o["against"])
-                      for k, o in v["outcomes"].items() if not (k == "pruned" and ctx.field.klass != "perennial")],
-        )
+        next_check = visit_check(ctx.field.klass)
     if next_check and diag.outcome == "unexplained":
         yield "step", {"tool": "next_check", "state": "skipped", "label": STEP_LABELS["next_check"][0],
                        "reason": "No single check separates the causes, so a call or visit is the check."}
@@ -169,6 +164,7 @@ def iter_events(area: str, case_id: str) -> Iterator[tuple[str, dict]]:
         evidence=evidence, hypotheses=diag.hypotheses, stage_outcome=diag.stage_outcome,
         next_check=next_check,
         visit_checklist=_visit_list(diag.outcome, facts, vars_),
+        check_context={k: ctx.state.get(k) for k in ("has_edge_zone", "edge_name")},
         limits=limits_text(f),
     )
     yield "diagnosis", result.model_dump(mode="json")

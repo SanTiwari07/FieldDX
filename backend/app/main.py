@@ -16,11 +16,11 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from . import areas, assistant, config, data, db, llm, overview, places, service
-from .models import CaseResult, CloseRequest
+from .models import CaseResult, FindingRequest
 from . import pipeline
 from .pipeline import build_case, iter_events
 from .raster import raster as build_raster
-from .resolve import CloseError, apply_outcome
+from .resolve import CloseError, apply_finding
 from .tools.common import build_ctx, quality_of
 
 
@@ -506,20 +506,19 @@ def case_raster(case_id: str, scene: str | None = None, area: str = Depends(curr
     return out
 
 
-@app.post("/api/cases/{case_id}/close")
-def close_case(case_id: str, body: CloseRequest, area: str = Depends(current_area),
-               officer: dict = Depends(current_officer)):
+@app.post("/api/cases/{case_id}/findings")
+def record_finding(case_id: str, body: FindingRequest, area: str = Depends(current_area),
+                   officer: dict = Depends(current_officer)):
+    """Record what the officer found at the recommended check. The case stays open and is re-assessed."""
     if data.case_spec(area, case_id) is None:
         raise HTTPException(404, f"No case {case_id} in your area")
-    base = build_case(area, case_id)
-    closed_at = db.now()
+    current = service.effective_case(area, case_id)
+    at = db.now()
     try:
-        apply_outcome(base, body.check_id, body.outcome, body.note, closed_at)  # validate before saving
+        apply_finding(current, body.check_id, body.outcome, body.note, at)  # validate before saving
     except CloseError as e:
         raise HTTPException(422, str(e))
-    if db.get_outcome(area, case_id):
-        raise HTTPException(409, "This case is already closed")
-    db.save_outcome(area, case_id, body.check_id, body.outcome, body.note, closed_at, officer["id"])
+    db.add_finding(area, case_id, body.check_id, body.outcome, body.note, at, officer["id"])
     return service.ensure_narrative(area, service.effective_case(area, case_id))
 
 
@@ -607,7 +606,7 @@ def edit_fields(body: FieldEdit, area: str = Depends(current_area), officer: dic
 
 @app.post("/api/admin/reset")
 def reset(area: str = Depends(current_area)):
-    """Clear closed cases and stored narratives in the officer's area, so a demo starts clean."""
+    """Clear recorded findings and stored narratives in the officer's area, so a demo starts clean."""
     db.reset(area)
     return {"ok": True}
 

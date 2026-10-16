@@ -36,3 +36,25 @@ def test_check_results_only_support_what_they_directly_show():
     assert checks["drip_line"]["outcomes"]["wet"]["label"] == "Drip line working"
     assert checks["drip_line"]["outcomes"]["dry"]["label"] == "Drip line not working"
     assert checks["soil_probe"]["outcomes"]["moist"]["supports"] == []
+
+
+def after(*findings):
+    from datetime import datetime
+    from app.resolve import apply_finding
+    r = build_case(AREA, "F128")
+    for check_id, outcome in findings:
+        r = apply_finding(r, check_id, outcome, "", datetime(2026, 10, 16, 10, 0))
+    return r
+
+
+def test_leaves_clean_lowers_pests_leaves_irrigation_alone_and_moves_to_the_drip_line():
+    r = after(("leaf_undersides", "clean"))
+    s = scores(r)
+    assert r.outcome == "field_case"                 # the case stays open
+    assert s["H8"] == (0.2, "possible")              # pest or disease spread: less likely, still possible
+    assert s["H7"] == (0.4, "leading")               # irrigation failure: unchanged, first because pests weakened
+    assert s["H9"] == (0.0, "ruled_out") and s["H10"] == (0.0, "ruled_out")
+    assert r.next_check.check_id == "drip_line" and "south" in r.next_check.label
+    assert r.next_check.reason.startswith("Leaves clean, so pest or disease spread is less likely.")
+    causes = " ".join(h.model_dump_json() for h in r.hypotheses) + r.next_check.reason
+    assert "confirmed" not in causes.lower()      # the drop itself may be confirmed by scenes; no cause is
