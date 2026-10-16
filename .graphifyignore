@@ -1,0 +1,4 @@
+# generated pixel grids and scene rasters (rebuild with scripts/build_dataset.py)
+data/grids/
+data/scenes/
+data/raw/
