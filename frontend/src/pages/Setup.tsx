@@ -4,7 +4,7 @@ import { CircleMarker, MapContainer, Polygon, Polyline, Rectangle, TileLayer, us
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import {
-  Activity, ArrowRight, Check, CornerUpLeft, Hand, Layers, MapPin, MousePointerClick, Navigation, PenLine, Search, Trash2, Type, X,
+  Activity, ArrowRight, Check, CornerUpLeft, Hand, Layers, MapPin, MousePointerClick, Navigation, PenLine, Search, Trash2, Type,
 } from "lucide-react";
 import { api, AreaSummary, FieldsSource, GeoPolygon, OverviewMap, OverviewSummary, Place } from "../api";
 import { fmtDate } from "../lib/format";
@@ -17,6 +17,14 @@ type Mode = "pick" | "draw" | "coords";
 type LngLat = [number, number];
 
 const MAX_KM2_FALLBACK = 150;
+
+const STEPS = [["find", "Find your place"], ["mark", "Mark the land"], ["build", "Start"]] as const;
+
+const METHODS: { id: Mode; Icon: typeof PenLine; title: string; text: string }[] = [
+  { id: "draw", Icon: PenLine, title: "Draw around it", text: "Click the corners of the land on the satellite map." },
+  { id: "pick", Icon: MousePointerClick, title: "Tap the fields", text: "Pick fields from the published field map." },
+  { id: "coords", Icon: Type, title: "Type coordinates", text: "Paste a centre point or the corners." },
+];
 const PICK_MARGIN_M = 400;
 
 // ---------- geometry (lon/lat, small areas)
@@ -100,6 +108,15 @@ function RegionLock({ place }: { place: Place | null }) {
   return null;
 }
 
+/** Show a search result on the map before the officer says it is the right place. Nothing is locked or fetched. */
+function PreviewFit({ place }: { place: Place | null }) {
+  const map = useMap();
+  useEffect(() => {
+    if (place) map.flyToBounds(L.latLngBounds(place.bounds), { padding: [48, 48], duration: 0.9 });
+  }, [map, place]);
+  return null;
+}
+
 function FitTo({ ring }: { ring: LngLat[] | null }) {
   const map = useMap();
   const key = ring ? ring.map((p) => p.join(",")).join(";") : "";
@@ -131,7 +148,7 @@ function Overview({ place, summary, error, onGo }: {
   const w = summary.windows;
   return (
     <>
-      <p className="setup-sub">Cropland NDVI, {fmtDate(w.recent[0])} to {fmtDate(w.recent[1])} against {fmtDate(w.baseline[0])} to {fmtDate(w.baseline[1])}. Clouds masked per pixel.</p>
+      <p className="setup-sub">Crop greenness (NDVI) from {fmtDate(w.recent[0])} to {fmtDate(w.recent[1])}, compared with {fmtDate(w.baseline[0])} to {fmtDate(w.baseline[1])}. Clouds are masked.</p>
       <dl className="ov-stats">
         <div className="drop"><dt>Lost greenness</dt><dd>{pct(summary.drop)}</dd><small>of cropland, 0.10 NDVI or more</small></div>
         <div className="gain"><dt>Greened up</dt><dd>{pct(summary.gain)}</dd><small>0.10 NDVI or more</small></div>
@@ -183,8 +200,8 @@ function ExistingAreas({ areas, onJoin, busy }: { areas: AreaSummary[]; onJoin: 
   if (!areas.length) return null;
   return (
     <section className="setup-block">
-      <h2 className="setup-h">Already set up</h2>
-      <p className="setup-sub">Work in an area a colleague has built. Its cases and findings are shared.</p>
+      <h2 className="setup-h">Or join an area a colleague set up</h2>
+      <p className="setup-sub">Its cases and findings are shared with you.</p>
       <ul className="area-list">
         {areas.map((a) => (
           <li key={a.id}>
@@ -211,6 +228,8 @@ export default function Setup() {
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState("");
   const [place, setPlace] = useState<Place | null>(null);
+  // a search result the officer is looking at; nothing is fetched until they confirm it
+  const [preview, setPreview] = useState<Place | null>(null);
   const [source, setSource] = useState<FieldsSource | null>(null);
   const [mode, setMode] = useState<Mode>("draw");
   const [showFtw, setShowFtw] = useState(true);
@@ -228,10 +247,11 @@ export default function Setup() {
   const [ovMap, setOvMap] = useState<OverviewMap | null>(null);
   const [ovSummary, setOvSummary] = useState<OverviewSummary | null>(null);
   const [ovError, setOvError] = useState("");
-  const [showChange, setShowChange] = useState(true);
+  const [showChange, setShowChange] = useState(false);
   const [goText, setGoText] = useState("");
   const [goPoint, setGoPoint] = useState<[number, number] | null>(null);
   const [goError, setGoError] = useState("");
+  const [review, setReview] = useState(false);
   const mapRef = useRef<L.Map | null>(null);
   const onMap = useCallback((m: L.Map) => { mapRef.current = m; }, []);
   const searchBox = useRef<HTMLInputElement>(null);
@@ -269,14 +289,13 @@ export default function Setup() {
 
   const choose = async (p: Place) => {
     setPlace(p);
+    setPreview(null);
     setResults(null);
     setName(p.name);
     setPicked([]); setDraw([]); setClosed(false); setCoordText(""); setError("");
     setSource(null);
     setOvMap(null); setOvSummary(null); setOvError(""); setGoPoint(null); setGoError("");
-    const region = { name: p.name, bounds: p.bounds, boundary: p.boundary };
-    api.overviewMap(region).then(setOvMap).catch((e) => setOvError((e as Error).message));
-    api.overviewSummary(region).then(setOvSummary).catch((e) => setOvError((e as Error).message));
+    asked.current = null;
     try {
       setSource(await api.fieldsSource(p.country, p.subdivision));
     } catch (e) {
@@ -284,6 +303,16 @@ export default function Setup() {
       setError(`Could not check the published field shapes: ${(e as Error).message}`);
     }
   };
+
+  // what changed across the region is read only when the officer asks for it
+  const asked = useRef<string | null>(null);
+  useEffect(() => {
+    if (!place || !showChange || asked.current === place.id) return;
+    asked.current = place.id;
+    const region = { name: place.name, bounds: place.bounds, boundary: place.boundary };
+    api.overviewMap(region).then(setOvMap).catch((e) => setOvError((e as Error).message));
+    api.overviewSummary(region).then(setOvSummary).catch((e) => setOvError((e as Error).message));
+  }, [place, showChange]);
 
   const coords = useMemo(() => parseCoords(coordText, km), [coordText, km]);
 
@@ -384,6 +413,8 @@ export default function Setup() {
     );
   }
 
+  const step: "find" | "mark" | "build" = !place ? "find" : review && ring && !tooBig ? "build" : "mark";
+
   const mask = place
     ? (place.boundary ? outerRings(place.boundary).map((r) => toLatLng(r)) : [toLatLng(boxAround([[place.bounds[0][1], place.bounds[0][0]], [place.bounds[1][1], place.bounds[1][0]]], 0))])
     : [];
@@ -391,151 +422,196 @@ export default function Setup() {
   return (
     <main className="setup">
       <aside className="setup-panel">
-        <header>
-          <div className="eyebrow">Step 2 of 3 · Your area</div>
-          <h1>Where do you work{me ? `, ${me.officer.name.split(" ")[0]}` : ""}?</h1>
-          <p className="lede">FieldDx builds real data for the area you mark, and you will only see cases from it.</p>
+        <header className="setup-top">
+          <ol className="stepper" aria-label="Setting up your area">
+            {STEPS.map(([id, label], i) => {
+              const at = STEPS.findIndex(([s]) => s === step);
+              return (
+                <li key={id} className={i < at ? "is-done" : i === at ? "is-now" : ""} aria-current={i === at ? "step" : undefined}>
+                  <span aria-hidden>{i < at ? <Check size={12} strokeWidth={3} /> : i + 1}</span>{label}
+                </li>
+              );
+            })}
+          </ol>
+          <h1>{step === "find" ? `Where do you work${me ? `, ${me.officer.name.split(" ")[0]}` : ""}?` : step === "mark" ? `Mark your land in ${place!.name}` : `Start reading ${name.trim() || "this area"}`}</h1>
         </header>
 
-        {!place && <ExistingAreas areas={existing} onJoin={join} busy={busy} />}
-
-        <section className="setup-block">
-          <h2 className="setup-h"><span className="n">1</span> Find your region</h2>
-          {place ? (
-            <div className="place-chip">
-              <MapPin size={16} aria-hidden />
-              <div><strong>{place.name}</strong><small>{place.kind} · {place.context}</small></div>
-              <button type="button" className="icon-btn" aria-label="Choose another region" onClick={() => { setPlace(null); setSource(null); setPicked([]); setDraw([]); setClosed(false); searchBox.current?.focus(); }}>
-                <X size={16} />
-              </button>
-            </div>
-          ) : (
-            <>
-              <form className="search" onSubmit={search} role="search">
-                <Search size={16} aria-hidden />
-                <input ref={searchBox} className="input" value={q} onChange={(e) => setQ(e.target.value)}
-                  placeholder="District, taluka or village, e.g. Kolhapur" aria-label="Search for your region" />
-                <button className="btn btn-primary btn-sm" type="submit" disabled={searching || q.trim().length < 2}>
-                  {searching ? <Spinner /> : "Search"}
-                </button>
-              </form>
-              {searchError && <p className="form-error" role="alert">{searchError}</p>}
-              {results && (
-                results.length ? (
-                  <ul className="results" aria-label="Places found">
-                    {results.map((p) => (
-                      <li key={p.id}>
-                        <button type="button" onClick={() => choose(p)}>
-                          <strong>{p.name}</strong> <span className="kind">{p.kind}</span>
-                          <small>{p.context}</small>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                ) : <p className="muted small">Nothing found. Try the district name.</p>
-              )}
-            </>
-          )}
-        </section>
-
-        {place && (
-          <section className="setup-block">
-            <h2 className="setup-h"><span className="n">2</span> What is changing in {place.name}</h2>
-            <Overview place={place} summary={ovSummary} error={ovError}
-              onGo={(b, near) => { flyTo(b); if (near && !nameTouched) setName(`Around ${near}`); }} />
-          </section>
-        )}
-
-        {place && (
-          <section className="setup-block">
-            <h2 className="setup-h"><span className="n">3</span> Go to the land and mark it</h2>
-            <form className="search goto" onSubmit={goTo}>
-              <Navigation size={16} aria-hidden />
-              <input className="input" value={goText} onChange={(e) => setGoText(e.target.value)} spellCheck={false}
-                placeholder="Farm coordinates, e.g. 16.7410, 74.4425" aria-label="Go to coordinates" />
-              <button className="btn btn-outline btn-sm" type="submit" disabled={!goText.trim()}>Go</button>
-            </form>
-            {goError && <p className="form-error">{goError}</p>}
-            <p className="muted small">Or zoom in on the map, or tap a hotspot above. Then mark the land you want examined:</p>
-            <div className="seg mode-seg" role="tablist" aria-label="How to mark the area">
-              <button type="button" role="tab" aria-selected={mode === "draw"} className={mode === "draw" ? "on" : ""} onClick={() => setMode("draw")}><PenLine size={14} aria-hidden /> Draw a polygon</button>
-              <button type="button" role="tab" aria-selected={mode === "pick"} className={mode === "pick" ? "on" : ""} disabled={!partition} onClick={() => setMode("pick")}><MousePointerClick size={14} aria-hidden /> Pick fields</button>
-              <button type="button" role="tab" aria-selected={mode === "coords"} className={mode === "coords" ? "on" : ""} onClick={() => setMode("coords")}><Type size={14} aria-hidden /> Type corners</button>
-            </div>
-
-            {mode === "pick" && (
-              <div className="mode-help">
-                <p>Tap fields on the map to add them. These are the field shapes Fields of the World already published for {place.subdivision ? "this state" : "this region"} ({partition?.layers[0]}).</p>
-                <p className="muted small">Fields of {ZONED_HA} ha or more are read in eight zones, four interior quarters and four edges, which lets FieldDx tell an edge problem from a patch. Smaller fields down to {MIN_FIELD_HA} ha are read as one zone: the drop, neighbours, weather and season still count, but not where in the field it is.</p>
-                {zoom < 13 && <p className="hint"><Hand size={14} aria-hidden /> Zoom in to see the fields.</p>}
-                <p className="stat"><strong>{picked.length}</strong> field{picked.length === 1 ? "" : "s"} picked
-                  {picked.length > 0 && <button type="button" className="link-btn" onClick={() => setPicked([])}>Clear</button>}</p>
-                <p className="ftw-key"><span className="k-big" aria-hidden /> Eight zones <span className="k-whole" aria-hidden /> One zone <span className="k-small" aria-hidden /> Under {MIN_FIELD_HA} ha, too small</p>
-                {pickNote && <p className="hint warn" role="status">{pickNote}</p>}
-                {wholePicks > 0 && <p className="muted small">{wholePicks} of them {wholePicks === 1 ? "is" : "are"} under {ZONED_HA} ha and will be read as one zone.</p>}
-                {picked.length > 0 && picked.length < 3 && <p className="muted small">Pick a few neighbouring fields too: FieldDx compares each field with similar ones within 2 km to tell an area-wide event from a field problem.</p>}
-              </div>
-            )}
-            {mode === "draw" && (
-              <div className="mode-help">
-                <p>Click around the land to place corners. Click the first corner again to close the shape.</p>
-                <div className="draw-tools">
-                  <span className="stat"><strong>{draw.length}</strong> corner{draw.length === 1 ? "" : "s"}{closed ? ", closed" : ""}</span>
-                  <button type="button" className="btn btn-ghost btn-sm" disabled={!draw.length} onClick={() => { setClosed(false); setDraw((d) => d.slice(0, -1)); }}><CornerUpLeft size={14} aria-hidden /> Undo</button>
-                  <button type="button" className="btn btn-ghost btn-sm" disabled={draw.length < 3 || closed} onClick={() => setClosed(true)}><Check size={14} aria-hidden /> Close shape</button>
-                  <button type="button" className="btn btn-ghost btn-sm" disabled={!draw.length} onClick={() => { setDraw([]); setClosed(false); }}><Trash2 size={14} aria-hidden /> Clear</button>
+        {step === "find" && (
+          <>
+            {preview ? (
+              <section className="confirm-card" aria-labelledby="confirm-h">
+                <p className="muted small">Is this the right place?</p>
+                <h2 id="confirm-h"><MapPin size={18} aria-hidden /> {preview.name}</h2>
+                <p className="confirm-where">{preview.kind[0].toUpperCase() + preview.kind.slice(1)} in {preview.context}</p>
+                <p className="muted small">Check the outline on the map. Nothing is loaded until you confirm.</p>
+                <div className="confirm-actions">
+                  <button type="button" className="btn btn-primary" onClick={() => choose(preview)}>Yes, work in {preview.name}</button>
+                  <button type="button" className="btn btn-ghost" onClick={() => { setPreview(null); searchBox.current?.focus(); }}>Choose another</button>
                 </div>
-              </div>
+              </section>
+            ) : (
+              <section className="setup-block">
+                <form className="search" onSubmit={search} role="search">
+                  <Search size={16} aria-hidden />
+                  <input ref={searchBox} className="input" value={q} onChange={(e) => setQ(e.target.value)}
+                    placeholder="Taluka, district or village, e.g. Baramati" aria-label="Search for your region" />
+                  <button className="btn btn-primary btn-sm" type="submit" disabled={searching || q.trim().length < 2}>
+                    {searching ? <Spinner /> : "Search"}
+                  </button>
+                </form>
+                {searchError && <p className="form-error" role="alert">{searchError}</p>}
+                {results && (
+                  results.length ? (
+                    <ul className="results" aria-label="Places found">
+                      {results.map((p) => (
+                        <li key={p.id}>
+                          <button type="button" onClick={() => setPreview(p)}>
+                            <MapPin size={15} aria-hidden />
+                            <span><strong>{p.name}</strong> <span className="kind">{p.kind}</span><small>{p.context}</small></span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : <p className="muted small">Nothing found. Try the district name.</p>
+                )}
+                {!results && <p className="muted small">You will see the place on the map and confirm it before anything is loaded.</p>}
+              </section>
             )}
-            {mode === "coords" && (
-              <div className="mode-help">
-                <label className="field">
-                  <span className="caption">One point per line: latitude, longitude</span>
-                  <textarea value={coordText} onChange={(e) => setCoordText(e.target.value)} rows={4} spellCheck={false}
-                    placeholder={`${place.center[0].toFixed(4)}, ${place.center[1].toFixed(4)}`} />
-                </label>
-                <p className="muted small">One point makes a square around it. Three or more points are the corners of your area.</p>
-                <label className="field inline">
-                  <span className="caption">Square size</span>
-                  <select className="input" value={km} onChange={(e) => setKm(Number(e.target.value))}>
-                    {[2, 3, 5, 7, 9, 12].map((k) => <option key={k} value={k}>{k} × {k} km</option>)}
-                  </select>
-                </label>
-                {coords.error && <p className="form-error">{coords.error}</p>}
-              </div>
-            )}
-            {ring && (
-              <p className={`area-size ${tooBig ? "bad" : ""}`}>
-                {km2 < 1 ? `${(km2 * 100).toFixed(0)} ha` : `${km2.toFixed(1)} km²`}
-                {tooBig ? ` is over the ${maxKm2} km² limit. Make it smaller.` : mode === "pick" ? " of imagery around the picked fields." : " marked."}
-              </p>
-            )}
-          </section>
+            {!preview && !results && <ExistingAreas areas={existing} onJoin={join} busy={busy} />}
+          </>
         )}
 
-        {place && ring && !tooBig && (
+        {place && step !== "find" && (
+          <div className="place-chip">
+            <MapPin size={16} aria-hidden />
+            <div><strong>{place.name}</strong><small>{place.kind} in {place.context}</small></div>
+            <button type="button" className="link-btn" onClick={() => { setPlace(null); setSource(null); setPicked([]); setDraw([]); setClosed(false); setShowChange(false); setReview(false); }}>
+              Change
+            </button>
+          </div>
+        )}
+
+        {place && step === "mark" && (
+          <>
+            <section className="setup-block">
+              <h2 className="setup-h">How do you want to mark it?</h2>
+              <div className="methods" role="radiogroup" aria-label="How to mark the area">
+                {METHODS.map(({ id, Icon, title, text }) => (
+                  <button key={id} type="button" role="radio" aria-checked={mode === id} className={`method ${mode === id ? "on" : ""}`}
+                    disabled={id === "pick" && !partition} onClick={() => setMode(id)}>
+                    <Icon size={18} aria-hidden />
+                    <span><strong>{title}</strong><small>{id !== "pick" ? text : !source ? "Checking for published field shapes..." : !partition ? "No published field shapes for this region." : text}</small></span>
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            <section className="setup-block">
+              {mode === "draw" && (
+                <div className="mode-help">
+                  <p className="do">Click on the map around the land. Click the first corner again to close it.</p>
+                  <div className="draw-tools">
+                    <span className="stat"><strong>{draw.length}</strong> corner{draw.length === 1 ? "" : "s"}{closed ? ", closed" : ""}</span>
+                    <button type="button" className="btn btn-ghost btn-sm" disabled={!draw.length} onClick={() => { setClosed(false); setDraw((d) => d.slice(0, -1)); }}><CornerUpLeft size={14} aria-hidden /> Undo</button>
+                    <button type="button" className="btn btn-ghost btn-sm" disabled={draw.length < 3 || closed} onClick={() => setClosed(true)}><Check size={14} aria-hidden /> Close shape</button>
+                    <button type="button" className="btn btn-ghost btn-sm" disabled={!draw.length} onClick={() => { setDraw([]); setClosed(false); }}><Trash2 size={14} aria-hidden /> Clear</button>
+                  </div>
+                </div>
+              )}
+              {mode === "pick" && (
+                <div className="mode-help">
+                  <p className="do">Tap fields on the map to add them. Add a few neighbours too, so FieldDx can compare them.</p>
+                  {zoom < 13 && <p className="hint"><Hand size={14} aria-hidden /> Zoom in to see the fields.</p>}
+                  <p className="stat"><strong>{picked.length}</strong> field{picked.length === 1 ? "" : "s"} picked
+                    {picked.length > 0 && <button type="button" className="link-btn" onClick={() => setPicked([])}>Clear</button>}</p>
+                  <p className="ftw-key"><span className="k-big" aria-hidden /> Read in detail <span className="k-whole" aria-hidden /> Read as one <span className="k-small" aria-hidden /> Too small</p>
+                  {pickNote && <p className="hint warn" role="status">{pickNote}</p>}
+                  {wholePicks > 0 && <p className="muted small">{wholePicks} of them {wholePicks === 1 ? "is" : "are"} under {ZONED_HA} ha and will be read as one zone.</p>}
+                  <details className="more-info">
+                    <summary>What do the colours mean?</summary>
+                    <p>Fields of {ZONED_HA} ha or more are read in eight zones, which tells an edge problem from a patch. Smaller fields down to {MIN_FIELD_HA} ha are read as one zone. Shapes come from Fields of the World ({partition?.layers[0]}).</p>
+                  </details>
+                </div>
+              )}
+              {mode === "coords" && (
+                <div className="mode-help">
+                  <label className="field">
+                    <span className="caption">One point per line: latitude, longitude</span>
+                    <textarea value={coordText} onChange={(e) => setCoordText(e.target.value)} rows={4} spellCheck={false}
+                      placeholder={`${place.center[0].toFixed(4)}, ${place.center[1].toFixed(4)}`} />
+                  </label>
+                  <p className="muted small">One point makes a square around it. Three or more points are the corners.</p>
+                  <label className="field inline">
+                    <span className="caption">Square size</span>
+                    <select className="input" value={km} onChange={(e) => setKm(Number(e.target.value))}>
+                      {[2, 3, 5, 7, 9, 12].map((k) => <option key={k} value={k}>{k} × {k} km</option>)}
+                    </select>
+                  </label>
+                  {coords.error && <p className="form-error">{coords.error}</p>}
+                </div>
+              )}
+              {mode !== "coords" && (
+                <form className="search goto" onSubmit={goTo}>
+                  <Navigation size={16} aria-hidden />
+                  <input className="input" value={goText} onChange={(e) => setGoText(e.target.value)} spellCheck={false}
+                    placeholder="Jump to a farm by latitude, longitude" aria-label="Go to coordinates" />
+                  <button className="btn btn-outline btn-sm" type="submit" disabled={!goText.trim()}>Go</button>
+                </form>
+              )}
+              {goError && <p className="form-error">{goError}</p>}
+              {ring && (
+                <p className={`area-size ${tooBig ? "bad" : ""}`}>
+                  {km2 < 1 ? `${(km2 * 100).toFixed(0)} ha` : `${km2.toFixed(1)} km²`}
+                  {tooBig ? ` is over the ${maxKm2} km² limit. Make it smaller.` : mode === "pick" ? " of imagery around the picked fields." : " marked."}
+                </p>
+              )}
+              {ring && !tooBig && (
+                <button type="button" className="btn btn-primary btn-block" onClick={() => setReview(true)}>Continue <ArrowRight size={15} aria-hidden /></button>
+              )}
+            </section>
+
+            <details className="setup-block change-box" open={showChange} onToggle={(e) => setShowChange((e.target as HTMLDetailsElement).open)}>
+              <summary>
+                <Activity size={16} aria-hidden />
+                <span><strong>Not sure where to look?</strong><small>See where crops lost green in {place.name} this fortnight</small></span>
+              </summary>
+              <Overview place={place} summary={ovSummary} error={ovError}
+                onGo={(b, near) => { flyTo(b); if (near && !nameTouched) setName(`Around ${near}`); }} />
+            </details>
+          </>
+        )}
+
+        {place && step === "build" && ring && (
           <section className="setup-block">
-            <h2 className="setup-h"><span className="n">4</span> Build it</h2>
-            <fieldset className="source">
-              <legend className="caption">Field shapes</legend>
-              <label className={`radio ${!partition ? "off" : ""}`}>
-                <input type="radio" name="src" checked={fieldSource === "ftw_global"} disabled={!partition} onChange={() => setFieldSource("ftw_global")} />
-                <span><strong>Fields of the World map</strong><small>{partition ? `Published shapes for ${partition.code.replace("_", "-")}. About two minutes.` : "Not published for this region."}</small></span>
-              </label>
-              <label className={`radio ${!source?.model_available || mode === "pick" ? "off" : ""}`}>
-                <input type="radio" name="src" checked={fieldSource === "ftw_model"} disabled={!source?.model_available || mode === "pick"} onChange={() => setFieldSource("ftw_model")} />
-                <span><strong>Run the model on fresh imagery</strong><small>{source?.model_available ? "Sharper on small plots, but takes 15 to 40 minutes." : "The model is not installed on this server."}</small></span>
-              </label>
-            </fieldset>
             <label className="field">
               <span className="caption">Name of this area</span>
               <input className="input" value={name} onChange={(e) => { setName(e.target.value); setNameTouched(true); }} maxLength={60} />
             </label>
-            <p className="muted small">FieldDx will fetch about 13 months of Sentinel-2 passes for {km2 < 1 ? `${(km2 * 100).toFixed(0)} ha` : `${km2.toFixed(1)} km²`}, the weather, and then look for alerts. You can leave this page while it works.</p>
+            <fieldset className="source">
+              <legend className="caption">Field shapes</legend>
+              <label className={`radio ${!partition ? "off" : ""}`}>
+                <input type="radio" name="src" checked={fieldSource === "ftw_global"} disabled={!partition} onChange={() => setFieldSource("ftw_global")} />
+                <span><strong>Published field map</strong><small>{partition ? "Fields of the World. About two minutes." : "Not published for this region."}</small></span>
+              </label>
+              <label className={`radio ${!source?.model_available || mode === "pick" ? "off" : ""}`}>
+                <input type="radio" name="src" checked={fieldSource === "ftw_model"} disabled={!source?.model_available || mode === "pick"} onChange={() => setFieldSource("ftw_model")} />
+                <span><strong>Detect fields from fresh imagery</strong><small>{source?.model_available ? "Sharper on small plots. 15 to 40 minutes." : "Not installed on this server."}</small></span>
+              </label>
+            </fieldset>
+            <div className="build-what">
+              <p className="caption">What happens next</p>
+              <ul>
+                <li>About 13 months of Sentinel-2 passes for the {km2 < 1 ? `${(km2 * 100).toFixed(0)} ha` : `${km2.toFixed(1)} km²`} you marked</li>
+                <li>Weather for the same months</li>
+                <li>Every field is checked for a drop in greenness</li>
+              </ul>
+              <p className="muted small">You can leave this page while it works.</p>
+            </div>
             {error && <p className="form-error" role="alert">{error}</p>}
             <button type="button" className="btn btn-primary btn-block" disabled={!canBuild} onClick={build}>
-              {busy === "build" ? <Spinner /> : null} Set up {name.trim() || "this area"} <ArrowRight size={15} aria-hidden />
+              {busy === "build" ? <Spinner /> : null} Set up {name.trim() || "this area"}
             </button>
+            <button type="button" className="btn btn-ghost btn-block" onClick={() => setReview(false)}><CornerUpLeft size={14} aria-hidden /> Change the marked land</button>
           </section>
         )}
         {!ring && error && <p className="form-error" role="alert">{error}</p>}
@@ -548,6 +624,12 @@ export default function Setup() {
           <TileLayer url="https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}"
             maxNativeZoom={18} maxZoom={19} opacity={0.85} />
           <RegionLock place={place} />
+          <PreviewFit place={preview} />
+          {preview && !place && (preview.boundary
+            ? outerRings(preview.boundary).map((r, i) => (
+              <Polygon key={`pv-${i}`} positions={toLatLng(r)} interactive={false}
+                pathOptions={{ color: "#d99a1e", weight: 3, fillColor: "#d99a1e", fillOpacity: 0.12 }} />))
+            : <Rectangle bounds={preview.bounds} interactive={false} pathOptions={{ color: "#d99a1e", weight: 3, fillColor: "#d99a1e", fillOpacity: 0.12 }} />)}
           <ZoomWatch onZoom={setZoom} />
           <MapHandle onMap={onMap} />
           {place && ovMap && showChange && (
@@ -574,7 +656,7 @@ export default function Setup() {
           {place && partition && (showFtw || mode === "pick") && (
             <FtwLayer url={`/api/ftw/${partition.code}.pmtiles`} layer={partition.layers[0]} picking={mode === "pick"} picked={picked} onPick={togglePick} />
           )}
-          <DrawClicks active={!!place && mode === "draw" && !closed} onAdd={addVertex} />
+          <DrawClicks active={step === "mark" && mode === "draw" && !closed} onAdd={addVertex} />
           {mode === "draw" && draw.length > 0 && (
             <>
               {closed
@@ -606,12 +688,12 @@ export default function Setup() {
           <div className="map-toggles">
             {ovMap && (
               <button type="button" className={`map-toggle ${showChange ? "on" : ""}`} onClick={() => setShowChange((v) => !v)} aria-pressed={showChange}>
-                <Activity size={14} aria-hidden /> Change this fortnight
+                <Activity size={14} aria-hidden /> Where crops lost green
               </button>
             )}
             {partition && mode !== "pick" && (
               <button type="button" className={`map-toggle ${showFtw ? "on" : ""}`} onClick={() => setShowFtw((v) => !v)} aria-pressed={showFtw}>
-                <Layers size={14} aria-hidden /> Fields of the World shapes
+                <Layers size={14} aria-hidden /> Field shapes
               </button>
             )}
           </div>
@@ -623,7 +705,9 @@ export default function Setup() {
             <div className="legend-ends"><span>Loss ≤ −0.15</span><span>0</span><span>Gain ≥ +0.15</span></div>
           </div>
         )}
-        {!place && <div className="map-hint"><Search size={14} aria-hidden /> Search for your district to lock the map to it.</div>}
+        {!place && !preview && <div className="map-hint"><Search size={14} aria-hidden /> Search for your taluka or district to begin.</div>}
+        {!place && preview && <div className="map-hint is-ask"><MapPin size={14} aria-hidden /> Is this {preview.name}? Confirm it to carry on.</div>}
+        {step === "mark" && mode === "draw" && draw.length === 0 && <div className="map-hint"><PenLine size={14} aria-hidden /> Zoom in and click the corners of the land.</div>}
       </section>
     </main>
   );
