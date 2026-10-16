@@ -29,28 +29,27 @@ The officer gets a **case file**, not a heatmap: ranked causes where every line 
 ## The officer's flow
 
 ```
-Sign in
-  -> Find your region          the map locks to the district and shows what changed there this fortnight
-  -> Go to the land, mark it   coordinates or a hotspot take you there; draw a polygon or pick fields
+Sign in                        the demo area is one tap; an account is a username and a PIN
+  -> Find your place           search a taluka or district; its outline shows on the map and you confirm it
+  -> Mark the land             draw around it, tap published fields, or type coordinates
   -> FieldDx builds it         real field shapes, a year of Sentinel-2, weather, then the alerts
-  -> Today's briefing          what was thrown out, what is a harvest, what is area-wide, which fields need you
-  -> Check the fields map      every shape in the area, why each is or is not watched; fix what the model got wrong
-  -> Case                      the investigation replays, then the diagnosis and the next check
+  -> Today                     how many fields need you, where every other alert went, the fields to start with
+  -> A field                   the likely cause in plain words, what else it could be, and the one check
   -> Visit and close           the finding becomes evidence and the ranking updates
+  Ask FieldDx, anywhere        questions about any field, answered from the area's own records
 ```
 
-1. **Sign in.** Create an account with a username and a 4 to 8 digit PIN, or sign in. *Explore the demo area* opens the shipped Niphad area (Nashik) without an account.
-2. **Find your region.** Search a district, taluka or village. The map locks to the region's real boundary from OpenStreetMap, and paints this fortnight's change in cropland NDVI across the whole region, computed live in Google Earth Engine from cloud-masked Sentinel-2. A summary gives the share of cropland that lost or gained greenness and the places where most of it dropped, named after the nearest village ("around Karambali, 64% of cropland dropped"). This is a screen, not a diagnosis: a harvested field drops just like a failing one.
-3. **Go to the land and mark it.** Type a farm's coordinates to fly to it, tap a hotspot, or zoom in. Then mark the land to examine:
-   - **draw a polygon** around it (the default),
-   - **pick fields** on the published Fields of the World map, whose shapes stream onto the map for the region's state, or
-   - **type corners**: one point for a square of 2 to 12 km, or three or more corners.
+1. **Sign in.** The sign-in page opens on real satellite imagery (Esri World Imagery) of the demo fields. *Try the demo area* opens the shipped Niphad area (Nashik) without an account; otherwise sign in or create an account with a username and a 4 to 8 digit PIN.
+2. **Find your place.** Search a district, taluka or village. Picking a result only shows its outline on the map and asks *Is this the right place?*. Nothing is locked or fetched until the officer confirms. An area a colleague has already set up can be joined instead.
+3. **Mark the land.** Choose how: **draw around it** (the default), **tap the fields** on the published Fields of the World map, or **type coordinates** (one point for a square of 2 to 12 km, or three or more corners). A farm's coordinates fly the map there. *Not sure where to look?* opens, on request only, this fortnight's change in cropland NDVI across the region, computed live in Google Earth Engine, with the places where most of it dropped. It is a screen, not a diagnosis: a harvested field drops just like a failing one.
+4. **FieldDx builds it.** Name the area, choose the field shapes, and start. For that polygon only, from real sources, with progress shown step by step: field shapes, about 13 months of Sentinel-2 passes, weather, 10 m pixel zones per field, the harvest season, then the alerts. A few square kilometres take five to ten minutes, and the officer can leave the page while it runs.
+5. **Today.** One sentence says how many fields need the officer. One bar shows every alert of the last three weeks split into *need you*, *watching*, *area-wide*, *harvest*, *set aside* and *resolved*; each part opens that group in the case list. Beside the map are the five fields to start with, each with its likely cause and how sure FieldDx is.
+6. **Check the fields map, and correct it.** The map draws every field shape inside the area, not only the watched ones: watched fields in their case colour, harvest in wheat, shapes too small or too thin to read from 10 m pixels as dashed outlines, shapes that are not cropland as dotted ones, and land where no field shape was found as a cyan hatch. **Correct fields** lets the officer draw a field the model missed, split, merge, or remove a shape. Only that field is read again from the passes already downloaded.
+7. **A field.** It opens on a **Summary**: the most likely cause in plain words and how sure FieldDx is (*Likely*, *Possible*, *Weak lead*), what the satellite saw, why FieldDx thinks so, what else it could be, and what was checked and ruled out. The next best check stays pinned under it. The **Evidence** tab holds the full diagnosis and every check with its evidence, and can replay the investigation step by step; **Trend** has the NDVI timeline; **Ask** answers questions about this field. Recording what was found closes the case and re-ranks the causes.
 
-   An area a colleague has already set up can be joined instead.
-4. **FieldDx builds it.** For that polygon only, from real sources, with progress shown step by step: field shapes, about 13 months of Sentinel-2 passes, weather, 10 m pixel zones per field, the harvest season, then the alerts. A few square kilometres take five to ten minutes, and the officer can leave the page while it runs.
-5. **Today's briefing.** Fields watched, alerts raised, how many are a harvest, how many were dismissed and why, area-wide events, fields waiting for another clear pass, and the few that need a call or a visit, with where to start. Drops inside the inferred harvest season are one *Harvest under way* card, which says how many of those fields had a green crop just before and that one call to a few farmers confirms it.
-6. **Check the fields map, and correct it.** The map draws every field shape inside the area, not only the watched ones: watched fields in their case colour, harvest in wheat, shapes too small or too thin to read from 10 m pixels as dashed outlines, shapes that are not cropland as dotted ones, and land where no field shape was found as a cyan hatch. The area boundary is a solid line and the land outside it is dimmed. Every shape answers a tap. **Correct fields** lets the officer draw a field the model missed, split a shape that joins two farms, merge shapes that are one farm, or mark a shape as not a field. Only that field is read again from the passes already downloaded (seconds, not a rebuild); the alerts are then detected again, and every other field keeps its id and its closed cases.
-7. **Cases.** Each case replays its investigation step by step, then shows the ranked diagnosis and the next best check on a phone-friendly checklist. Recording what was found closes the case and re-ranks the causes.
+### Ask FieldDx
+
+An assistant for questions such as *which fields should I visit first?*, *what should I ask the farmer?* or *why not pest or disease?*, in English, Hindi or Marathi. It is retrieval first (`backend/app/assistant.py`): every case and every watched field of the officer's area becomes a short plain-text record, and the area one more (counts, dates, recent weather). A question is matched to records by field number ("field 94", "plot 128", or the field in the previous turn), then by word overlap (BM25); on a case page that case comes first with all its evidence. Gemini answers only from those records, cites the fields and evidence it used as links, and is told never to invent numbers, pests or doses. Without a key, or if the call fails, the matching records are returned as they are. `POST /api/ask` takes `question`, an optional `case_id` and the last turns.
 
 Every route reads only the signed-in officer's area. A case ID from another area answers "not found".
 
@@ -110,7 +109,7 @@ What is **assumed, and says so wherever it is used**:
 - **Zones follow the real shape.** A field's 10 m pixels are split into an analysis area (the shape shrunk 10 m), four interior quadrants, four edges, and an unshrunk 20 m ring used only by the boundary check. A field too small or thin for that is read as one zone: its pixels at least half a pixel inside the boundary. The case says which, and the boundary and pattern checks say why they were skipped.
 - **A rule table** (`backend/app/engine/rules.py`) scores ten hypotheses in three stages. Stages 1 and 2 dismiss the case with a reason or raise an area alert; stage 3 ranks field-specific causes. A drop seen on only one clear pass is *watched*, not escalated. If nothing clears the bar, the answer is "ask or visit", never a forced guess.
 - **The next best check** (`backend/app/next_check.py`) is computed, not written by a model: how cleanly a result splits the top two causes, divided by the minutes it takes. The candidate table sits under "Why this check?".
-- **The language model never invents a cause.** Gemini, when configured, only writes the plain-language case file from the evidence list. Its output is validated: every line must cite known evidence IDs and follow the engine's order. One retry, then a template narrative. Without a key the app works the same.
+- **The language model never invents a cause.** Gemini, when configured, only writes the plain-language case file from the evidence list, and answers Ask FieldDx questions from the area's own records. Its output is validated: every line must cite known evidence IDs and follow the engine's order. One retry, then a template narrative. Without a key the app works the same.
 - **A map at pixel level.** The field is painted as its real 10 m pixels on satellite imagery: NDVI, change against each pixel's own baseline, or plain satellite. Any pass can be picked from the scene bar, two dates compared side by side, and a pixel inspected under the pointer. Cloudy passes stay in the scene bar, disabled, and never show a number.
 
 The full hypothesis table and the reasoning behind it are in [idea.md](idea.md). The visual language is in [DESIGN.md](DESIGN.md).
@@ -193,7 +192,7 @@ Set these in the environment or in a `.env` file at the repository root (see `.e
 
 | Variable | Default | Effect |
 |---|---|---|
-| `GEMINI_API_KEY` | none | Lets Gemini write the case file. Without it, a template narrative is used. |
+| `GEMINI_API_KEY` | none | Lets Gemini write the case file and answer Ask FieldDx. Without it, a template narrative is used and Ask returns the matching records. |
 | `GEMINI_MODEL` | `gemini-3.8-flash` | The Gemini model. |
 | `FIELDDX_LLM` | `auto` | `off` always uses the template narrative. |
 | `FIELDDX_LLM_TIMEOUT` | `25` | Seconds to wait for the model. |
@@ -237,7 +236,7 @@ The fixture exists only for tests. The product never reads it.
 ```
 backend/app      main.py (API), areas.py (areas and builds), places.py (place search, FTW partitions),
                  overview.py (region change), pipeline.py, engine/, tools/, next_check.py, resolve.py,
-                 narrative.py, llm.py, raster.py, data.py, db.py, config.py
+                 narrative.py, llm.py, assistant.py (Ask FieldDx), raster.py, data.py, db.py, config.py
 backend/tests    engine logic on a fixture, invariants on the real data, accounts and areas
 frontend/src     pages/ (SignIn, Setup, Home, Inbox, Case, Checklist), components/, styles/, session.tsx, api.ts
 data/            checks.json, areas/niphad/ (the shipped demo area), areas/<id>/ built at runtime

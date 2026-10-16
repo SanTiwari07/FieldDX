@@ -6,23 +6,28 @@ description: The design language for FieldDx, a differential-diagnosis tool for 
 colors:
   # Chrome: neutral, so the map and the evidence carry the colour
   canvas: "#ffffff"
-  canvas-subtle: "#f8fafc"
-  canvas-sunken: "#f1f4f3"
-  border: "#e5e7eb"
-  border-subtle: "#f3f4f6"
-  border-strong: "#d1d5db"
-  ink: "#101c16"
-  ink-hover: "#22302a"
-  text-primary: "#101c16"
-  text-secondary: "#5c6670"
-  text-tertiary: "#737b82"
-  text-disabled: "#b4b8bc"
+  canvas-subtle: "#f2f4ee"   # lichen: the page behind the cards
+  canvas-sunken: "#e8ece4"
+  border: "#dfe4da"
+  border-subtle: "#edf0e9"
+  border-strong: "#c7cfc2"
+  ink: "#123232"             # monsoon teal: text, primary buttons, the next-check slip
+  ink-hover: "#1d4545"
+  text-primary: "#142222"
+  text-secondary: "#4d5c58"
+  text-tertiary: "#6c7a76"
+  text-disabled: "#aab4af"
   on-ink: "#ffffff"
-  focus: "#10b981"
+  focus: "#d99a1e"
 
   # Brand: used sparingly, never as a data colour
-  brand: "#065f2c"
-  brand-wash: "#e5f4e9"
+  brand: "#123232"
+  brand-wash: "#e3ece8"
+
+  # Turmeric: what needs the officer (the step they are on, the place to confirm, the Ask button, "likely")
+  turmeric: "#d99a1e"
+  turmeric-soft: "#fbf1dc"
+  turmeric-ink: "#7a5208"
 
   # Severity (inbox ranking): icon + text always, never colour alone
   severity-high: "#b91c1c"
@@ -77,75 +82,75 @@ colors:
   overlay-nodata-hatch: "#d1d5db"
 
 typography:
+  # Headings and big numbers in Bricolage Grotesque; everything else in Figtree
   display:
-    fontFamily: Inter
-    fontSize: 28px
+    fontFamily: Bricolage Grotesque
+    fontSize: 40px
     fontWeight: 700
-    lineHeight: 1.2
-    letterSpacing: -0.022em
+    lineHeight: 1.05
+    letterSpacing: -0.03em
   heading-1:
-    fontFamily: Inter
-    fontSize: 22px
-    fontWeight: 700
-    lineHeight: 1.25
-    letterSpacing: -0.018em
+    fontFamily: Bricolage Grotesque
+    fontSize: 26px
+    fontWeight: 650
+    lineHeight: 1.15
+    letterSpacing: -0.02em
   heading-2:
-    fontFamily: Inter
+    fontFamily: Bricolage Grotesque
     fontSize: 18px
     fontWeight: 600
     lineHeight: 1.3
     letterSpacing: -0.011em
   heading-3:
-    fontFamily: Inter
+    fontFamily: Figtree
     fontSize: 15px
     fontWeight: 600
     lineHeight: 1.35
     letterSpacing: -0.011em
   body-lg:
-    fontFamily: Inter
+    fontFamily: Figtree
     fontSize: 16px
     fontWeight: 400
     lineHeight: 1.55
     letterSpacing: -0.011em
   body-md:
-    fontFamily: Inter
+    fontFamily: Figtree
     fontSize: 14px
     fontWeight: 400
     lineHeight: 1.5
     letterSpacing: -0.011em
   ui-label:
-    fontFamily: Inter
+    fontFamily: Figtree
     fontSize: 14px
     fontWeight: 600
     lineHeight: 1.2
     letterSpacing: 0
   caption:
-    fontFamily: Inter
+    fontFamily: Figtree
     fontSize: 12px
     fontWeight: 500
     lineHeight: 1.4
     letterSpacing: 0
   eyebrow:
-    fontFamily: Inter
-    fontSize: 11px
+    fontFamily: Figtree
+    fontSize: 13px
     fontWeight: 600
-    lineHeight: 1.2
-    letterSpacing: 0.06em
-    textTransform: uppercase
+    lineHeight: 1.3
+    letterSpacing: 0           # sentence case: no all-caps labels anywhere
   data-lg:
-    fontFamily: Inter
+    fontFamily: Figtree
     fontSize: 24px
     fontWeight: 600
     lineHeight: 1.15
     fontVariantNumeric: tabular-nums
   data-sm:
-    fontFamily: Inter
+    fontFamily: Figtree
     fontSize: 13px
     fontWeight: 500
     lineHeight: 1.3
     fontVariantNumeric: tabular-nums
   evidence-id:
-    fontFamily: Inter
+    fontFamily: Figtree
     fontSize: 12px
     fontWeight: 700
     lineHeight: 1
