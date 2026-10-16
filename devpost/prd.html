@@ -228,8 +228,8 @@
   <section id="payoff">
     <header>
       <div class="eyebrow">The payoff · Investigation update after a finding</div>
-      <h2>The officer records Drip line working on Field 128</h2>
-      <p class="sub">Compare the case before the finding, what the app does today, and what this PRD asks for. The first two views come from running the real case through FieldDx.</p>
+      <h2>The officer records Leaves clean on Field 128</h2>
+      <p class="sub">Compare the case before the finding, what today's app does after a finding, and what this PRD asks for. All three come from running the real case through the engine; the last under the rules in the spec.</p>
     </header>
     <div class="seg" role="group" aria-label="Which view">
       <button type="button" data-view="before" aria-pressed="true">Before the finding</button>
@@ -279,8 +279,8 @@
     <ol class="build">
       <li>Recording a finding no longer closes the case or marks anything confirmed. The results read Drip line working and Drip line not working. <span class="lab change">Change</span></li>
       <li>The <i>Investigation updated</i> state replaces the confirmation card: the new evidence, a before-and-after for the causes, and evidence-linked reasons. <span class="lab new">New</span></li>
-      <li>Re-ranking only raises a cause on direct evidence. Nutrient deficiency stays ruled out after Drip line working. <span class="lab change">Change</span></li>
-      <li>The next check updates after a finding, with the reason: leaf undersides for thrips or mildew. <span class="lab new">New</span></li>
+      <li>Re-ranking only raises a cause on direct evidence. Nutrient deficiency stays ruled out after Leaves clean or Drip line working. <span class="lab change">Change</span></li>
+      <li>The next check is recalculated after a finding, with the reason: after Leaves clean, the drip line on the south edge. <span class="lab new">New</span></li>
       <li>A state for when none of the current explanations fits well. Built, but not filmed unless a genuine, reproducible example exists. <span class="lab new">New</span></li>
     </ol>
     <p class="sub" style="margin-top:10px">Everything else in the core journey already exists and should keep working.</p>
@@ -297,6 +297,7 @@
       <li><b>Reversible, never arbitrary.</b> Only direct evidence raises a cause.</li>
       <li><b>Quiet update, loud next check.</b></li>
       <li><b>Words, not just colour</b>, for every change.</li>
+      <li><b>The demo records Leaves clean</b> at the computed first check, the leaf undersides (decided in 4-spec).</li>
       <li><b>The demo ends at Investigation updated plus the new next check</b>: one reliable, honest investigation from start to finish.</li>
       <li><b>When No Cause Fits is built but not filmed</b> unless a genuine, reproducible example exists.</li>
       <li><b>Keep the existing design language.</b></li>
@@ -347,9 +348,9 @@
     { t: "What changed", sc: "Case", tag: "built", d: "Satellite imagery, the change in greenery over time, and the evidence behind the alert." },
     { t: "Triage first", sc: "Case · Investigation", tag: "built", d: "Is the drop real (image quality)? Is it ordinary (harvest, pruning, weather, neighbours)? Only then are causes ranked.", c: ["Field 128 shows the data-quality and ordinary-change checks before the ranked causes."] },
     { t: "Ranked causes", sc: "Case · Investigation", tag: "verified", d: "Pest or disease spread leads (high). Irrigation failure is possible (medium). Nutrient deficiency and standing water are ruled out. Each has evidence for and against.", c: ["Each cause shows a status, how sure FieldDx is, and linked evidence lines."] },
-    { t: "Next check", sc: "Case · dark slip", tag: "verified", d: "Check the drip line and valve on the south edge. Not working points to irrigation failure; working means look at the leaves for thrips and mildew.", c: ["The slip names the check and what each result would mean."] },
-    { t: "Record finding", sc: "Field checklist", tag: "change", d: "The officer records the example finding Drip line working. Recording already works; what happens next changes.", c: ["After recording, the case is still open and a field-visit item is in the evidence timeline.", "Nothing on the screen says confirmed or closed."] },
-    { t: "Investigation updated", sc: "Case", tag: "new", payoff: true, d: "The case stays open. Irrigation failure is ruled out with the reason. Pest or disease spread is still leading, not confirmed. Nutrient deficiency stays ruled out. The next check becomes the leaf undersides for thrips or mildew.", c: ["The screen answers: What changed? Why did it change? What should I do next?"] }
+    { t: "Next check", sc: "Case · dark slip", tag: "change", d: "Inspect the leaf undersides for thrips or mildew. Today the app picks the drip line, but only because a working line was miscounted as evidence for pests. With that corrected, the leaf check is as decisive and cheaper.", c: ["The slip names the check and what each result would mean."] },
+    { t: "Record finding", sc: "Field checklist", tag: "change", d: "The officer records the example finding Leaves clean. Recording already works; what happens next changes.", c: ["After recording, the case is still open and a field-visit item is in the evidence timeline.", "Nothing on the screen says confirmed or closed."] },
+    { t: "Investigation updated", sc: "Case", tag: "new", payoff: true, d: "The case stays open. Pest or disease spread is less likely but still possible. Irrigation failure is unchanged and now ranks first, never labelled more likely. Nutrient deficiency and standing water are unchanged. The next check is recalculated to the drip line and valve on the south edge.", c: ["The screen answers: What changed? Why did it change? What should I do next?"] }
   ];
   var nodesG = document.getElementById("jnodes"), edgesG = document.getElementById("jedges");
   var W = 210, H = 84, gap = 40, x0 = 15;
@@ -386,23 +387,23 @@
   // ---- Payoff: before / today / PRD. "before" and "today" are from running the real F128 case.
   var V = {
     before: { status: ["Open", ""], causes: [
-      ["Pest or disease spread", "Leading · high"], ["Irrigation failure", "Possible · medium"],
+      ["Pest or disease spread", "Leading · 0.7"], ["Irrigation failure", "Possible · 0.4"],
       ["Nutrient deficiency", "Ruled out"], ["Standing water", "Ruled out"]],
-      slip: ["Check the drip line and valve on the south edge", "Not working points to irrigation failure. Working means look at the leaves for thrips and mildew."],
-      note: "Real output for Field 128 before any finding.", noteCls: "" },
+      slip: ["Inspect the leaf undersides for thrips or mildew", "Pests or lesions visible points to pest or disease spread. Leaves clean counts against it. 4 minutes."],
+      note: "Real output for Field 128 with the corrected evidence rules. Today the app recommends the drip line here.", noteCls: "" },
     today: { status: ["Closed · Confirmed on the ground", "closed"], causes: [
       ["Pest or disease spread", "Confirmed", "flag", "Marked confirmed, though no leaf has been inspected."],
       ["Nutrient deficiency", "Possible · medium", "flag", "Back in from ruled out, because a working line was counted as support."],
       ["Irrigation failure", "Ruled out"], ["Standing water", "Ruled out"]],
       slip: ["Check the drip line and valve on the south edge", "Unchanged, although the check was just done."],
-      note: "Real output today, where the app labels the finding Drip line wet: every finding closes the case, and no before-and-after is shown.", noteCls: "bad" },
+      note: "Real output today after the app's first check, a drip line found working (labelled Drip line wet): every finding closes the case, and no before-and-after is shown.", noteCls: "bad" },
     prd: { status: ["Investigation updated · still open", "updated"], causes: [
-      ["Pest or disease spread", "Still leading · not confirmed", "", "", "Still leading", "Still the best fit, but nothing on site has confirmed it yet."],
-      ["Irrigation failure", "Ruled out", "", "", "Ruled out", "The officer recorded that the drip line is working (field visit)."],
-      ["Nutrient deficiency", "Ruled out", "", "", "Unchanged", "A working drip line says nothing about nutrients."],
+      ["Irrigation failure", "Possible · 0.4 · now first", "", "", "Unchanged", "No new evidence for it. It ranks first because pest or disease spread became less likely."],
+      ["Pest or disease spread", "Possible · 0.7 → 0.2", "", "", "Less likely", "The officer found the leaf undersides clean (field visit)."],
+      ["Nutrient deficiency", "Ruled out", "", "", "Unchanged", "Clean leaves say nothing about nutrients."],
       ["Standing water", "Ruled out", "", "", "Unchanged", ""]],
-      slip: ["Inspect the undersides of leaves for thrips or mildew", "Why this changed: the drip line is working, so irrigation is out. Leaf undersides separate pests from mildew."],
-      three: true, note: "Proposed. Every change carries a word label and an evidence-linked reason.", noteCls: "" }
+      slip: ["Check the drip line and valve on the south edge", "Why this changed: leaves were clean, so pest or disease spread is less likely. The drip line now best separates irrigation failure from pest or disease spread."],
+      three: true, note: "Simulated with the engine under the spec's rules. Every change carries a word label and an evidence-linked reason.", noteCls: "" }
   };
   var box = document.getElementById("case");
   function showV(k) {
@@ -422,7 +423,7 @@
     var slip = el("div", "slip"); slip.appendChild(el("div", "k", "Next check")); slip.appendChild(el("div", "c", v.slip[0])); slip.appendChild(el("p", "w", v.slip[1])); box.appendChild(slip);
     if (v.three) {
       var t = el("div", "three");
-      [["What changed?", "Irrigation failure is ruled out. The next check moved to the leaves."], ["Why?", "The officer recorded the drip line is working (new field-visit evidence)."], ["What next?", "Inspect the leaf undersides for thrips or mildew. The case stays open."]]
+      [["What changed?", "Pest or disease spread is less likely. Irrigation failure, unchanged, now ranks first."], ["Why?", "The officer found the leaf undersides clean (new field-visit evidence)."], ["What next?", "Check the drip line and valve on the south edge. The case stays open."]]
         .forEach(function (q) { var d = el("div"); d.appendChild(el("b", null, q[0])); d.appendChild(document.createTextNode(q[1])); t.appendChild(d); });
       box.appendChild(t);
     }
@@ -439,21 +440,21 @@
     ["Ranked Causes With Evidence", "verified", "Develops scope.md > The Core Loop step 4",
       "Causes are ranked with a status, how sure FieldDx is, and evidence lines for and against, each linked to evidence.",
       ["Field 128: pest or disease spread leading, irrigation failure possible, nutrient deficiency and standing water ruled out, each with linked evidence."]],
-    ["The Next Check", "verified", "Develops scope.md > The Unique Kernel",
+    ["The Next Check", "change", "Develops scope.md > The Unique Kernel",
       "One practical check, chosen because its results separate the leading causes, with what each result would mean.",
-      ["Field 128's slip recommends checking the drip line and valve on the south edge, with results for working and not working."]],
+      ["Field 128's slip recommends inspecting the leaf undersides, with results for pests or lesions visible and leaves clean."]],
     ["Recording a Finding", "change", "Develops scope.md > The Core Loop step 6",
       "The officer records the result on the field checklist, and it appears as a field-visit evidence item. The results read Drip line working and Drip line not working. Recording does not close or resolve the case. Today, any finding closes it and marks the top cause confirmed on the ground.",
-      ["After Drip line working on Field 128, the case is still open and the field-visit item is in the timeline.", "Nothing on the screen says confirmed or closed."]],
+      ["After Leaves clean on Field 128, the case is still open and the field-visit item is in the timeline.", "Nothing on the screen says confirmed or closed."]],
     ["Investigation Update After a Finding", "new", "Develops scope.md > What Working Looks Like step 6",
       "Investigation updated replaces the confirmation card. It shows the new evidence, the updated leading cause, and a before-and-after with movement labels (more likely, less likely, ruled out, unchanged, newly considered) and evidence-linked reasons. The leading cause reads still leading, not confirmed.",
-      ["Irrigation failure shows ruled out, with a reason that cites the field-visit evidence.", "Pest or disease spread shows still leading, and nowhere confirmed.", "Every changed cause has a movement label and a one-line reason. Unchanged causes say unchanged.", "Understandable without colour: each change has a word label."]],
+      ["Pest or disease spread shows less likely, with a reason that cites the field-visit evidence.", "Irrigation failure shows unchanged and says it now ranks first because pest or disease spread weakened. Never more likely.", "The word confirmed appears nowhere.", "Every changed cause has a movement label and a one-line reason. Unchanged causes say unchanged.", "Understandable without colour: each change has a word label."]],
     ["Reversible but Never Arbitrary", "change", "Learner principle",
       "A finding raises a cause only if it directly supports it. Ruling one cause out never promotes another. A strongly ruled-out cause returns only with meaningful contradicting evidence, with the reason shown. Today, a working drip line brings nutrient deficiency back to possible.",
       ["After Drip line working, nutrient deficiency stays ruled out and shows unchanged.", "Any cause that rises shows the specific evidence that raised it."]],
     ["Next Check Responds to the Finding", "new", "Develops scope.md > Carried Into the PRD",
-      "The dark slip updates to the next most useful check, says why it changed, and what each result would mean. For Field 128 after Drip line working: inspect the undersides of leaves for thrips or mildew.",
-      ["The slip shows the leaf-underside check with a reason that refers to the drip-line finding.", "The slip remains the strongest visual element on the case."]],
+      "The dark slip updates to the next most useful check, says why it changed, and what each result would mean. Done checks are skipped. For Field 128 after Leaves clean: the drip line and valve on the south edge.",
+      ["The slip shows the drip-line check with a reason that refers to the leaf finding.", "The slip remains the strongest visual element on the case."]],
     ["When No Cause Fits", "new", "Learner decision · built, but not in the one-minute demo unless a genuine, reproducible example exists",
       "If a finding fits none of the causes (for example, healthy leaves), FieldDx records it, says the expected signs weren't found, and can say none of the current explanations fits well. It does not declare the field healthy or the alert false, and it suggests another check or an expert.",
       ["A finding that supports no cause leaves no cause marked leading or confirmed on its strength, and the case says none of the current explanations fits well."]]

@@ -1,0 +1,417 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FieldDx Spec</title>
+<meta name="description" content="Technical spec review for FieldDx: how a recorded finding is stored, replayed and turned into a new next check, traced through the real Field 128 case. Companion to devpost/spec.md, which is canonical.">
+<style>
+  :root {
+    --canvas: #ffffff; --canvas-subtle: #f2f4ee; --canvas-sunken: #e8ece4;
+    --border: #dfe4da; --border-strong: #c7cfc2;
+    --ink: #123232; --text: #142222; --text-2: #4d5c58; --text-3: #6c7a76; --on-ink: #ffffff;
+    --brand-wash: #e3ece8;
+    --turmeric: #d99a1e; --turmeric-soft: #fbf1dc; --turmeric-ink: #7a5208;
+    --for: #1f5f99; --for-soft: #e6f0f9; --ok: #1f6b45; --ok-soft: #e5f4e9; --warn: #8a5a00; --warn-soft: #fdf4e3;
+    --r-sm: 8px; --r-md: 12px;
+    --raised: 0 1px 0 rgba(18,50,50,.04), 0 4px 14px -6px rgba(18,50,50,.12);
+    --font: Figtree, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --display: "Bricolage Grotesque", var(--font);
+    --mono: ui-monospace, "Cascadia Code", Consolas, monospace;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --canvas: #142020; --canvas-subtle: #0e1717; --canvas-sunken: #1a2828; --border: #2a3a38; --border-strong: #3a4c4a;
+      --ink: #cfe3dc; --text: #e6eeea; --text-2: #a9bab4; --text-3: #84958f; --on-ink: #0e1717; --brand-wash: #1d2f2c;
+      --turmeric: #e5ad3e; --turmeric-soft: #2e2512; --turmeric-ink: #f0c66e;
+      --for: #7fb2e0; --for-soft: #16283a; --ok: #6fc196; --ok-soft: #13291e; --warn: #e5ad3e; --warn-soft: #2e2512;
+      --raised: 0 1px 0 rgba(0,0,0,.2), 0 4px 14px -6px rgba(0,0,0,.5); color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --canvas: #142020; --canvas-subtle: #0e1717; --canvas-sunken: #1a2828; --border: #2a3a38; --border-strong: #3a4c4a;
+    --ink: #cfe3dc; --text: #e6eeea; --text-2: #a9bab4; --text-3: #84958f; --on-ink: #0e1717; --brand-wash: #1d2f2c;
+    --turmeric: #e5ad3e; --turmeric-soft: #2e2512; --turmeric-ink: #f0c66e;
+    --for: #7fb2e0; --for-soft: #16283a; --ok: #6fc196; --ok-soft: #13291e; --warn: #e5ad3e; --warn-soft: #2e2512;
+    --raised: 0 1px 0 rgba(0,0,0,.2), 0 4px 14px -6px rgba(0,0,0,.5); color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: var(--canvas-subtle); color: var(--text); font: 16px/1.6 var(--font); }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 32px 16px 80px; }
+  h1, h2, h3 { font-family: var(--display); line-height: 1.2; margin: 0; color: var(--text); }
+  h1 { font-size: clamp(2rem, 5vw, 2.8rem); letter-spacing: -.02em; }
+  h2 { font-size: 1.35rem; letter-spacing: -.01em; margin-bottom: 4px; }
+  h3 { font-size: 1rem; }
+  p { margin: 0 0 12px; }
+  code, pre { font-family: var(--mono); font-size: .86em; }
+  code { background: var(--canvas-sunken); padding: 1px 5px; border-radius: 4px; }
+  pre { background: var(--canvas-sunken); border: 1px solid var(--border); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; margin: 8px 0 12px; line-height: 1.5; }
+  .eyebrow { font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; color: var(--text-3); font-weight: 600; }
+  .sub { color: var(--text-2); }
+  .lede { font-size: 1.15rem; color: var(--text-2); max-width: 62ch; margin-top: 10px; }
+  header.top { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: flex-end; justify-content: space-between; margin-bottom: 24px; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: .85rem; color: var(--text-3); }
+  .pill { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--border); background: var(--canvas); font-weight: 600; font-size: .8rem; color: var(--text-2); }
+  .pill.draft::before, .pill.approved::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--turmeric); }
+  .pill.approved::before { background: var(--ok); }
+  .theme-toggle { font: inherit; font-size: .8rem; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--border); background: var(--canvas); color: var(--text-2); cursor: pointer; }
+  nav.toc { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 24px; }
+  nav.toc a { font-size: .85rem; text-decoration: none; color: var(--text-2); padding: 5px 12px; border-radius: 999px; border: 1px solid var(--border); background: var(--canvas); }
+  nav.toc a:hover { color: var(--text); border-color: var(--border-strong); }
+  a:focus-visible, button:focus-visible, summary:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--turmeric); outline-offset: 2px; }
+  section { background: var(--canvas); border: 1px solid var(--border); border-radius: var(--r-md); padding: 24px; margin-bottom: 16px; box-shadow: var(--raised); }
+  section > header { margin-bottom: 16px; }
+  .plain-lang { background: var(--ink); color: var(--on-ink); border: none; }
+  .plain-lang h2, .plain-lang .eyebrow { color: var(--on-ink); }
+  .plain-lang .eyebrow { opacity: .7; }
+  .plain-lang p { max-width: 70ch; opacity: .95; }
+  .plain-lang ul { margin: 0 0 12px; padding-left: 18px; opacity: .95; }
+  .plain-lang b { color: var(--turmeric); }
+  .plain-lang code { background: rgba(255,255,255,.12); color: var(--on-ink); }
+  .diagram-scroll svg { min-width: 580px; }
+
+  .lab { display: inline-flex; align-items: center; gap: 5px; font-size: .72rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; border: 1px solid; white-space: nowrap; }
+  .lab.built { color: var(--text-2); background: var(--canvas-subtle); border-color: var(--border-strong); }
+  .lab.built::before { content: "●"; font-size: .55rem; }
+  .lab.change { color: var(--warn); background: var(--warn-soft); border-color: var(--warn); }
+  .lab.change::before { content: "↻"; }
+  .lab.new { color: var(--for); background: var(--for-soft); border-color: var(--for); }
+  .lab.new::before { content: "+"; }
+
+  /* architecture diagram */
+  .diagram-scroll { overflow-x: auto; margin: 0 -8px; padding: 0 8px; }
+  .diagram-scroll svg { display: block; min-width: 620px; width: 100%; height: auto; }
+  .box rect { fill: var(--canvas); stroke: var(--border-strong); stroke-width: 1.2; }
+  .box.hl rect { stroke: var(--turmeric); stroke-width: 2.4; }
+  .box.store rect { fill: var(--canvas-subtle); }
+  .box.engine rect { fill: var(--brand-wash); }
+  .box text { fill: var(--text); font: 600 14px var(--font); }
+  .box text.s { fill: var(--text-3); font: 12px var(--font); }
+  .box text.f { fill: var(--text-3); font: 11px var(--mono); }
+  .group rect { fill: none; stroke: var(--border-strong); stroke-dasharray: 5 4; }
+  .group text { fill: var(--text-3); font: 600 11px var(--font); letter-spacing: .08em; }
+  .wire { stroke: var(--text-3); stroke-width: 1.4; fill: none; }
+  .wire.hl { stroke: var(--turmeric); stroke-width: 2.4; }
+  .wl { fill: var(--text-3); font: 12px var(--font); }
+  .wl.hl { fill: var(--turmeric-ink); font-weight: 600; }
+  .ah { fill: var(--text-3); }
+  .ah.hl { fill: var(--turmeric); }
+  .tag-new { fill: var(--for); } .tag-change { fill: var(--warn); } .tag-built { fill: var(--border-strong); }
+
+  /* stepper */
+  .stepper { display: grid; grid-template-columns: 230px 1fr; gap: 20px; margin-top: 18px; }
+  @media (max-width: 720px) { .stepper { grid-template-columns: 1fr; } }
+  .steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+  .steps button { width: 100%; text-align: left; font: inherit; font-size: .92rem; padding: 8px 10px; border-radius: var(--r-sm); border: 1px solid transparent; background: none; color: var(--text-2); cursor: pointer; display: flex; gap: 10px; align-items: baseline; }
+  .steps button .n { font-variant-numeric: tabular-nums; color: var(--text-3); font-weight: 600; font-size: .8rem; }
+  .steps button:hover { background: var(--canvas-subtle); }
+  .steps button[aria-current="step"] { background: var(--brand-wash); color: var(--text); border-color: var(--border); font-weight: 600; }
+  .stage { background: var(--canvas-subtle); border: 1px solid var(--border); border-radius: var(--r-md); padding: 18px; display: flex; flex-direction: column; min-height: 250px; }
+  .stage .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 8px; }
+  .stage h3 { font-size: 1.1rem; }
+  .stage .files { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 10px; }
+  .stage .files code { font-size: .78rem; }
+  .stage .vals { font-family: var(--mono); font-size: .82rem; color: var(--text-2); background: var(--canvas); border: 1px solid var(--border); border-radius: var(--r-sm); padding: 8px 10px; white-space: pre-wrap; }
+  .controls { margin-top: auto; padding-top: 14px; display: flex; gap: 8px; align-items: center; }
+  .controls button { font: inherit; font-size: .88rem; font-weight: 600; padding: 7px 14px; border-radius: var(--r-sm); border: 1px solid var(--border-strong); background: var(--canvas); color: var(--text); cursor: pointer; }
+  .controls button.primary { background: var(--ink); border-color: var(--ink); color: var(--on-ink); }
+  .controls button:disabled { opacity: .4; cursor: default; }
+  .controls .count { margin-left: auto; font-size: .82rem; color: var(--text-3); font-variant-numeric: tabular-nums; }
+
+  details { border: 1px solid var(--border); border-radius: var(--r-sm); background: var(--canvas); margin-bottom: 8px; }
+  details summary { cursor: pointer; padding: 12px 14px; font-weight: 600; list-style: none; display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; }
+  details summary::-webkit-details-marker { display: none; }
+  details summary .ttl { flex: 1 1 auto; }
+  details summary::after { content: "+"; color: var(--text-3); font-weight: 500; }
+  details[open] summary::after { content: "−"; }
+  details[open] summary { border-bottom: 1px solid var(--border); }
+  details .body { padding: 12px 14px 14px; color: var(--text-2); }
+  details .body ul { margin: 0; padding-left: 18px; }
+  details .body .prd { font-size: .8rem; color: var(--text-3); margin-bottom: 6px; }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 720px) { .grid2 { grid-template-columns: 1fr; } }
+  .grid2 > section { margin-bottom: 0; }
+  .stack { margin-bottom: 16px; }
+  ol.run { margin: 0; padding-left: 20px; }
+  ol.run li { margin-bottom: 8px; }
+  ul.list { margin: 0; padding-left: 18px; }
+  ul.list li { margin-bottom: 6px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  .chip { font-size: .72rem; font-weight: 700; letter-spacing: .04em; padding: 2px 8px; border-radius: 4px; background: var(--canvas-sunken); color: var(--text-2); }
+  .foot { font-size: .85rem; color: var(--text-3); margin-top: 24px; }
+  .foot a { color: var(--text-2); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div>
+      <div class="eyebrow">Build With AI: Basics · Planning review 3 of 3</div>
+      <h1>FieldDx technical spec</h1>
+      <p class="lede">How a recorded finding is stored, replayed and turned into a new next check, traced through the real Field 128 case. The existing stack, with one idea changed: a finding is a step in an investigation, not the end of one.</p>
+    </div>
+    <div class="meta">
+      <span class="pill draft" id="status">Draft</span>
+      <span>Sanskar Tiwari &amp; Shambhavi Patil</span>
+      <button class="theme-toggle" id="theme" type="button">Theme</button>
+    </div>
+  </header>
+
+  <nav class="toc" aria-label="Sections">
+    <a href="#plain">In plain language</a>
+    <a href="#arch">Architecture</a>
+    <a href="#components">Components</a>
+    <a href="#run">Run and record</a>
+    <a href="#data">Data</a>
+    <a href="#decisions">Decisions</a>
+  </nav>
+
+  <section class="plain-lang" id="plain">
+    <div class="eyebrow">How this works, in plain language</div>
+    <h2>Two halves, one rule file, one findings list</h2>
+    <ul>
+      <li><b>The engine</b> (Python, FastAPI) reads the shipped Niphad data, checks whether a drop is real and unusual, scores the causes and picks the next check. Plain rules, no language model: the same field always gives the same answer.</li>
+      <li><b>The screens</b> (React, TypeScript) show the case and let the officer record what they found.</li>
+      <li><b>The check list</b> (<code>data/checks.json</code>) says what each result supports and what it counts against. The evidence rules live here, not in code.</li>
+      <li><b>The findings store</b> (a SQLite file) keeps every finding, in order.</li>
+    </ul>
+    <p>Opening a case rebuilds it from the satellite evidence, then replays each finding on top. Each finding moves only the causes the check list names. The next check is picked again from the causes still live. A fixed template writes the summary, so the wording is identical every run.</p>
+  </section>
+
+  <section id="arch">
+    <header>
+      <div class="eyebrow">Architecture · the core journey through the system</div>
+      <h2>Field 128, step by step</h2>
+      <p class="sub">Step through the journey. The diagram highlights the pieces each step touches. The values are real engine output for Field 128, simulated under this spec's rules.</p>
+    </header>
+    <div class="diagram-scroll">
+      <svg viewBox="0 0 960 330" role="img" aria-label="Architecture: screens call the API; the engine reads shipped data and the check list, stores and replays findings, and writes the summary from a template">
+        <defs>
+          <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker>
+          <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah hl" d="M0,0 L10,5 L0,10 z"/></marker>
+        </defs>
+        <g class="group"><rect x="10" y="20" width="230" height="290" rx="12"/><text x="26" y="42">BROWSER · REACT</text></g>
+        <g class="group"><rect x="290" y="20" width="660" height="290" rx="12"/><text x="306" y="42">ENGINE · FASTAPI ON LAPTOP</text></g>
+
+        <g class="box" id="b-case"><rect x="30" y="60" width="190" height="96" rx="10"/><rect class="tag-change" x="44" y="74" width="8" height="8" rx="2"/><text x="60" y="83">Case screen</text><text class="s" x="44" y="106">update panel, movement</text><text class="s" x="44" y="122">chips, next-check slip</text><text class="f" x="44" y="142">NextCheck · Diagnosis</text></g>
+        <g class="box" id="b-check"><rect x="30" y="196" width="190" height="96" rx="10"/><rect class="tag-change" x="44" y="210" width="8" height="8" rx="2"/><text x="60" y="219">Field checklist</text><text class="s" x="44" y="242">saves a result,</text><text class="s" x="44" y="258">returns to the case</text><text class="f" x="44" y="278">Checklist · api.ts</text></g>
+
+        <g class="box" id="b-api"><rect x="310" y="128" width="160" height="96" rx="10"/><rect class="tag-change" x="324" y="142" width="8" height="8" rx="2"/><text x="340" y="151">API + service</text><text class="s" x="324" y="174">GET case, POST</text><text class="s" x="324" y="190">findings; replay</text><text class="f" x="324" y="210">main · service</text></g>
+        <g class="box engine" id="b-replay"><rect x="520" y="60" width="200" height="96" rx="10"/><rect class="tag-change" x="534" y="74" width="8" height="8" rx="2"/><text x="550" y="83">Finding replay</text><text class="s" x="534" y="106">moves only named causes,</text><text class="s" x="534" y="122">builds the update record</text><text class="f" x="534" y="142">resolve.apply_finding</text></g>
+        <g class="box engine" id="b-next"><rect x="520" y="196" width="200" height="96" rx="10"/><rect class="tag-change" x="534" y="210" width="8" height="8" rx="2"/><text x="550" y="219">Next check</text><text class="s" x="534" y="242">live causes, skip done,</text><text class="s" x="534" y="258">why it changed</text><text class="f" x="534" y="278">next_check.choose</text></g>
+        <g class="box store" id="b-rules"><rect x="760" y="44" width="170" height="64" rx="10"/><rect class="tag-change" x="774" y="58" width="8" height="8" rx="2"/><text x="790" y="67">Check list</text><text class="f" x="774" y="92">data/checks.json</text></g>
+        <g class="box store" id="b-store"><rect x="760" y="128" width="170" height="64" rx="10"/><rect class="tag-new" x="774" y="142" width="8" height="8" rx="2"/><text x="790" y="151">Findings store</text><text class="f" x="774" y="176">case_findings · SQLite</text></g>
+        <g class="box store" id="b-sum"><rect x="760" y="212" width="170" height="80" rx="10"/><rect class="tag-change" x="774" y="226" width="8" height="8" rx="2"/><text x="790" y="235">Template summary</text><text class="s" x="774" y="256">never says confirmed</text><text class="f" x="774" y="278">narrative.py</text></g>
+
+        <path class="wire" id="w-get" d="M220 108 C 270 108, 270 160, 308 160" marker-end="url(#a)"/>
+        <path class="wire" id="w-post" d="M220 244 C 270 244, 270 196, 308 196" marker-end="url(#a)"/>
+        <text class="wl" id="l-get" x="232" y="96">GET case</text>
+        <text class="wl" id="l-post" x="226" y="266">POST finding</text>
+        <path class="wire" id="w-replay" d="M470 160 C 495 160, 495 108, 518 108" marker-end="url(#a)"/>
+        <path class="wire" id="w-next" d="M470 196 C 495 196, 495 244, 518 244" marker-end="url(#a)"/>
+        <path class="wire" id="w-rules" d="M720 90 L758 80" marker-end="url(#a)"/>
+        <path class="wire" id="w-rules2" d="M720 230 C 740 230, 740 100, 758 96" marker-end="url(#a)"/>
+        <path class="wire" id="w-store" d="M470 176 C 600 176, 640 162, 758 160" marker-end="url(#a)"/>
+        <path class="wire" id="w-sum" d="M720 266 L758 256" marker-end="url(#a)"/>
+      </svg>
+    </div>
+
+    <div class="stepper">
+      <ol class="steps" id="steps"></ol>
+      <div class="stage" id="stage" aria-live="polite">
+        <div class="row"><h3 id="s-title"></h3><span id="s-lab"></span></div>
+        <div class="files" id="s-files"></div>
+        <p id="s-what"></p>
+        <div class="vals" id="s-vals"></div>
+        <div class="controls">
+          <button type="button" id="prev">Back</button>
+          <button type="button" class="primary" id="next">Next</button>
+          <span class="count" id="count"></span>
+        </div>
+      </div>
+    </div>
+    <noscript><p class="sub">The step-by-step trace is in devpost/spec.md under "The Core Journey Through the System".</p></noscript>
+  </section>
+
+  <section id="components">
+    <header>
+      <div class="eyebrow">Components</div>
+      <h2>Where every PRD behaviour lives</h2>
+      <p class="sub">Each heading is an address the build will cite. Open one for its files, its PRD link and what changes.</p>
+    </header>
+    <div id="comp"></div>
+  </section>
+
+  <div class="grid2 stack">
+    <section id="run">
+      <div class="eyebrow">Where it runs · before each take</div>
+      <h2>Local, no keys, reproducible</h2>
+      <pre>cd backend
+pip install -e ".[dev]"
+$env:FIELDDX_LLM="off"
+python -m uvicorn app.main:app --port 8000</pre>
+      <pre>cd frontend
+npm install
+npm run dev</pre>
+      <ol class="run">
+        <li><code>python scripts/reset_demo.py</code> clears Niphad's findings and summaries.</li>
+        <li><code>python -m pytest tests/test_field128_demo.py</code> (in <code>backend</code>) confirms the expected before-and-after.</li>
+        <li>Open <code>localhost:5173</code>, choose <b>Try the demo area</b>, open Field 128.</li>
+      </ol>
+      <p class="sub" style="margin-top:10px">Video on YouTube plus the public repo. No deployment for now.</p>
+    </section>
+    <section>
+      <div class="eyebrow">Look and feel</div>
+      <h2>Existing tokens, two new pieces</h2>
+      <ul class="list sub">
+        <li>The dark slip (<code>--ink</code>) stays the strongest element.</li>
+        <li><i>Investigation updated</i>: a small pill, turmeric outline on <code>--turmeric-soft</code>. No toast.</li>
+        <li>Movement chips are words plus glyphs, never colour alone:</li>
+      </ul>
+      <div class="chips"><span class="chip">↑ MORE LIKELY</span><span class="chip">↓ LESS LIKELY</span><span class="chip">✕ RULED OUT</span><span class="chip">= UNCHANGED</span><span class="chip">+ NEWLY CONSIDERED</span></div>
+    </section>
+  </div>
+
+  <section id="data">
+    <div class="eyebrow">Data model and failure modes</div>
+    <h2>Where each piece of data lives</h2>
+    <details open><summary><span class="ttl">Data</span></summary><div class="body"><ul>
+      <li><b>Satellite evidence, fields, weather, scenes:</b> shipped files in <code>data/areas/niphad/</code>. Read-only. <span class="lab built">Built</span></li>
+      <li><b>Check list:</b> <code>data/checks.json</code>. Read-only at run time, edited once in this build. <span class="lab change">Change</span></li>
+      <li><b>Findings:</b> rows in <code>case_findings</code>. Added on save. They persist across reloads and restarts until reset. <span class="lab new">New</span></li>
+      <li><b>The case on screen:</b> not stored. It is rebuilt on every request from shipped data plus findings, so leaving and coming back shows the same case. <span class="lab built">Built</span></li>
+      <li><b>Update record:</b> <code>CaseResult.update</code>, describing the latest finding. Replaces <code>resolution</code>. <span class="lab new">New</span></li>
+    </ul></div></details>
+    <details><summary><span class="ttl">Failure modes and fallbacks</span></summary><div class="body"><ul>
+      <li><b>Findings left from a previous take:</b> the case opens already updated. Run <code>reset_demo.py</code> first.</li>
+      <li><b>A Gemini key in .env:</b> updated cases still use the template, and <code>FIELDDX_LLM=off</code> covers the first summary too.</li>
+      <li><b>Engine output drifts from the video script:</b> <code>test_field128_demo.py</code> fails before recording.</li>
+      <li><b>Existing tests expect closing:</b> rewritten in the same build step.</li>
+    </ul></div></details>
+    <details><summary><span class="ttl">What was simplified, and why</span></summary><div class="body"><ul>
+      <li><b>No closing at all</b>, instead of a four-outcome workflow. The proof is the feedback loop.</li>
+      <li><b>Template summary</b>, instead of Gemini, so every run reads the same.</li>
+      <li><b>Fix the check list</b>, instead of special rules in code. One data edit applies everywhere.</li>
+      <li><b>Shared demo officer, one area.</b></li>
+      <li><b>None fits = every cause ruled out.</b> Simple and testable.</li>
+    </ul></div></details>
+  </section>
+
+  <section id="decisions">
+    <div class="eyebrow">Decisions and open issues</div>
+    <h2>Decided in this interview</h2>
+    <ul class="list">
+      <li><b>A working drip line or moist soil counts only against irrigation failure.</b> The rule lives in the check list.</li>
+      <li><b>The computed next check stands.</b> Field 128 starts at the leaf undersides. No location-priority rule.</li>
+      <li><b>The demo records Leaves clean.</b> Pest less likely; irrigation unchanged but first, never more likely; next check, the drip line.</li>
+      <li><b>Template summary</b> for the proof and the video. Gemini stays optional for later.</li>
+      <li><b>Local only</b>, with a one-command reset and a Field 128 test before filming.</li>
+    </ul>
+    <details style="margin-top:14px"><summary><span class="ttl">The useful unknown: how one rule change ripples</span></summary><div class="body">
+      <p>Correcting one <code>supports</code> list changed Field 128's first check from the drip line to the leaf undersides. A looser scoring rule, where an <i>against</i> result also counts as separating, picked leaf yellowing first, because it treated "not pests" as evidence for irrigation. So the app's strict rule stays, and the Field 128 test now pins the behaviour down.</p>
+    </div></details>
+    <details><summary><span class="ttl">PRD update and open issues</span></summary><div class="body">
+      <p>The PRD's journey and payoff were revised to match: leaf undersides first, Leaves clean, then the drip line. Nothing is blocking. Check during the build that the phone dock and inbox read well with the new label.</p>
+    </div></details>
+  </section>
+
+  <p class="foot">Companion to <a href="spec.md">devpost/spec.md</a>, which is canonical. Implements <a href="prd.html">the approved PRD</a>. Next: <code>5-build</code>.</p>
+</div>
+
+<script>
+(function () {
+  var root = document.documentElement;
+  try { var saved = localStorage.getItem("fdx-theme"); if (saved) root.setAttribute("data-theme", saved); } catch (e) {}
+  document.getElementById("theme").addEventListener("click", function () {
+    var dark = root.getAttribute("data-theme") === "dark" || (!root.getAttribute("data-theme") && matchMedia("(prefers-color-scheme: dark)").matches);
+    var next = dark ? "light" : "dark"; root.setAttribute("data-theme", next);
+    try { localStorage.setItem("fdx-theme", next); } catch (e) {}
+  });
+  function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  function lab(k) { return el("span", "lab " + k, { built: "Built", change: "Change", "new": "New" }[k]); }
+
+  // Journey through the system (spec.md > The Core Journey Through the System)
+  var S = [
+    { t: "Dashboard", k: "built", b: ["b-case", "b-api"], w: ["w-get", "l-get"], f: ["Home.tsx", "main.py /api/home"],
+      d: "The browser asks the engine for the Niphad home view. Field 128 is listed as needing attention.", v: "Field 128 · greenery drop near the south edge · alert 5 Oct 2026" },
+    { t: "Open Field 128", k: "built", b: ["b-case", "b-api"], w: ["w-get", "l-get"], f: ["service.effective_case", "engine/stages.py"],
+      d: "The engine builds the case from shipped data: triage stages first, then ranked causes. No findings yet, so nothing is replayed.", v: "Pest or disease spread  0.7  leading\nIrrigation failure      0.4  possible\nNutrient deficiency     0.0  ruled out\nStanding water          0.0  ruled out" },
+    { t: "Next check", k: "change", b: ["b-next", "b-rules", "b-api"], w: ["w-next", "w-rules2"], f: ["next_check.choose", "data/checks.json"],
+      d: "Each check is scored by how cleanly it separates the top two causes, per minute. With the corrected check list, the leaf undersides win. Today the drip line wins only because a working line was miscounted as support for pests.", v: "leaf_undersides  split 0.5  4 min  score 0.125   ← chosen\ndrip_line        split 0.5  5 min  score 0.100\nsoil_probe       split 0.5 10 min  score 0.050" },
+    { t: "Record Leaves clean", k: "change", b: ["b-check", "b-api", "b-store"], w: ["w-post", "l-post", "w-store"], f: ["Checklist.tsx", "api.recordFinding", "POST /api/cases/F128/findings", "db.add_finding"],
+      d: "The officer saves the result. The browser posts it, the engine validates it against the check list and stores it as a row. The case stays open.", v: "case_findings += (niphad, F128, leaf_undersides, clean, '')" },
+    { t: "Replay", k: "new", b: ["b-api", "b-replay", "b-store", "b-rules"], w: ["w-replay", "w-store", "w-rules"], f: ["service.effective_case", "resolve.apply_finding"],
+      d: "The engine rebuilds the case and replays the finding. Leaves clean only counts against pest or disease spread, so no other score moves.", v: "Irrigation failure      0.4 → 0.4  UNCHANGED · now first\nPest or disease spread  0.7 → 0.2  LESS LIKELY (E-field visit)\nNutrient deficiency     0.0 → 0.0  UNCHANGED\nStanding water          0.0 → 0.0  UNCHANGED" },
+    { t: "Next check recalculated", k: "new", b: ["b-next", "b-rules"], w: ["w-next", "w-rules2"], f: ["next_check.choose(done={leaf_undersides})"],
+      d: "Leaf undersides is done. The live causes are irrigation failure and pest or disease spread, and the best remaining check is the drip line.", v: "drip_line on the south edge   ← chosen\nWhy: leaves were clean, so pest or disease spread is less likely.\nThe drip line now best separates irrigation failure from pest or disease spread." },
+    { t: "Investigation updated", k: "new", b: ["b-case", "b-sum", "b-api"], w: ["w-get", "l-get", "w-sum"], f: ["NextCheck.tsx InvestigationUpdate", "Diagnosis.tsx", "narrative.py template"],
+      d: "The screen shows the pill, the finding with its evidence link, the before-and-after with movement chips, and the new slip. The template summary says the same thing, and never says confirmed.", v: "What changed? Pest less likely; irrigation, unchanged, now first.\nWhy? Leaf undersides clean (field visit).\nWhat next? Drip line and valve, south edge. Case still open." }
+  ];
+  var all = ["b-case", "b-check", "b-api", "b-replay", "b-next", "b-rules", "b-store", "b-sum"];
+  var wires = ["w-get", "w-post", "w-replay", "w-next", "w-rules", "w-rules2", "w-store", "w-sum", "l-get", "l-post"];
+  var list = document.getElementById("steps"), cur = 0;
+  S.forEach(function (st, i) {
+    var li = el("li"), b = el("button"); b.type = "button";
+    b.appendChild(el("span", "n", String(i + 1).padStart(2, "0"))); b.appendChild(el("span", null, st.t));
+    b.addEventListener("click", function () { show(i); }); li.appendChild(b); list.appendChild(li);
+  });
+  function show(i) {
+    cur = i; var st = S[i];
+    all.forEach(function (id) { document.getElementById(id).classList.toggle("hl", st.b.indexOf(id) >= 0); });
+    wires.forEach(function (id) {
+      var e = document.getElementById(id), on = st.w.indexOf(id) >= 0;
+      e.classList.toggle("hl", on);
+      if (e.tagName.toLowerCase() === "path") e.setAttribute("marker-end", on ? "url(#ah)" : "url(#a)");
+    });
+    document.getElementById("s-title").textContent = (i + 1) + ". " + st.t;
+    var l = document.getElementById("s-lab"); l.innerHTML = ""; l.appendChild(lab(st.k));
+    var fs = document.getElementById("s-files"); fs.innerHTML = ""; st.f.forEach(function (f) { fs.appendChild(el("code", null, f)); });
+    document.getElementById("s-what").textContent = st.d;
+    document.getElementById("s-vals").textContent = st.v;
+    document.getElementById("count").textContent = (i + 1) + " / " + S.length;
+    list.querySelectorAll("button").forEach(function (b, j) { if (j === i) b.setAttribute("aria-current", "step"); else b.removeAttribute("aria-current"); });
+    document.getElementById("prev").disabled = i === 0;
+    document.getElementById("next").disabled = i === S.length - 1;
+  }
+  document.getElementById("prev").addEventListener("click", function () { if (cur > 0) show(cur - 1); });
+  document.getElementById("next").addEventListener("click", function () { if (cur < S.length - 1) show(cur + 1); });
+  show(0);
+
+  // Components (spec.md > Components)
+  var C = [
+    ["Check List and Evidence Rules", "change", "prd.md > Reversible but Never Arbitrary", ["data/checks.json"],
+      ["A result lists a cause under supports only if it is direct evidence for it.", "drip_line.wet and soil_probe.moist drop their supports (today H8 and H9).", "Labels: Drip line working / Drip line not working. Keys stay dry and wet."]],
+    ["Findings Store", "change", "prd.md > Recording a Finding · States and Boundaries", ["backend/app/db.py"],
+      ["New table case_findings, one row per finding, in order.", "add_finding, list_findings; reset(area) also clears findings.", "case_outcomes is no longer used. No migration needed."]],
+    ["Finding Replay", "change", "prd.md > Investigation Update After a Finding · Reversible but Never Arbitrary", ["backend/app/resolve.py", "backend/app/models.py"],
+      ["apply_finding moves only causes in supports (+0.5) and against (−0.5, never below 0). No other score changes.", "Case stays open; nothing marked confirmed.", "Update record: before/after score and status, movement label, reason line citing the field-visit evidence.", "Unchanged-but-moved causes say why (now first because pest or disease spread became less likely).", "None fits: every cause ruled out, so the case shows unexplained and recommends a call or visit."]],
+    ["Next Check Recalculation", "change", "prd.md > Next Check Responds to the Finding", ["backend/app/next_check.py"],
+      ["Strict separation scoring kept. Checks already done are skipped.", "One live cause: cheapest check with a result for it and one against it, or call or visit.", "Returns a why-it-changed line for the slip."]],
+    ["Case Service and API", "change", "prd.md > Recording a Finding", ["backend/app/service.py", "backend/app/main.py"],
+      ["effective_case replays every finding in order.", "POST /api/cases/{id}/findings replaces /close.", "Inbox and home show an updated case as open, labelled Investigation updated."]],
+    ["Template Summary", "change", "prd.md > Look and Feel · reproducibility", ["backend/app/narrative.py", "backend/app/llm.py"],
+      ["Cases with findings always use the template, even with a Gemini key.", "States what was checked, what moved, what stayed the same, and the next check.", "Never uses the word confirmed for a cause."]],
+    ["Case Screen: Investigation Update", "new", "prd.md > Investigation Update After a Finding", ["NextCheck.tsx", "Diagnosis.tsx", "Summary.tsx", "Dock.tsx"],
+      ["InvestigationUpdate replaces ResolutionCard: pill, finding with evidence link, before-and-after.", "Movement chips per cause in Diagnosis.", "Summary and Dock drop confirmed and closed; the leader reads still leading, not confirmed.", "The slip shows the recalculated check and its reason."]],
+    ["Field Checklist", "change", "prd.md > Recording a Finding", ["pages/Checklist.tsx", "api.ts"],
+      ["Saving calls api.recordFinding, then returns to the case.", "Types: InvestigationUpdate, Movement; Resolution dropped."]],
+    ["Demo Reset and Field 128 Check", "new", "Reproducibility", ["scripts/reset_demo.py", "backend/tests/test_field128_demo.py"],
+      ["reset_demo.py calls db.reset(\"niphad\").", "Test, on real data: before (pest leading, first check leaf_undersides); after Leaves clean (pest 0.2 possible, irrigation 0.4 unchanged and first, others unchanged, open, next drip_line, nothing confirmed); after Drip line working alone (irrigation ruled out, nutrient unchanged)."]]
+  ];
+  var cw = document.getElementById("comp");
+  C.forEach(function (c, i) {
+    var d = el("details"); if (i === 2) d.open = true;
+    var sm = el("summary"); sm.appendChild(el("span", "ttl", c[0])); sm.appendChild(lab(c[1])); d.appendChild(sm);
+    var b = el("div", "body"); b.appendChild(el("div", "prd", "Implements " + c[2]));
+    var fs = el("div", "chips"); c[3].forEach(function (f) { fs.appendChild(el("code", null, f)); }); b.appendChild(fs);
+    var ul = el("ul"); ul.style.marginTop = "8px"; c[4].forEach(function (x) { ul.appendChild(el("li", null, x)); }); b.appendChild(ul);
+    d.appendChild(b); cw.appendChild(d);
+  });
+})();
+</script>
+</body>
+</html>

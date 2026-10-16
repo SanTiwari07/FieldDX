@@ -24,15 +24,17 @@ Develops `scope.md > The Core Loop` and `scope.md > What "Working" Looks Like`.
 3. The case shows the satellite imagery, the change in greenery over time, and the evidence behind the alert. **Built**
 4. The investigation runs its checks before any diagnosis. First: is the drop real (image quality)? Then: is it ordinary (harvest, pruning, weather, neighbours)? Only after that are causes ranked. **Built**
 5. Field 128's ranked causes: pest or disease spread leading (high), irrigation failure possible (medium), nutrient deficiency and standing water ruled out. Each cause shows evidence for and against. **Verified**
-6. The dark next-check slip recommends checking the drip line and valve on the south edge, and says what each result would mean. **Verified**
-7. On the field checklist, the officer records the example finding **Drip line working**. **Built** for recording, **Change** for what happens next.
+6. The dark next-check slip recommends **inspecting the leaf undersides** for thrips or mildew, and says what each result would mean. **Change**: today it recommends the drip line, but only because a working drip line was miscounted as evidence for pests. With that corrected, the leaf undersides check is just as decisive and cheaper (`spec.md > Check List and Evidence Rules`).
+7. On the field checklist, the officer records the example finding **Leaves clean**. **Built** for recording, **Change** for what happens next.
 8. **The payoff.** The case stays open and shows *Investigation updated*:
-   - Irrigation failure is ruled out, with the reason.
-   - Pest or disease spread is still leading, but not confirmed.
-   - Nutrient deficiency stays ruled out.
-   - The next check changes to inspecting the undersides of leaves for thrips or mildew, with the reason.
+   - Pest or disease spread is less likely, with the reason, but still possible.
+   - Irrigation failure is unchanged, and now ranks first because pest or disease spread weakened. It is never labelled more likely.
+   - Nutrient deficiency and standing water are unchanged and stay ruled out.
+   - The next check is recalculated to the drip line and valve on the south edge, with the reason.
 
    **Change / New**
+
+*Revised in `4-spec`:* the demo originally checked the drip line first. Correcting the evidence rules changed the computed first check, and the learner chose to let the computed answer stand.
 
 Success means the screen answers three questions at once: what changed, why it changed, and what to do next.
 
@@ -69,7 +71,7 @@ Develops `scope.md > The Core Loop` step 4. **Verified**
 ### The Next Check
 Develops `scope.md > The Unique Kernel`. **Verified**
 - One practical check is recommended, chosen because its possible results separate the leading causes. It shows what each result would mean.
-  - [ ] Field 128's slip recommends checking the drip line and valve on the south edge, with results for not working (points to irrigation failure) and working (look at the leaves for thrips and mildew).
+  - [ ] Field 128's slip recommends inspecting the leaf undersides, with results for pests or lesions visible (points to pest or disease spread) and leaves clean.
 
 ### Recording a Finding
 Develops `scope.md > The Core Loop` step 6. **Built**, with a **Change**
@@ -77,18 +79,19 @@ Develops `scope.md > The Core Loop` step 6. **Built**, with a **Change**
 - The finding appears in the evidence timeline as a new field-visit item, marked as observed by the officer. **Built**
 - The two drip-line results read **Drip line working** and **Drip line not working**. These describe what the officer saw, not a diagnosis. **Change**: today they read Drip line wet and Drip line dry.
 - **Recording a finding does not close or resolve the case.** **Change**: today any finding closes the case and the top cause shows as confirmed on the ground.
-  - [ ] After recording Drip line working on Field 128, the case is still open and the field-visit item is in the evidence timeline.
+  - [ ] After recording Leaves clean on Field 128, the case is still open and the field-visit item is in the evidence timeline.
   - [ ] Nothing on the screen says confirmed or closed.
 
 ### Investigation Update After a Finding
 The payoff. Develops `scope.md > What "Working" Looks Like` step 6 and `scope.md > Carried Into the PRD`. **New**
 - The current confirmation card (Confirmed on the ground) is **replaced** by an *Investigation updated* state. **Change**
 - That state shows three things: the new evidence, what changed in the ranking of causes, and the next recommended check.
-- A short **before-and-after** for the causes. Each cause carries a movement label (more likely, less likely, ruled out, unchanged, newly considered) and, if it changed, one line saying why, linked to the evidence that caused it. Example: *Irrigation failure ruled out: the officer recorded that the drip line is working.*
+- A short **before-and-after** for the causes. Each cause carries a movement label (more likely, less likely, ruled out, unchanged, newly considered) and, if it changed, one line saying why, linked to the evidence that caused it. Example: *Pest or disease spread less likely: the officer found the leaf undersides clean.*
 - The leading cause can stay leading, but it reads as still leading, not confirmed.
 - The case shows clearly that the investigation is still open.
-  - [ ] After Drip line working on Field 128, irrigation failure shows ruled out with a reason that cites the field-visit evidence.
-  - [ ] Pest or disease spread shows still leading, and the word confirmed appears nowhere.
+  - [ ] After Leaves clean on Field 128, pest or disease spread shows less likely with a reason that cites the field-visit evidence.
+  - [ ] Irrigation failure shows unchanged, with a reason saying it now ranks first because pest or disease spread became less likely. It never shows more likely.
+  - [ ] The word confirmed appears nowhere.
   - [ ] Every cause whose position or status changed has a movement label and a one-line reason. Unchanged causes show unchanged.
   - [ ] The update makes sense without colour: each change has a word label.
 
@@ -103,8 +106,8 @@ The payoff. Develops `scope.md > What "Working" Looks Like` step 6 and `scope.md
 ### Next Check Responds to the Finding
 Develops `scope.md > Carried Into the PRD`. **New**
 - When a finding changes the investigation, the dark slip moves to the next most useful check. It says why the recommendation changed and what each result would mean.
-- For Field 128 after Drip line working, the next check is to inspect the undersides of leaves for thrips or mildew. FieldDx's check list already names this as the follow-up to a working drip line.
-  - [ ] After Drip line working, the slip shows the leaf-underside check, with a reason that refers to the drip-line finding.
+- The next check is recalculated from the causes still live, skipping checks already done. For Field 128 after Leaves clean, it is the drip line and valve on the south edge.
+  - [ ] After Leaves clean, the slip shows the drip-line check, with a reason that refers to the leaf finding.
   - [ ] The slip remains the strongest visual element on the case.
 
 ### When No Cause Fits
@@ -129,6 +132,7 @@ Develops `scope.md > Carried Into the PRD`. **New**
 - **The confirmation card is replaced by Investigation updated.** It shows the new evidence, the change in ranking, and the next check.
 - **Quiet update, loud next check.** The update is a small label and a short before-and-after. The dark slip stays the strongest element.
 - **Words as well as colour** for every change.
+- **The demo records Leaves clean** at the computed first check, the leaf undersides (decided in `4-spec`).
 - **The demo ends at Investigation updated plus the new next check.** The full closing workflow is deferred, so the proof stays on one reliable, honest investigation from start to finish.
 - **When No Cause Fits is built but not filmed** unless a genuine, reproducible example exists.
 - **Keep the existing design language** in `docs/DESIGN.md`.
@@ -137,8 +141,8 @@ Develops `scope.md > Carried Into the PRD`. **New**
 For the proof, on the Niphad demo area and Field 128:
 1. Recording a finding no longer closes the case or marks anything confirmed, and the drip-line results read Drip line working and Drip line not working.
 2. The *Investigation updated* state, replacing the confirmation card, with the new evidence, a before-and-after for the causes, and evidence-linked reasons.
-3. Re-ranking that raises a cause only on direct evidence. Nutrient deficiency stays ruled out after Drip line working.
-4. The next check updates after a finding, with the reason: inspect the leaf undersides for thrips or mildew.
+3. Re-ranking that raises a cause only on direct evidence. Nutrient deficiency stays ruled out after Drip line working or Leaves clean.
+4. The next check is recalculated after a finding, with the reason: after Leaves clean, the drip line and valve on the south edge.
 5. The state for when none of the current explanations fits well.
 
 Everything else in the core journey already exists and should keep working.
