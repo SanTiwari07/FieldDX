@@ -1,6 +1,6 @@
 ---
 doc: spec
-status: draft
+status: approved
 ---
 
 # FieldDx — Technical Spec
@@ -61,6 +61,8 @@ Set `FIELDDX_LLM=off` before starting the engine (PowerShell: `$env:FIELDDX_LLM=
 3. Open <http://localhost:5173>, choose **Try the demo area**, open Field 128.
 
 Submission needs the demo video on YouTube and the public GitHub repo. No deployment for now.
+
+**Current demo video:** <https://youtu.be/LRmjZv-JO-s>. It was recorded before this build, so it shows the app's previous behaviour, not the changes proposed in this spec. After the build, the workflow is checked against the real app and the video is re-recorded if it no longer matches.
 
 ## Look and Feel
 From `prd.md > Look and Feel`, using the tokens already in `frontend/src/styles/tokens.css` (from `docs/DESIGN.md`). **Built**
