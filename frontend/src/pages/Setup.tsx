@@ -225,6 +225,7 @@ export default function Setup() {
   const [existing, setExisting] = useState<AreaSummary[]>([]);
   const [q, setQ] = useState("");
   const [results, setResults] = useState<Place[] | null>(null);
+  const [searched, setSearched] = useState("");
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState("");
   const [place, setPlace] = useState<Place | null>(null);
@@ -280,6 +281,7 @@ export default function Setup() {
     setSearchError("");
     try {
       setResults((await api.places(q.trim())).places);
+      setSearched(q.trim());
     } catch (err) {
       setSearchError((err as Error).message);
     } finally {
@@ -453,7 +455,7 @@ export default function Setup() {
               <section className="setup-block">
                 <form className="search" onSubmit={search} role="search">
                   <Search size={16} aria-hidden />
-                  <input ref={searchBox} className="input" value={q} onChange={(e) => setQ(e.target.value)}
+                  <input ref={searchBox} className="input" value={q} onChange={(e) => { setQ(e.target.value); if (results && !results.length) setResults(null); }}
                     placeholder="Taluka, district or village, e.g. Baramati" aria-label="Search for your region" />
                   <button className="btn btn-primary btn-sm" type="submit" disabled={searching || q.trim().length < 2}>
                     {searching ? <Spinner /> : "Search"}
@@ -472,7 +474,7 @@ export default function Setup() {
                         </li>
                       ))}
                     </ul>
-                  ) : <p className="muted small">Nothing found. Try the district name.</p>
+                  ) : <p className="muted small">Nothing found for &ldquo;{searched}&rdquo;. Try the name alone, like Baramati, or add the district: Baramati, Pune.</p>
                 )}
                 {!results && <p className="muted small">You will see the place on the map and confirm it before anything is loaded.</p>}
               </section>
