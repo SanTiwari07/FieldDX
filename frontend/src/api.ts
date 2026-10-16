@@ -243,6 +243,7 @@ export const api = {
       body: JSON.stringify(body),
     }).then((r) => json<CaseResult>(r)),
   reset: () => post("/api/admin/reset").then((r) => json<{ ok: boolean }>(r)),
+  ask: (body: { question: string; case_id?: string; history: AskTurn[] }) => post("/api/ask", body).then((r) => json<AskAnswer>(r)),
   raster: (id: string, scene?: string) =>
     fetch(`/api/cases/${id}/raster${scene ? `?scene=${scene}` : ""}`).then((r) => json<RasterData>(r)),
 };
@@ -451,4 +452,15 @@ export interface HomeData {
   top: InboxRow[];
   detector: string;
   provenance: Provenance;
+}
+
+export interface AskTurn {
+  role: "user" | "assistant";
+  text: string;
+}
+
+export interface AskAnswer {
+  answer: string;
+  mode: "gemini" | "retrieval";
+  sources: { id: string; title: string; kind: "case" | "field"; link: string | null; cited: boolean }[];
 }

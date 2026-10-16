@@ -15,7 +15,7 @@ from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from . import areas, config, data, db, llm, overview, places, service
+from . import areas, assistant, config, data, db, llm, overview, places, service
 from .models import CaseResult, CloseRequest
 from . import pipeline
 from .pipeline import build_case, iter_events
@@ -365,7 +365,7 @@ def home(area: str = Depends(current_area), officer: dict = Depends(current_offi
                    "harvest": sum(1 for r in rows if r["kind"] == "harvest"),
                    "dismissed": sum(1 for r in rows if r["outcome"] == "auto_dismissed" and r["kind"] != "harvest"),
                    "resolved": count("resolved")},
-        "top": [r for r in rows if r["outcome"] in ("field_case", "unexplained")][:3],
+        "top": [r for r in rows if r["outcome"] in ("field_case", "unexplained")][:5],
         "detector": cf.get("detector"), "provenance": data.provenance(area),
     }
 
@@ -521,6 +521,26 @@ def close_case(case_id: str, body: CloseRequest, area: str = Depends(current_are
         raise HTTPException(409, "This case is already closed")
     db.save_outcome(area, case_id, body.check_id, body.outcome, body.note, closed_at, officer["id"])
     return service.ensure_narrative(area, service.effective_case(area, case_id))
+
+
+class AskTurn(BaseModel):
+    role: str = Field(pattern="^(user|assistant)$")
+    text: str = Field(max_length=4000)
+
+
+class AskRequest(BaseModel):
+    question: str = Field(min_length=1, max_length=600)
+    case_id: str | None = Field(default=None, max_length=12)
+    history: list[AskTurn] = Field(default_factory=list, max_length=12)
+
+
+@app.post("/api/ask")
+def ask(body: AskRequest, area: str = Depends(current_area)):
+    """Ask FieldDx a question about the fields in your area, answered from their own case data."""
+    if body.case_id and data.case_spec(area, body.case_id) is None:
+        raise HTTPException(404, f"No case {body.case_id} in your area")
+    return assistant.answer(area, body.question.strip(), body.case_id,
+                            [t.model_dump() for t in body.history])
 
 
 @app.get("/api/checks")

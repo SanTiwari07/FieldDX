@@ -5,6 +5,8 @@ import { api } from "./api";
 import { useSession } from "./session";
 import SignIn from "./pages/SignIn";
 import { Spinner } from "./components/ui";
+import { Mark } from "./components/Mark";
+import { AskLauncher } from "./components/Ask";
 
 // each step of the flow loads when the officer reaches it; sign-in stays light
 const Setup = lazy(() => import("./pages/Setup"));
@@ -14,21 +16,6 @@ const CasePage = lazy(() => import("./pages/Case"));
 const Checklist = lazy(() => import("./pages/Checklist"));
 
 const Loading = () => <main className="page"><div className="center-spin"><Spinner size={22} /></div></main>;
-
-function Mark() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 32 32" aria-hidden>
-      <rect width="32" height="32" rx="7" fill="currentColor" />
-      <g fill="#fff">
-        {[0, 1, 2].flatMap((r) =>
-          [0, 1, 2].map((c) => (
-            <rect key={`${r}${c}`} x={6 + c * 7} y={6 + r * 7} width="6" height="6" rx="1" opacity={r === 1 && c === 1 ? 1 : 0.45} />
-          )),
-        )}
-      </g>
-    </svg>
-  );
-}
 
 function OfficerMenu() {
   const { me, set, signOut } = useSession();
@@ -84,6 +71,8 @@ function OfficerMenu() {
 
 function AppBar() {
   const { me } = useSession();
+  const loc = useLocation();
+  if (loc.pathname === "/signin") return null;
   const area = me?.area;
   const ready = area?.status === "ready";
   return (
@@ -99,7 +88,6 @@ function AppBar() {
             <NavLink to="/cases">Cases</NavLink>
           </nav>
         )}
-        {!me && <span className="appbar-tag">Differential diagnosis for farm fields</span>}
         <span className="appbar-spacer" />
         {area && (
           <span className="area-chip" title={area.region}>
@@ -146,6 +134,7 @@ export default function App() {
           <Route path="*" element={<main className="page"><p>Page not found. <Link to="/">Back to today</Link></p></main>} />
         </Routes>
       </div>
+      <AskLauncher />
     </>
   );
 }
