@@ -27,20 +27,22 @@ export function NextCheckSlip({ caseId, nc, names }: { caseId: string; nc: NextC
 
 export function VisitChecklist({ items }: { items: string[] }) {
   const [done, setDone] = useState<Record<number, boolean>>({});
+  const n = Object.values(done).filter(Boolean).length;
   return (
     <section className="slip slip-plain" aria-labelledby="vc-h">
-      <div className="eyebrow slip-eyebrow" id="vc-h">General visit checklist</div>
-      <p className="slip-instruction">No single check separates the causes, so look at everything once.</p>
+      <p className="cl-kicker" id="vc-h">Look at each of these</p>
+      <p className="slip-instruction">No single check tells the causes apart, so go through the list once and tick what you looked at.</p>
       <ul className="visit-list">
         {items.map((t, i) => (
           <li key={i}>
-            <label>
+            <label className={done[i] ? "on" : ""}>
               <input type="checkbox" checked={!!done[i]} onChange={() => setDone((d) => ({ ...d, [i]: !d[i] }))} />
               <span>{t}</span>
             </label>
           </li>
         ))}
       </ul>
+      <p className="slip-cost" aria-live="polite">{n} of {items.length} looked at</p>
     </section>
   );
 }
@@ -101,26 +103,29 @@ export function CloseCaseForm({ r, onSaved, large = false }: { r: CaseResult; on
 
   return (
     <form className={`close-form ${large ? "large" : ""}`} onSubmit={submit} aria-labelledby="close-h">
-      <h3 id="close-h">Close the case</h3>
-      <p className="muted small">What did you find? The finding is stored against the case as new evidence and the ranking updates.</p>
+      <div>
+        <h3 id="close-h">Record what you found</h3>
+        <p className="close-sub">It is saved with the case as new evidence, and the likely cause is updated.</p>
+      </div>
       <fieldset>
-        <legend className="eyebrow">Result: {nc.label.toLowerCase()}</legend>
+        <legend>What did you find?{!large && <small>{nc.label}</small>}</legend>
         <div className="chips">
           {nc.outcomes.map((o) => (
             <label key={o.key} className={`chip ${choice === o.key ? "on" : ""}`}>
               <input type="radio" name="result" value={o.key} checked={choice === o.key} onChange={() => setChoice(o.key)} />
+              <i aria-hidden>{choice === o.key && <Check size={13} strokeWidth={3} />}</i>
               <span>{o.label}</span>
             </label>
           ))}
         </div>
       </fieldset>
       <label className="field">
-        <span className="eyebrow">What you saw (optional)</span>
-        <textarea rows={3} maxLength={600} value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. Valve at the east end was clogged with silt" />
+        <span className="field-label">Anything else you saw <small>(optional)</small></span>
+        <textarea rows={3} maxLength={600} value={note} onChange={(e) => setNote(e.target.value)} placeholder="For example, the valve at the east end was clogged with silt" />
       </label>
       {error && <p className="form-error" role="alert">{error}</p>}
       <button className="btn btn-primary" disabled={!choice || busy}>
-        {busy ? <Spinner /> : <CheckCircle2 size={16} aria-hidden />} Save finding and close case
+        {busy ? <Spinner /> : <CheckCircle2 size={16} aria-hidden />} {choice ? "Save and close the case" : "Choose what you found first"}
       </button>
     </form>
   );
@@ -132,10 +137,10 @@ export function ResolutionCard({ r }: { r: CaseResult }) {
   const evId = r.evidence[r.evidence.length - 1]?.id;
   return (
     <section className="resolution" aria-labelledby="res-h">
-      <div className="res-head"><CheckCircle2 size={18} aria-hidden /><span className="eyebrow" id="res-h">Resolved</span></div>
-      <p className="res-title">{res.confirmed_name} {res.confirmed_id === r.hypotheses[0]?.id ? "confirmed" : "now leads"}.</p>
-      <p>{res.outcome_label}. {res.note && <>&ldquo;{res.note}&rdquo; </>}<Refs ids={evId ? [evId] : []} /></p>
-      <p className="muted small">Closed {new Date(res.closed_at).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}. The ranking above reflects this finding.</p>
+      <p className="res-head" id="res-h"><CheckCircle2 size={16} aria-hidden /> Confirmed on the ground</p>
+      <p className="res-title">{res.confirmed_name} {res.confirmed_id === r.hypotheses[0]?.id ? "confirmed" : "is now the likely cause"}</p>
+      <p>{res.outcome_label}.{res.note && <> &ldquo;{res.note}&rdquo;</>} <Refs ids={evId ? [evId] : []} /></p>
+      <p className="res-when">Closed {new Date(res.closed_at).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}. The case now includes this finding.</p>
     </section>
   );
 }
