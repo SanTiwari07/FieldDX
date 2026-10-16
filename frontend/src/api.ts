@@ -89,17 +89,33 @@ export interface Headline {
   baseline_label: string;
 }
 
-export interface Resolution {
+export type Movement = "more_likely" | "less_likely" | "ruled_out" | "newly_considered" | "unchanged";
+
+export interface CauseMove {
+  id: string;
+  name: string;
+  before_score: number;
+  after_score: number;
+  before_status: string;
+  after_status: string;
+  before_rank: number;
+  after_rank: number;
+  movement: Movement;
+  reason: string;
+  evidence_ids: string[];
+}
+
+/** The latest officer finding and what it changed. The case stays open; nothing here confirms a cause. */
+export interface InvestigationUpdate {
   check_id: string;
   check_label: string;
   outcome_key: string;
   outcome_label: string;
   note: string;
-  closed_at: string;
-  confirmed_id: string;
-  confirmed_name: string;
-  ranking_before: string[];
-  ranking_after: string[];
+  recorded_at: string;
+  evidence_id: string;
+  findings: number;
+  moves: CauseMove[];
 }
 
 export interface FieldInfo {
@@ -128,7 +144,7 @@ export interface CaseResult {
   visit_checklist: string[];
   narrative: CaseFile | null;
   narrative_source: "gemini" | "template" | null;
-  resolution: Resolution | null;
+  update: InvestigationUpdate | null;
   limits: string;
 }
 
@@ -147,6 +163,7 @@ export interface InboxRow {
   kind: DismissalKind | null;
   /** the field's highest monthly NDVI in the alert's month and the two before it */
   green_before: number | null;
+  updated: boolean;
 }
 
 export type DismissalKind = "harvest" | "management" | "artefact" | "boundary";
@@ -449,7 +466,7 @@ export interface HomeData {
   last_pass: string | null;
   fields: number;
   alerts: number;
-  counts: { visit: number; watch: number; area_alert: number; dismissed: number; harvest: number; resolved: number };
+  counts: { visit: number; watch: number; area_alert: number; dismissed: number; harvest: number; updated: number };
   top: InboxRow[];
   detector: string;
   provenance: Provenance;

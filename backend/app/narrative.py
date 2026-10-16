@@ -79,6 +79,8 @@ def template_narrative(r: CaseResult) -> CaseFile:
         ]
         return CaseFile(summary=summary, hypotheses=expl, next_check_explainer=None, limits=r.limits)
 
+    if r.update is not None:
+        return _updated(r, ranked)
     lead = ranked[0]
     lines = lead.for_lines[:3]
     parts = [f"{lead.name} is the leading explanation ({lead.confidence} confidence)."]
@@ -109,6 +111,49 @@ def template_narrative(r: CaseResult) -> CaseFile:
             key=lambda x: int(x[1:]),
         ) or _tool_ids(r, "ndvi_series")[:1]
         nxt = CaseFileLine(text=text, evidence_ids=refs)
+    return CaseFile(summary=summary, hypotheses=expl, next_check_explainer=nxt, limits=r.limits)
+
+
+_MOVE_WORDS = {"more_likely": "is more likely", "less_likely": "is less likely", "ruled_out": "is ruled out",
+               "newly_considered": "is back under consideration"}
+
+
+def _updated(r: CaseResult, ranked: list[HypothesisResult]) -> CaseFile:
+    """The case file after an officer finding: what was checked, what moved, what did not, and what next.
+    Always the template, so the wording is the same on every run; it never calls a cause confirmed."""
+    u = r.update
+    assert u is not None
+    lead = ranked[0]
+    moved = [m for m in u.moves if m.movement != "unchanged"]
+    parts = [f"Investigation updated after a field visit: {u.outcome_label.lower()} ({u.evidence_id})."]
+    if moved:
+        parts.append(" ".join(f"{m.name} {_MOVE_WORDS[m.movement]}." for m in moved))
+    else:
+        parts.append("The finding moves none of the causes.")
+    lm = next((m for m in u.moves if m.id == lead.id), None)
+    if lm is not None and lm.movement == "unchanged" and lm.after_rank < lm.before_rank:
+        parts.append(f"{lead.name} is now first with no new evidence for it, because the others weakened. "
+                     "It is the best remaining fit, not a diagnosis.")
+    else:
+        parts.append(f"{lead.name} is first. It is the best remaining fit, not a diagnosis.")
+    parts.append("The case stays open.")
+    summary = CaseFileLine(text=" ".join(parts), evidence_ids=[u.evidence_id])
+
+    expl = []
+    for h in ranked:
+        m = next((m for m in u.moves if m.id == h.id), None)
+        why = [CaseFileLine(text=_sentence(m.reason), evidence_ids=m.evidence_ids or [u.evidence_id])] if m else []
+        why += [CaseFileLine(text=_sentence(ln.text), evidence_ids=ln.evidence_ids) for ln in h.for_lines[:2]]
+        if h.against_lines:
+            a = h.against_lines[-1]
+            why.append(CaseFileLine(text="Against: " + _sentence(a.text[0].lower() + a.text[1:]), evidence_ids=a.evidence_ids))
+        expl.append(HypothesisExplainer(id=h.id, why=why))
+
+    nxt = None
+    if r.next_check:
+        nc = r.next_check
+        text = nc.label + ". " + (nc.reason + " " if nc.reason else "") + " ".join(f"{o.label}: {o.then}." for o in nc.outcomes)
+        nxt = CaseFileLine(text=text, evidence_ids=[u.evidence_id])
     return CaseFile(summary=summary, hypotheses=expl, next_check_explainer=nxt, limits=r.limits)
 
 

@@ -1,7 +1,8 @@
-import { BadgeCheck, CircleHelp, Minus, Plus, Sparkles, FileText } from "lucide-react";
-import type { CaseResult, Hypothesis, Line } from "../api";
+import { CircleHelp, Minus, Plus, Sparkles, FileText } from "lucide-react";
+import type { CaseResult, Hypothesis, Line, Movement } from "../api";
 import { useFlip } from "../hooks";
 import { ConfidenceMeter, Refs } from "./ui";
+import { MoveChip } from "./NextCheck";
 
 function Lines({ kind, lines }: { kind: "for" | "against" | "unknown"; lines: Line[] }) {
   if (!lines.length) return null;
@@ -24,19 +25,16 @@ function Lines({ kind, lines }: { kind: "for" | "against" | "unknown"; lines: Li
   );
 }
 
-function HypothesisCard({ h, rank, confirmed, setRef }: {
-  h: Hypothesis; rank: number; confirmed: boolean; setRef: (el: HTMLElement | null) => void;
+function HypothesisCard({ h, rank, move, setRef }: {
+  h: Hypothesis; rank: number; move?: Movement; setRef: (el: HTMLElement | null) => void;
 }) {
   return (
     <article ref={setRef} className={`hyp ${rank === 1 ? "hyp-lead" : ""}`}>
       <header>
         <span className="hyp-rank" aria-label={`Rank ${rank}`}>{rank}</span>
         <h3>{h.name}</h3>
-        {confirmed ? (
-          <span className="confirmed"><BadgeCheck size={15} aria-hidden /> Confirmed on site</span>
-        ) : (
-          <ConfidenceMeter level={h.confidence} />
-        )}
+        {move && <MoveChip m={move} />}
+        <ConfidenceMeter level={h.confidence} />
       </header>
       <Lines kind="for" lines={h.for_lines} />
       <Lines kind="against" lines={h.against_lines} />
@@ -79,10 +77,8 @@ export function CaseFilePanel({ r }: { r: CaseResult }) {
 }
 
 export function Diagnosis({ r }: { r: CaseResult }) {
-  const resolved = r.outcome === "resolved";
-  const live = r.hypotheses.filter(
-    (h) => (h.stage === 3 && (h.status === "leading" || h.status === "possible")) || (resolved && h.status === "leading"),
-  );
+  const live = r.hypotheses.filter((h) => h.stage === 3 && (h.status === "leading" || h.status === "possible"));
+  const moves = Object.fromEntries((r.update?.moves ?? []).map((m) => [m.id, m.movement]));
   const ruledOut = r.hypotheses.filter((h) => h.status === "ruled_out" && h.brief);
   const flip = useFlip(live.map((h) => h.id));
 
@@ -112,10 +108,10 @@ export function Diagnosis({ r }: { r: CaseResult }) {
 
       <CaseFilePanel r={r} />
 
-      {live.length > 0 && (!r.stage_outcome || resolved) && (
+      {live.length > 0 && !r.stage_outcome && (
         <div className="hyp-list">
           {live.map((h, i) => (
-            <HypothesisCard key={h.id} h={h} rank={i + 1} confirmed={resolved && i === 0} setRef={flip(h.id)} />
+            <HypothesisCard key={h.id} h={h} rank={i + 1} move={moves[h.id]} setRef={flip(h.id)} />
           ))}
         </div>
       )}

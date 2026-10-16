@@ -150,7 +150,6 @@ function Triage({ h }: { h: HomeData }) {
     { key: "area", label: "Area-wide", n: h.counts.area_alert, note: "neighbours changed too", to: "/cases#area" },
     { key: "harvest", label: "Harvest", n: h.counts.harvest, note: "looks like a crop being cut", to: "/cases#harvest" },
     { key: "dismissed", label: "Set aside", n: h.counts.dismissed, note: "cloud, field edges or field work", to: "/cases#dismissed" },
-    { key: "resolved", label: "Resolved", n: h.counts.resolved, note: "checked on the ground", to: "/cases#resolved" },
   ].filter((s) => s.n > 0);
   const total = Math.max(1, segs.reduce((a, s) => a + s.n, 0));
   const aside = h.alerts - h.counts.visit;

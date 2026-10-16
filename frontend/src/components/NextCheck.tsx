@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Check, CheckCircle2, Clock } from "lucide-react";
-import { api, CaseResult, NextCheck } from "../api";
+import { ArrowRight, Check, CheckCircle2, Clock, RefreshCw } from "lucide-react";
+import { api, CaseResult, Movement, NextCheck } from "../api";
 import { Refs, Spinner } from "./ui";
 
 /** What the check is for: separating two causes, testing the one left, or (for a call or visit) nothing named. */
@@ -17,6 +17,7 @@ export function NextCheckSlip({ caseId, nc, names }: { caseId: string; nc: NextC
     <section className="slip" aria-labelledby="slip-h">
       <div className="eyebrow slip-eyebrow" id="slip-h">Next best check</div>
       <p className="slip-instruction">{nc.label}</p>
+      {nc.reason && <p className="slip-reason">{nc.reason}</p>}
       <ul className="slip-results">
         {nc.outcomes.map((o) => (
           <li key={o.key}>
@@ -138,16 +139,42 @@ export function CloseCaseForm({ r, onSaved, large = false }: { r: CaseResult; on
   );
 }
 
-export function ResolutionCard({ r }: { r: CaseResult }) {
-  const res = r.resolution;
-  if (!res) return null;
-  const evId = r.evidence[r.evidence.length - 1]?.id;
+const MOVES: Record<Movement, { glyph: string; word: string }> = {
+  more_likely: { glyph: "↑", word: "More likely" },
+  less_likely: { glyph: "↓", word: "Less likely" },
+  ruled_out: { glyph: "✕", word: "Ruled out" },
+  newly_considered: { glyph: "+", word: "Newly considered" },
+  unchanged: { glyph: "=", word: "Unchanged" },
+};
+
+/** A word and a glyph, never colour alone. */
+export function MoveChip({ m }: { m: Movement }) {
+  const { glyph, word } = MOVES[m];
+  return <span className={`mv mv-${m}`}><span aria-hidden>{glyph}</span> {word}</span>;
+}
+
+/** What the latest finding changed: quiet, factual, and the case stays open. */
+export function InvestigationUpdate({ r }: { r: CaseResult }) {
+  const u = r.update;
+  if (!u) return null;
   return (
-    <section className="resolution" aria-labelledby="res-h">
-      <p className="res-head" id="res-h"><CheckCircle2 size={16} aria-hidden /> Confirmed on the ground</p>
-      <p className="res-title">{res.confirmed_name} {res.confirmed_id === r.hypotheses[0]?.id ? "confirmed" : "is now the likely cause"}</p>
-      <p>{res.outcome_label}.{res.note && <> &ldquo;{res.note}&rdquo;</>} <Refs ids={evId ? [evId] : []} /></p>
-      <p className="res-when">Closed {new Date(res.closed_at).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}. The case now includes this finding.</p>
+    <section className="update" aria-labelledby="upd-h">
+      <p className="update-pill" id="upd-h"><RefreshCw size={13} aria-hidden /> Investigation updated · still open</p>
+      <p className="update-finding">
+        <strong>{u.check_label}:</strong> {u.outcome_label.toLowerCase()}.{u.note && <> &ldquo;{u.note}&rdquo;</>} <Refs ids={[u.evidence_id]} />
+      </p>
+      <ol className="update-moves">
+        {u.moves.map((m) => (
+          <li key={m.id}>
+            <div className="um-row">
+              <MoveChip m={m.movement} />
+              <strong>{m.name}</strong>
+              <span className="um-rank">{m.before_rank === m.after_rank ? `#${m.after_rank}` : `#${m.before_rank} → #${m.after_rank}`}</span>
+            </div>
+            <p className="um-reason">{m.reason} {m.evidence_ids.length > 0 && <Refs ids={m.evidence_ids} />}</p>
+          </li>
+        ))}
+      </ol>
     </section>
   );
 }

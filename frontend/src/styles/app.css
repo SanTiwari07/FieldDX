@@ -411,3 +411,19 @@ textarea:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
   *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
   .step-in { animation: none; }
 }
+
+/* Investigation updated: quiet and factual. The dark slip stays the loudest thing on the page. */
+.update { border: 1px solid var(--border); border-radius: var(--r-md); background: var(--canvas); padding: 14px 16px; margin-bottom: 14px; }
+.update-pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--turmeric-ink); background: var(--turmeric-soft); border: 1px solid var(--turmeric); border-radius: 9999px; padding: 3px 10px; }
+.update-finding { margin-top: 10px; font-size: 14px; color: var(--text); }
+.update-moves { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 6px; }
+.update-moves li { padding: 8px 10px; background: var(--canvas-subtle); border-radius: var(--r-sm); }
+.um-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 14px; }
+.um-rank { margin-left: auto; font-size: 12px; color: var(--text-3); font-variant-numeric: tabular-nums; }
+.um-reason { margin-top: 3px; font-size: 13px; color: var(--text-2); }
+.mv { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; padding: 2px 7px; border-radius: 4px; background: var(--canvas-sunken); color: var(--text-2); white-space: nowrap; }
+.mv-more_likely, .mv-newly_considered { color: var(--ev-for); }
+.mv-ruled_out { color: var(--text-3); }
+.slip-reason { margin-top: 6px; font-size: 13px; opacity: 0.85; }
+.dock-reason { margin-top: 4px; font-size: 12.5px; opacity: 0.85; }
+.tag-updated { margin-left: 8px; font-size: 11px; font-weight: 600; color: var(--turmeric-ink); background: var(--turmeric-soft); border: 1px solid var(--turmeric); border-radius: 9999px; padding: 1px 7px; white-space: nowrap; }

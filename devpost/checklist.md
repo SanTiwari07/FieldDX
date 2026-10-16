@@ -29,7 +29,7 @@ Build mode: fast (switched from learn after slice 1, at the learner's request)
   Learner check: Open Field 128, go to the field checklist, record Leaves clean, and confirm you land back on an open case whose slip now says to check the drip line and valve on the south edge. Reload the page and confirm it's still there, then run `python scripts/reset_demo.py` and confirm Field 128 is back to the leaf-undersides check.
   Commit: `Keep cases open after a finding and recompute the next check`
 
-- [ ] **3. The case shows Investigation updated with a clear before-and-after**
+- [x] **3. The case shows Investigation updated with a clear before-and-after**
   Becomes usable: After a finding, the case shows the quiet Investigation updated pill, the finding with its evidence link, each cause's movement chip (word plus glyph) with a one-line reason, the slip's why-it-changed line, and a template summary that never says confirmed.
   Why now: Slice 2 makes the logic right. This slice makes it readable, answering what changed, why, and what next, which is the moment the video depends on.
   PRD ref: `prd.md > Investigation Update After a Finding`, `prd.md > Look and Feel`

@@ -77,9 +77,7 @@ def inbox(area: str) -> list[dict]:
     results = sorted((effective_case(area, c["id"]) for c in data.case_specs(area)), key=inbox_sort_key)
     for r in results:
         lead = next((h for h in r.hypotheses if h.status in ("leading", "fired")), None)
-        if r.outcome == "resolved" and r.resolution:
-            lead_name, conf = r.resolution.confirmed_name, "high"
-        elif r.outcome == "unexplained":
+        if r.outcome == "unexplained":
             ask = (r.visit_checklist[0] if r.visit_checklist else "").split(".")[0].split("It is one")[0].strip()
             lead_name, conf = (ask or "Ask or visit: no clear cause"), None
         elif r.outcome == "watch":
@@ -96,5 +94,6 @@ def inbox(area: str) -> list[dict]:
             "stage_title": r.stage_outcome.title if r.stage_outcome else None,
             "alert_date": r.alert_date.isoformat(),
             "kind": dismissal_kind(r), "green_before": green_before(area, r.field.id, r.alert_date),
+            "updated": r.update is not None,
         })
     return rows

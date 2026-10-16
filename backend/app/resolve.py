@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 
 from . import config, data
-from .models import CaseResult, Evidence, HypothesisResult, Line
+from .models import CaseResult, CauseMove, Evidence, HypothesisResult, InvestigationUpdate, Line
 from .engine.stages import confidence_for
 from .next_check import choose, visit_check
 from .pipeline import assign_stance
@@ -40,6 +40,9 @@ def apply_finding(base: CaseResult, check_id: str, outcome_key: str, note: str, 
     outcome = check["outcomes"][outcome_key]
 
     r = base.model_copy(deep=True)
+    named = set(outcome["supports"]) | set(outcome["against"])
+    before = {h.id: (h.score, h.status) for h in r.hypotheses}
+    rank_before = [h.id for h in _rank([h for h in r.hypotheses if h.stage == 3 or h.id in named])]
     eid = f"E{len(r.evidence) + 1}"
     finding = f"{outcome['label']}. {nc.label}."
     if note.strip():
@@ -87,9 +90,47 @@ def apply_finding(base: CaseResult, check_id: str, outcome_key: str, note: str, 
     if new is not None:
         new.reason = _reason(outcome["label"], base, r, new)
     r.next_check = new
+    r.update = InvestigationUpdate(
+        check_id=check_id, check_label=nc.label, outcome_key=outcome_key, outcome_label=outcome["label"],
+        note=note.strip(), recorded_at=recorded_at.isoformat(timespec="seconds"), evidence_id=eid,
+        findings=len(done), moves=_moves(outcome["label"], before, rank_before, ordered, eid),
+    )
     r.narrative = None
     r.narrative_source = None
     return r
+
+
+def _moves(result_label: str, before: dict, rank_before: list[str], ordered: list[HypothesisResult],
+           eid: str) -> list[CauseMove]:
+    """Each cause before and after, with a word for how it moved and one line saying why."""
+    rank_after = [h.id for h in ordered]
+    dropped = [h.name.lower() for h in ordered if h.score < before[h.id][0]]
+    out = []
+    for h in ordered:
+        b_score, b_status = before[h.id]
+        if h.status == "ruled_out" and b_status != "ruled_out":
+            mv = "ruled_out"
+        elif b_status == "ruled_out" and h.status != "ruled_out":
+            mv = "newly_considered"
+        elif h.score > b_score:
+            mv = "more_likely"
+        elif h.score < b_score:
+            mv = "less_likely"
+        else:
+            mv = "unchanged"
+        if mv != "unchanged":
+            reason, ids = f"On site: {result_label.lower()}.", [eid]
+        elif rank_after.index(h.id) < rank_before.index(h.id) and dropped:
+            first = "now ranks first" if rank_after.index(h.id) == 0 else "now ranks higher"
+            reason, ids = f"No new evidence for it. It {first} because {' and '.join(dropped)} became less likely.", []
+        else:
+            reason, ids = f"{result_label} says nothing about it.", []
+        out.append(CauseMove(
+            id=h.id, name=h.name, before_score=b_score, after_score=h.score, before_status=b_status,
+            after_status=h.status, before_rank=rank_before.index(h.id) + 1, after_rank=rank_after.index(h.id) + 1,
+            movement=mv, reason=reason, evidence_ids=ids,
+        ))
+    return out
 
 
 def _reason(result_label: str, before: CaseResult, after: CaseResult, nc) -> str:

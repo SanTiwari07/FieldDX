@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { ArrowLeft, ArrowRight, ClipboardList, Clock, Eye, EyeOff, MapPinned } from "lucide-react";
 import { api, CaseResult } from "../api";
 import { fmtDate } from "../lib/format";
-import { checkPurpose, CloseCaseForm, ResolutionCard, VisitChecklist } from "../components/NextCheck";
+import { checkPurpose, CloseCaseForm, VisitChecklist } from "../components/NextCheck";
 
 const cap = (t: string) => t.replace(/^./, (c) => c.toUpperCase());
 
@@ -61,13 +61,6 @@ export default function Checklist() {
           </section>
 
           <CloseCaseForm r={r} onSaved={saved} large />
-        </>
-      )}
-
-      {r.outcome === "resolved" && (
-        <>
-          <ResolutionCard r={r} />
-          <Link to={`/case/${r.case_id}`} className="btn btn-primary btn-block cl-done">Back to the case <ArrowRight size={15} aria-hidden /></Link>
         </>
       )}
 

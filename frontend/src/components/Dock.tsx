@@ -1,33 +1,20 @@
 import { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, CheckCircle2, ClipboardList, Clock, Eye, EyeOff, MapPinned, Pencil, X } from "lucide-react";
+import { ArrowRight, ClipboardList, Clock, Eye, EyeOff, MapPinned, Pencil, X } from "lucide-react";
 import type { CaseResult } from "../api";
 import { checkPurpose, CloseCaseForm } from "./NextCheck";
-import { Refs } from "./ui";
 
 /** The one place the next best check lives. It stays docked under the panel on every tab. */
 export function Dock({ r, onRecord }: { r: CaseResult; onRecord: () => void }) {
   const nc = r.next_check;
   const names = Object.fromEntries(r.hypotheses.map((h) => [h.id, h.name]));
 
-  if (r.outcome === "resolved" && r.resolution) {
-    const ev = r.evidence[r.evidence.length - 1]?.id;
-    return (
-      <div className="dock dock-resolved">
-        <CheckCircle2 size={20} aria-hidden />
-        <div>
-          <strong>{r.resolution.confirmed_name} confirmed</strong>
-          <p>{r.resolution.outcome_label}{r.resolution.note && <>, &ldquo;{r.resolution.note}&rdquo;</>} {ev && <Refs ids={[ev]} />}</p>
-        </div>
-      </div>
-    );
-  }
-
   if (r.outcome === "field_case" && nc) {
     return (
       <div className="dock dock-slip">
-        <p className="dock-kicker">Next best check</p>
+        <p className="dock-kicker">{r.update ? "Next best check · updated" : "Next best check"}</p>
         <p className="dock-instruction">{nc.label}</p>
+        {nc.reason && <p className="dock-reason">{nc.reason}</p>}
         <ul className="dock-results">
           {nc.outcomes.map((o) => (
             <li key={o.key}><b>{o.label}</b><ArrowRight size={13} aria-hidden /><span>{o.then}</span></li>

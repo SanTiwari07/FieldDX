@@ -76,6 +76,10 @@ def _call_model(prompt: str) -> str:
 
 def generate_narrative(r: CaseResult, call: Callable[[str], str] | None = None) -> tuple[CaseFile, str]:
     """Return (narrative, source) where source is 'gemini' or 'template'."""
+    if r.update is not None:
+        # after a finding the case file is always the template: same words every run, and no model to
+        # teach that ruling one cause out never confirms another
+        return template_narrative(r), "template"
     if call is None:
         if not is_enabled():
             return template_narrative(r), "template"

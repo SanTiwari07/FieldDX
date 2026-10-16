@@ -84,10 +84,11 @@ def case_text(r: CaseResult, full: bool = False) -> str:
             lines.append(f"  If {o.label.lower()}: {o.then}")
     if r.visit_checklist and r.outcome == "unexplained":
         lines.append("Visit checklist: " + " ".join(r.visit_checklist[:4]))
-    if r.resolution:
-        res = r.resolution
-        lines.append(f"Resolved on {res.closed_at[:10]}: {res.check_label} found '{res.outcome_label}'. "
-                     f"Confirmed cause: {res.confirmed_name}." + (f" Officer's note: {res.note}" if res.note else ""))
+    if r.update:
+        u = r.update
+        moves = "; ".join(f"{m.name}: {m.movement.replace('_', ' ')}" for m in u.moves)
+        lines.append(f"Investigation updated on {u.recorded_at[:10]}: {u.check_label} found '{u.outcome_label}'. "
+                     f"{moves}. The case is still open; no cause is confirmed." + (f" Officer's note: {u.note}" if u.note else ""))
     if r.narrative:
         lines.append(f"Case file summary: {r.narrative.summary.text}")
     if full:

@@ -108,17 +108,35 @@ class Headline(BaseModel):
     baseline_label: str
 
 
-class Resolution(BaseModel):
+Movement = Literal["more_likely", "less_likely", "ruled_out", "newly_considered", "unchanged"]
+
+
+class CauseMove(BaseModel):
+    """How one cause moved because of the latest officer finding."""
+    id: str
+    name: str
+    before_score: float
+    after_score: float
+    before_status: str
+    after_status: str
+    before_rank: int
+    after_rank: int
+    movement: Movement
+    reason: str
+    evidence_ids: list[str] = Field(default_factory=list)
+
+
+class InvestigationUpdate(BaseModel):
+    """The latest finding and what it changed. The case stays open: nothing here confirms a cause."""
     check_id: str
     check_label: str
     outcome_key: str
     outcome_label: str
     note: str
-    closed_at: str
-    confirmed_id: str
-    confirmed_name: str
-    ranking_before: list[str]
-    ranking_after: list[str]
+    recorded_at: str
+    evidence_id: str
+    findings: int  # how many findings the case has had so far
+    moves: list[CauseMove]
 
 
 class FieldInfo(BaseModel):
@@ -147,7 +165,7 @@ class CaseResult(BaseModel):
     visit_checklist: list[str] = Field(default_factory=list)
     narrative: CaseFile | None = None
     narrative_source: Literal["gemini", "template"] | None = None
-    resolution: Resolution | None = None
+    update: InvestigationUpdate | None = None
     check_context: dict[str, Any] = Field(default_factory=dict)  # what decides which checks apply, kept for replays
     limits: str = ""
 

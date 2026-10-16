@@ -1,6 +1,7 @@
-import { BadgeCheck, ChevronRight, CircleSlash, Eye, ListChecks, MapPinned, MessageCircleQuestion, Wheat } from "lucide-react";
+import { ChevronRight, CircleSlash, Eye, ListChecks, MapPinned, MessageCircleQuestion, Wheat } from "lucide-react";
 import type { CaseResult } from "../api";
 import { fmtDate, plainDrop, sureWord } from "../lib/format";
+import { InvestigationUpdate } from "./NextCheck";
 
 const strip = (t: string) => t.replace(/\s*\[[^\]]*\]/g, "").trim();
 
@@ -9,15 +10,6 @@ function Verdict({ r }: { r: CaseResult }) {
   const lead = r.hypotheses.find((h) => h.status === "leading" && h.stage === 3);
   const said = r.narrative ? strip(r.narrative.summary.text) : "";
 
-  if (r.outcome === "resolved" && r.resolution) {
-    return (
-      <div className="verdict v-resolved">
-        <p className="v-kicker"><BadgeCheck size={15} aria-hidden /> Confirmed on the ground</p>
-        <h2>{r.resolution.confirmed_name}</h2>
-        <p>{r.resolution.check_label}: {r.resolution.outcome_label.toLowerCase()}.{r.resolution.note ? ` “${r.resolution.note}”` : ""}</p>
-      </div>
-    );
-  }
   if (r.stage_outcome) {
     const so = r.stage_outcome;
     const Icon = so.kind === "area_alert" ? MapPinned : so.kind === "watch" ? Eye : /harvest/i.test(so.reason) ? Wheat : CircleSlash;
@@ -43,7 +35,9 @@ function Verdict({ r }: { r: CaseResult }) {
   }
   return (
     <div className="verdict v-case">
-      <p className="v-kicker">Most likely cause <span className={`sure sure-${lead.confidence}`}>{sureWord(lead.confidence)}</span></p>
+      <p className="v-kicker">
+        {r.update ? "Still leading, not confirmed" : "Most likely cause"} <span className={`sure sure-${lead.confidence}`}>{sureWord(lead.confidence)}</span>
+      </p>
       <h2>{lead.name}</h2>
       {said && <p>{said}</p>}
     </div>
@@ -60,6 +54,7 @@ export function Summary({ r, onAsk, onEvidence }: { r: CaseResult; onAsk: () => 
 
   return (
     <section className="summary" aria-label="Summary">
+      <InvestigationUpdate r={r} />
       <Verdict r={r} />
 
       <dl className="facts">
@@ -68,7 +63,7 @@ export function Summary({ r, onAsk, onEvidence }: { r: CaseResult; onAsk: () => 
         <div><dt>Alert</dt><dd>{fmtDate(r.alert_date)}</dd></div>
       </dl>
 
-      {lead && !r.stage_outcome && r.outcome !== "resolved" && lead.for_lines.length > 0 && (
+      {lead && !r.stage_outcome && lead.for_lines.length > 0 && (
         <div className="why">
           <h3>Why FieldDx thinks so</h3>
           <ul>{lead.for_lines.slice(0, 3).map((l, i) => <li key={i}>{strip(l.text)}</li>)}</ul>

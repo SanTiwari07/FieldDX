@@ -38,7 +38,7 @@ function Row({ row }: { row: InboxRow }) {
       <span role="cell" className="c-field">
         <Thumb id={row.id} />
         <span className="c-field-text">
-          <strong>{row.field.name}</strong>
+          <strong>{row.field.name}{row.updated && <span className="tag-updated">Investigation updated</span>}</strong>
           <small>{row.field.class_label}, {row.field.area_ha} ha{row.field.mode === "whole" ? ", one zone" : ""}</small>
         </span>
       </span>

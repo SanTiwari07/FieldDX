@@ -58,3 +58,18 @@ def test_leaves_clean_lowers_pests_leaves_irrigation_alone_and_moves_to_the_drip
     assert r.next_check.reason.startswith("Leaves clean, so pest or disease spread is less likely.")
     causes = " ".join(h.model_dump_json() for h in r.hypotheses) + r.next_check.reason
     assert "confirmed" not in causes.lower()      # the drop itself may be confirmed by scenes; no cause is
+
+
+def test_the_update_says_what_moved_what_did_not_and_never_confirms():
+    from app.narrative import template_narrative, validate_narrative
+    r = after(("leaf_undersides", "clean"))
+    moves = {m.id: m for m in r.update.moves}
+    assert moves["H8"].movement == "less_likely" and moves["H8"].evidence_ids == [r.update.evidence_id]
+    assert moves["H7"].movement == "unchanged" and moves["H7"].after_rank == 1 and moves["H7"].before_rank == 2
+    assert "It now ranks first because pest or disease spread became less likely" in moves["H7"].reason
+    assert moves["H9"].movement == "unchanged" and moves["H10"].movement == "unchanged"
+    cf = template_narrative(r)
+    assert validate_narrative(cf, r) == []
+    text = cf.summary.text + " ".join(ln.text for h in cf.hypotheses for ln in h.why)
+    assert "Investigation updated" in cf.summary.text and "stays open" in cf.summary.text
+    assert "confirmed" not in text.lower()

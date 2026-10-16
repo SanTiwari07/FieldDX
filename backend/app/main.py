@@ -364,7 +364,7 @@ def home(area: str = Depends(current_area), officer: dict = Depends(current_offi
                    "area_alert": count("area_alert"),
                    "harvest": sum(1 for r in rows if r["kind"] == "harvest"),
                    "dismissed": sum(1 for r in rows if r["outcome"] == "auto_dismissed" and r["kind"] != "harvest"),
-                   "resolved": count("resolved")},
+                   "updated": sum(1 for r in rows if r["updated"])},
         "top": [r for r in rows if r["outcome"] in ("field_case", "unexplained")][:5],
         "detector": cf.get("detector"), "provenance": data.provenance(area),
     }
