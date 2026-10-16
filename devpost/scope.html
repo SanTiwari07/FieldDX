@@ -1,0 +1,494 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FieldDx Scope</title>
+<meta name="description" content="Scope review for FieldDx: the kernel, the investigation loop, the demo and the proof-of-concept boundary. Companion to devpost/scope.md, which is canonical.">
+<style>
+  :root {
+    --canvas: #ffffff;
+    --canvas-subtle: #f2f4ee;
+    --canvas-sunken: #e8ece4;
+    --border: #dfe4da;
+    --border-strong: #c7cfc2;
+    --ink: #123232;
+    --text: #142222;
+    --text-2: #4d5c58;
+    --text-3: #6c7a76;
+    --on-ink: #ffffff;
+    --brand-wash: #e3ece8;
+    --turmeric: #d99a1e;
+    --turmeric-soft: #fbf1dc;
+    --turmeric-ink: #7a5208;
+    --ev-for: #1f5f99;
+    --q-usable: #1f6b45;
+    --muted-node: #f2f4ee;
+    --r-sm: 8px;
+    --r-md: 12px;
+    --raised: 0 1px 0 rgba(18, 50, 50, 0.04), 0 4px 14px -6px rgba(18, 50, 50, 0.12);
+    --font: Figtree, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --display: "Bricolage Grotesque", var(--font);
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --canvas: #142020;
+      --canvas-subtle: #0e1717;
+      --canvas-sunken: #1a2828;
+      --border: #2a3a38;
+      --border-strong: #3a4c4a;
+      --ink: #cfe3dc;
+      --text: #e6eeea;
+      --text-2: #a9bab4;
+      --text-3: #84958f;
+      --on-ink: #0e1717;
+      --brand-wash: #1d2f2c;
+      --turmeric: #e5ad3e;
+      --turmeric-soft: #2e2512;
+      --turmeric-ink: #f0c66e;
+      --ev-for: #7fb2e0;
+      --q-usable: #6fc196;
+      --muted-node: #1a2828;
+      --raised: 0 1px 0 rgba(0, 0, 0, 0.2), 0 4px 14px -6px rgba(0, 0, 0, 0.5);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --canvas: #142020;
+    --canvas-subtle: #0e1717;
+    --canvas-sunken: #1a2828;
+    --border: #2a3a38;
+    --border-strong: #3a4c4a;
+    --ink: #cfe3dc;
+    --text: #e6eeea;
+    --text-2: #a9bab4;
+    --text-3: #84958f;
+    --on-ink: #0e1717;
+    --brand-wash: #1d2f2c;
+    --turmeric: #e5ad3e;
+    --turmeric-soft: #2e2512;
+    --turmeric-ink: #f0c66e;
+    --ev-for: #7fb2e0;
+    --q-usable: #6fc196;
+    --muted-node: #1a2828;
+    --raised: 0 1px 0 rgba(0, 0, 0, 0.2), 0 4px 14px -6px rgba(0, 0, 0, 0.5);
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--canvas-subtle);
+    color: var(--text);
+    font: 16px/1.6 var(--font);
+  }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 32px 16px 80px; }
+  h1, h2, h3 { font-family: var(--display); color: var(--text); line-height: 1.2; margin: 0; }
+  h1 { font-size: clamp(2rem, 5vw, 2.8rem); letter-spacing: -0.02em; }
+  h2 { font-size: 1.35rem; letter-spacing: -0.01em; margin-bottom: 4px; }
+  h3 { font-size: 1rem; }
+  p { margin: 0 0 12px; }
+  .eyebrow { font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-3); font-weight: 600; }
+  .sub { color: var(--text-2); }
+  .lede { font-size: 1.15rem; color: var(--text-2); max-width: 62ch; margin-top: 10px; }
+
+  header.top { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: flex-end; justify-content: space-between; margin-bottom: 28px; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 0.85rem; color: var(--text-3); }
+  .pill { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--border); background: var(--canvas); font-weight: 600; font-size: 0.8rem; color: var(--text-2); }
+  .pill.draft::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--turmeric); }
+  .pill.approved::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--q-usable); }
+
+  nav.toc { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 28px; }
+  nav.toc a { font-size: 0.85rem; text-decoration: none; color: var(--text-2); padding: 5px 12px; border-radius: 999px; border: 1px solid var(--border); background: var(--canvas); }
+  nav.toc a:hover { border-color: var(--border-strong); color: var(--text); }
+  a:focus-visible, button:focus-visible, summary:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--turmeric); outline-offset: 2px; }
+
+  section { background: var(--canvas); border: 1px solid var(--border); border-radius: var(--r-md); padding: 24px; margin-bottom: 16px; box-shadow: var(--raised); }
+  section > header { margin-bottom: 16px; }
+
+  /* The kernel is the one loud element, like the next-check slip in the app */
+  .slip { background: var(--ink); color: var(--on-ink); border: none; }
+  .slip h2, .slip .eyebrow { color: var(--on-ink); }
+  .slip .eyebrow { opacity: 0.7; }
+  .slip blockquote { margin: 14px 0 0; padding-left: 14px; border-left: 3px solid var(--turmeric); opacity: 0.92; }
+  .slip p.big { font-size: 1.2rem; line-height: 1.5; margin: 8px 0 0; max-width: 66ch; }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 720px) { .grid2 { grid-template-columns: 1fr; } }
+  .grid2 > section { margin-bottom: 0; }
+  .stack { display: grid; gap: 16px; margin-bottom: 16px; }
+
+  /* Loop diagram */
+  .diagram-scroll { overflow-x: auto; margin: 0 -8px; padding: 0 8px; }
+  .diagram-scroll svg { display: block; min-width: 720px; width: 100%; height: auto; }
+  .node { cursor: pointer; }
+  .node rect { fill: var(--canvas); stroke: var(--border-strong); stroke-width: 1.2; transition: stroke 120ms, fill 120ms; }
+  .node text { fill: var(--text); font-family: var(--font); }
+  .node .num { fill: var(--text-3); font-size: 11px; font-weight: 600; letter-spacing: 0.06em; }
+  .node .lbl { font-size: 14.5px; font-weight: 600; }
+  .node:hover rect { stroke: var(--text-2); }
+  .node.on rect { stroke: var(--turmeric); stroke-width: 2.4; }
+  .node.kernel rect { fill: var(--ink); stroke: var(--ink); }
+  .node.kernel text { fill: var(--on-ink); }
+  .node.kernel .num { fill: var(--on-ink); opacity: 0.7; }
+  .node.kernel.on rect { stroke: var(--turmeric); }
+  .node.officer rect { fill: var(--turmeric-soft); stroke: var(--turmeric); }
+  .node.officer .num { fill: var(--turmeric-ink); }
+  .edge { stroke: var(--text-3); stroke-width: 1.4; fill: none; }
+  .edge.loop { stroke: var(--turmeric); stroke-width: 2; }
+  .edge.exit { stroke-dasharray: 4 4; }
+  .elabel { fill: var(--text-3); font: 12px var(--font); }
+  .elabel.loop { fill: var(--turmeric-ink); font-weight: 600; }
+  .aside rect { fill: var(--muted-node); stroke: var(--border); }
+  .aside text { fill: var(--text-2); font: 13px var(--font); }
+  .arrowhead { fill: var(--text-3); }
+  .arrowhead.loop { fill: var(--turmeric); }
+
+  .detail { margin-top: 16px; border-top: 1px solid var(--border); padding-top: 16px; min-height: 120px; }
+  .detail h3 { margin-bottom: 6px; }
+  .detail ul { margin: 6px 0 0; padding-left: 18px; color: var(--text-2); }
+  .hint { font-size: 0.82rem; color: var(--text-3); margin-top: 8px; }
+
+  /* Demo stepper */
+  .stepper { display: grid; grid-template-columns: 220px 1fr; gap: 20px; }
+  @media (max-width: 720px) { .stepper { grid-template-columns: 1fr; } }
+  .steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+  .steps button { width: 100%; text-align: left; font: inherit; font-size: 0.92rem; padding: 8px 10px; border-radius: var(--r-sm); border: 1px solid transparent; background: none; color: var(--text-2); cursor: pointer; display: flex; gap: 10px; align-items: baseline; }
+  .steps button .n { font-variant-numeric: tabular-nums; color: var(--text-3); font-weight: 600; font-size: 0.8rem; }
+  .steps button:hover { background: var(--canvas-subtle); }
+  .steps button[aria-current="step"] { background: var(--brand-wash); color: var(--text); border-color: var(--border); font-weight: 600; }
+  .steps button.moment .n::after { content: " ★"; color: var(--turmeric); }
+  .stage { background: var(--canvas-subtle); border: 1px solid var(--border); border-radius: var(--r-md); padding: 20px; display: flex; flex-direction: column; min-height: 230px; }
+  .stage .screen { font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-3); font-weight: 600; }
+  .stage h3 { font-size: 1.15rem; margin: 6px 0 10px; }
+  .stage .why { color: var(--text-2); }
+  .stage .moment-tag { display: none; align-self: flex-start; margin-top: 4px; font-size: 0.8rem; font-weight: 600; color: var(--turmeric-ink); background: var(--turmeric-soft); border: 1px solid var(--turmeric); padding: 3px 10px; border-radius: 999px; }
+  .stage.is-moment .moment-tag { display: inline-block; }
+  .controls { margin-top: auto; padding-top: 14px; display: flex; gap: 8px; align-items: center; }
+  .controls button { font: inherit; font-size: 0.88rem; font-weight: 600; padding: 7px 14px; border-radius: var(--r-sm); border: 1px solid var(--border-strong); background: var(--canvas); color: var(--text); cursor: pointer; }
+  .controls button.primary { background: var(--ink); border-color: var(--ink); color: var(--on-ink); }
+  .controls button:disabled { opacity: 0.4; cursor: default; }
+  .controls .count { margin-left: auto; font-size: 0.82rem; color: var(--text-3); font-variant-numeric: tabular-nums; }
+
+  /* Boundary */
+  .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
+  .tabs button { font: inherit; font-size: 0.92rem; font-weight: 600; padding: 8px 14px; border: none; background: none; color: var(--text-3); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+  .tabs button[aria-selected="true"] { color: var(--text); border-bottom-color: var(--ink); }
+  .tabs .c { font-weight: 500; color: var(--text-3); font-variant-numeric: tabular-nums; margin-left: 4px; }
+  [role="tabpanel"][hidden] { display: none; }
+  ul.now { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  ul.now li { padding: 10px 12px 10px 14px; border-left: 3px solid var(--q-usable); background: var(--canvas-subtle); border-radius: 0 var(--r-sm) var(--r-sm) 0; }
+  details { border: 1px solid var(--border); border-radius: var(--r-sm); background: var(--canvas); margin-bottom: 8px; }
+  details summary { cursor: pointer; padding: 10px 14px; font-weight: 600; list-style: none; display: flex; justify-content: space-between; gap: 12px; }
+  details summary::-webkit-details-marker { display: none; }
+  details summary::after { content: "+"; color: var(--text-3); font-weight: 500; }
+  details[open] summary::after { content: "−"; }
+  details[open] summary { border-bottom: 1px solid var(--border); }
+  details .body { padding: 10px 14px 12px; color: var(--text-2); }
+  details .tag { font-size: 0.75rem; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; }
+  .empty { padding: 18px; border: 1px dashed var(--border-strong); border-radius: var(--r-sm); color: var(--text-2); }
+
+  blockquote.q { margin: 0; padding-left: 14px; border-left: 3px solid var(--border-strong); color: var(--text-2); }
+  .foot { font-size: 0.85rem; color: var(--text-3); margin-top: 24px; }
+  .foot a { color: var(--text-2); }
+  .theme-toggle { font: inherit; font-size: 0.8rem; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--border); background: var(--canvas); color: var(--text-2); cursor: pointer; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div>
+      <div class="eyebrow">Build With AI: Basics · Planning review 1 of 3</div>
+      <h1>FieldDx scope</h1>
+      <p class="lede">Differential diagnosis for farm fields. When a field loses greenery, FieldDx works out what probably happened, what it wasn't, and the one check that settles it.</p>
+    </div>
+    <div class="meta">
+      <span class="pill approved" id="status">Approved</span>
+      <span>Sanskar Tiwari &amp; Shambhavi Patil</span>
+      <button class="theme-toggle" id="theme" type="button" aria-label="Toggle light or dark theme">Theme</button>
+    </div>
+  </header>
+
+  <nav class="toc" aria-label="Sections">
+    <a href="#kernel">Kernel</a>
+    <a href="#loop">Core loop</a>
+    <a href="#who">Who it's for</a>
+    <a href="#demo">What working looks like</a>
+    <a href="#boundary">Boundary</a>
+    <a href="#stands">Where this stands</a>
+  </nav>
+
+  <section class="slip" id="kernel">
+    <div class="eyebrow">The unique kernel</div>
+    <p class="big">FieldDx doesn't stop at a red patch or a list of causes. It picks <strong>one practical check whose outcomes best separate the leading causes</strong>. The officer's finding then goes back in as evidence and changes the assessment.</p>
+    <blockquote>"I don't want it to confidently diagnose something when the available data isn't enough."</blockquote>
+  </section>
+
+  <section id="loop">
+    <header>
+      <div class="eyebrow">The core loop</div>
+      <h2>From an alert to an investigation</h2>
+      <p class="sub">It doesn't jump straight from a red patch to a diagnosis. Select a step to see what happens there.</p>
+    </header>
+    <div class="diagram-scroll">
+      <svg viewBox="0 0 1000 300" role="group" aria-label="FieldDx investigation loop diagram">
+        <defs>
+          <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="arrowhead" d="M0,0 L10,5 L0,10 z"/></marker>
+          <marker id="ahl" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="arrowhead loop" d="M0,0 L10,5 L0,10 z"/></marker>
+        </defs>
+
+        <!-- forward edges -->
+        <line class="edge" x1="160" y1="78" x2="182" y2="78" marker-end="url(#ah)"/>
+        <line class="edge" x1="325" y1="78" x2="347" y2="78" marker-end="url(#ah)"/>
+        <line class="edge" x1="490" y1="78" x2="512" y2="78" marker-end="url(#ah)"/>
+        <line class="edge" x1="655" y1="78" x2="677" y2="78" marker-end="url(#ah)"/>
+        <line class="edge" x1="820" y1="78" x2="842" y2="78" marker-end="url(#ah)"/>
+
+        <!-- exits to set aside -->
+        <path class="edge exit" d="M255 116 V226" marker-end="url(#ah)"/>
+        <path class="edge exit" d="M420 116 V226" marker-end="url(#ah)"/>
+        <text class="elabel" x="263" y="168">not real</text>
+        <text class="elabel" x="428" y="168">explained</text>
+        <g class="aside">
+          <rect x="185" y="230" width="305" height="44" rx="8"/>
+          <text x="337" y="257" text-anchor="middle">Set aside: false alarm or ordinary change</text>
+        </g>
+
+        <!-- feedback loop: finding becomes evidence -->
+        <path class="edge loop" d="M915 116 C 915 250, 585 250, 585 120" marker-end="url(#ahl)"/>
+        <text class="elabel loop" x="750" y="248" text-anchor="middle">finding becomes new evidence</text>
+
+        <g class="node" data-step="0" tabindex="0" role="button" aria-label="Step 1, Alert">
+          <rect x="20" y="40" width="140" height="76" rx="10"/>
+          <text class="num" x="36" y="66">STEP 1</text>
+          <text class="lbl" x="36" y="92">Alert</text>
+        </g>
+        <g class="node" data-step="1" tabindex="0" role="button" aria-label="Step 2, Is it real?">
+          <rect x="185" y="40" width="140" height="76" rx="10"/>
+          <text class="num" x="201" y="66">STEP 2</text>
+          <text class="lbl" x="201" y="92">Is it real?</text>
+        </g>
+        <g class="node" data-step="2" tabindex="0" role="button" aria-label="Step 3, Ordinary change?">
+          <rect x="350" y="40" width="140" height="76" rx="10"/>
+          <text class="num" x="366" y="66">STEP 3</text>
+          <text class="lbl" x="366" y="92">Ordinary change?</text>
+        </g>
+        <g class="node" data-step="3" tabindex="0" role="button" aria-label="Step 4, Rank causes">
+          <rect x="515" y="40" width="140" height="76" rx="10"/>
+          <text class="num" x="531" y="66">STEP 4</text>
+          <text class="lbl" x="531" y="92">Rank causes</text>
+        </g>
+        <g class="node kernel" data-step="4" tabindex="0" role="button" aria-label="Step 5, One next check (the kernel)">
+          <rect x="680" y="40" width="140" height="76" rx="10"/>
+          <text class="num" x="696" y="66">STEP 5 · KERNEL</text>
+          <text class="lbl" x="696" y="92">One next check</text>
+        </g>
+        <g class="node officer" data-step="5" tabindex="0" role="button" aria-label="Step 6, Record finding">
+          <rect x="845" y="40" width="140" height="76" rx="10"/>
+          <text class="num" x="861" y="66">STEP 6 · OFFICER</text>
+          <text class="lbl" x="861" y="92">Record finding</text>
+        </g>
+      </svg>
+    </div>
+    <div class="detail" id="loop-detail" aria-live="polite"></div>
+    <noscript><p class="hint">The step details are in devpost/scope.md under "The Core Loop".</p></noscript>
+  </section>
+
+  <div class="grid2 stack">
+    <section id="who">
+      <div class="eyebrow">Who it's for</div>
+      <h2>An FPO field officer</h2>
+      <p>At a farmer producer organisation, starting in Indian farming communities such as Niphad near Nashik. They look after more farms than they can physically visit.</p>
+      <p class="sub">Free satellite maps show them <em>that</em> a field lost greenery, not <em>why</em>. It could be disease, pests, irrigation, harvest or pruning, weather, or a cloudy image. Today they chase alerts with little to go on, or ignore them.</p>
+    </section>
+    <section>
+      <div class="eyebrow">Why it matters</div>
+      <h2>Support judgement, don't replace it</h2>
+      <blockquote class="q">"The gap between detecting a problem and actually helping someone decide what to do about it."</blockquote>
+      <p class="sub" style="margin-top:12px">Success means technically useful, honest about its limits, and practical enough that an officer knows what to do next "without blindly trusting an AI-generated answer." Identity: a case file, not a heatmap.</p>
+    </section>
+  </div>
+
+  <section id="demo">
+    <header>
+      <div class="eyebrow">What "working" looks like</div>
+      <h2>The one-minute demo: Field 128, Niphad</h2>
+      <p class="sub">One real case, a suspected pest or disease spread near the south edge. Step through it.</p>
+    </header>
+    <div class="stepper">
+      <ol class="steps" id="demo-steps"></ol>
+      <div class="stage" id="demo-stage" aria-live="polite">
+        <div class="screen" id="demo-screen"></div>
+        <h3 id="demo-title"></h3>
+        <span class="moment-tag">The moment to remember</span>
+        <p class="why" id="demo-why"></p>
+        <div class="controls">
+          <button type="button" id="prev">Back</button>
+          <button type="button" class="primary" id="next">Next</button>
+          <span class="count" id="demo-count"></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="boundary">
+    <header>
+      <div class="eyebrow">The proof-of-concept boundary</div>
+      <h2>Now, later, cut</h2>
+      <p class="sub">"If I were starting again, I'd focus on proving the investigation loop first and add the supporting features only when they became necessary."</p>
+    </header>
+    <div class="tabs" role="tablist" aria-label="Scope decisions">
+      <button role="tab" aria-selected="true" aria-controls="p-now" id="t-now">Now<span class="c">6</span></button>
+      <button role="tab" aria-selected="false" aria-controls="p-later" id="t-later" tabindex="-1">Later<span class="c">7</span></button>
+      <button role="tab" aria-selected="false" aria-controls="p-cut" id="t-cut" tabindex="-1">Cut<span class="c">0</span></button>
+    </div>
+
+    <div role="tabpanel" id="p-now" aria-labelledby="t-now">
+      <ul class="now">
+        <li><strong>One real area.</strong> The existing Niphad dataset: real Sentinel-2 imagery, field shapes and weather, shipped in the repo.</li>
+        <li><strong>Real alerts</strong>, with the image-quality and ordinary-explanation checks.</li>
+        <li><strong>Evidence-backed ranking</strong> of causes, with uncertainty shown.</li>
+        <li><strong>One recommended next check</strong> per case, chosen to separate the leading causes.</li>
+        <li><strong>Recording a finding</strong>, which updates the evidence and the ranking.</li>
+        <li><strong>Phone essentials only:</strong> case summary, recommended check and finding form work on a phone.</li>
+      </ul>
+    </div>
+
+    <div role="tabpanel" id="p-later" aria-labelledby="t-later" hidden>
+      <details><summary>Sign-in and accounts <span class="tag">Later</span></summary><div class="body">Matter once several officers share the platform. A ready-to-use demo is enough to prove the loop.</div></details>
+      <details><summary>Region overview <span class="tag">Later</span></summary><div class="body">Helps officers discover where crop health is changing, but the proof starts once an alert exists for a particular field.</div></details>
+      <details><summary>Marking land and building areas on demand <span class="tag">Later</span></summary><div class="body">Important for other regions, but building a new area brings heavy data-processing complexity. Prove the investigation on Niphad first.</div></details>
+      <details><summary>Correcting field shapes <span class="tag">Later</span></summary><div class="body">Add it when testing shows that wrong boundaries are a significant problem.</div></details>
+      <details><summary>Ask FieldDx chat <span class="tag">Later</span></summary><div class="body">The case screen should already explain the causes, the evidence and the next check, without needing a chat.</div></details>
+      <details><summary>Polishing every screen for phones <span class="tag">Later</span></summary><div class="body">Wait until the core workflow is validated.</div></details>
+      <details><summary>Learning from past findings <span class="tag">Later</span></summary><div class="body">Over time, findings across cases could make future investigations more useful.</div></details>
+    </div>
+
+    <div role="tabpanel" id="p-cut" aria-labelledby="t-cut" hidden>
+      <div class="empty">Nothing is cut permanently. "Most have a genuine purpose; they simply don't all need to exist at the beginning."</div>
+    </div>
+  </section>
+
+  <section id="stands">
+    <div class="eyebrow">Where this stands</div>
+    <h2>Written after the build, as a look back</h2>
+    <p>Most of FieldDx was built before this scope, and the app already includes several <em>Later</em> items. This document names the core the demo has to prove.</p>
+    <blockquote class="q">"I think I tried to build too much around the core idea. If I were starting again, I'd focus on proving the investigation loop first."</blockquote>
+  </section>
+
+  <section id="carried">
+    <div class="eyebrow">Carried into the PRD</div>
+    <h2>Raised at scope review</h2>
+    <ul class="now">
+      <li><strong>Define the payoff exactly.</strong> After a finding is recorded: how the evidence updates, how the ranking of causes moves, and how the next check responds. The before-and-after should read without a long explanation.</li>
+      <li><strong>Built vs. proposed.</strong> Each behaviour says whether FieldDx already does it (verified), or whether it is something to demonstrate or improve, "so we don't accidentally promise behaviour that hasn't been verified."</li>
+    </ul>
+  </section>
+
+  <p class="foot">Companion to <a href="scope.md">devpost/scope.md</a>, which is canonical. Next: <code>3-prd</code>.</p>
+</div>
+
+<script>
+(function () {
+  // Theme toggle: per-viewer convenience only
+  var root = document.documentElement;
+  try { var saved = localStorage.getItem("fdx-theme"); if (saved) root.setAttribute("data-theme", saved); } catch (e) {}
+  document.getElementById("theme").addEventListener("click", function () {
+    var dark = root.getAttribute("data-theme") === "dark" ||
+      (!root.getAttribute("data-theme") && window.matchMedia("(prefers-color-scheme: dark)").matches);
+    var next = dark ? "light" : "dark";
+    root.setAttribute("data-theme", next);
+    try { localStorage.setItem("fdx-theme", next); } catch (e) {}
+  });
+
+  // Core loop details, from scope.md > The Core Loop
+  var loop = [
+    { t: "Alert", d: "The officer opens FieldDx and sees the fields in their area where greenery has dropped over the last few weeks.", l: ["What changed, when it changed, and how reliable the satellite observation is"] },
+    { t: "Is it real?", d: "Before anything else, FieldDx checks whether the drop could be an artefact of the observation itself.", l: ["Clouds and shadows", "Poor-quality imagery", "Pixels mixing with nearby land"] },
+    { t: "Ordinary change?", d: "Then whether something normal explains it.", l: ["Harvesting or pruning", "Weather conditions", "The same change in neighbouring fields"] },
+    { t: "Rank causes", d: "If it still looks concerning, the possible causes are ranked. Each shows the evidence for it and against it, and the uncertainty is made clear.", l: ["Irrigation failure", "Pest or disease spread", "Nutrient deficiency", "Standing water"] },
+    { t: "One next check", d: "The kernel. One practical check whose possible outcomes best separate the leading causes, instead of several unnecessary ones.", l: ["Example: inspect the drip line and valve near the affected part of a vineyard", "The officer decides whether to call the farmer, ask a few questions, or visit"] },
+    { t: "Record finding", d: "The officer records what they found. A dry line supports irrigation; a working line counts against it. FieldDx updates its assessment, and the case is resolved, monitored, or investigated further.", l: ["The finding loops back into the ranking as new evidence"] }
+  ];
+  var nodes = document.querySelectorAll(".node");
+  var detail = document.getElementById("loop-detail");
+  function showLoop(i) {
+    nodes.forEach(function (n) { n.classList.toggle("on", +n.dataset.step === i); n.setAttribute("aria-pressed", +n.dataset.step === i); });
+    var s = loop[i];
+    detail.innerHTML = "";
+    var h = document.createElement("h3"); h.textContent = "Step " + (i + 1) + ": " + s.t; detail.appendChild(h);
+    var p = document.createElement("p"); p.textContent = s.d; detail.appendChild(p);
+    var ul = document.createElement("ul");
+    s.l.forEach(function (x) { var li = document.createElement("li"); li.textContent = x; ul.appendChild(li); });
+    detail.appendChild(ul);
+  }
+  nodes.forEach(function (n) {
+    n.addEventListener("click", function () { showLoop(+n.dataset.step); });
+    n.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); showLoop(+n.dataset.step); } });
+  });
+  showLoop(4);
+
+  // Demo steps, from scope.md > What "Working" Looks Like
+  var demo = [
+    { s: "Dashboard", t: "See the fields needing attention", w: "The dashboard lists the fields that need attention beside the map of the Niphad area. Open Field 128." },
+    { s: "Case", t: "What changed, and the evidence", w: "Satellite imagery, the change in greenery over time, and the evidence behind the alert." },
+    { s: "Investigation", t: "No jump from red patch to diagnosis", w: "Data quality, neighbouring fields, weather and season are checked, then the possible causes are ranked." },
+    { s: "Next check", t: "Inspect the drip line and valve, south edge", w: "Chosen because its possible outcomes separate an irrigation problem from pest or disease spread." },
+    { s: "Field checklist", t: "Record a finding", w: "A clearly labelled example result is recorded: the drip line is working properly." },
+    { s: "Updated case", t: "The finding changes the assessment", w: "The evidence and the ranking visibly change because of the officer's finding, not just a \"resolved\" stamp. Alert, then investigation, then next step, then finding, then a new assessment.", m: true }
+  ];
+  var list = document.getElementById("demo-steps");
+  var stage = document.getElementById("demo-stage");
+  var cur = 0;
+  demo.forEach(function (d, i) {
+    var li = document.createElement("li");
+    var b = document.createElement("button");
+    b.type = "button";
+    if (d.m) b.className = "moment";
+    var n = document.createElement("span"); n.className = "n"; n.textContent = String(i + 1).padStart(2, "0");
+    var t = document.createElement("span"); t.textContent = d.s;
+    b.appendChild(n); b.appendChild(t);
+    b.addEventListener("click", function () { showDemo(i); });
+    li.appendChild(b); list.appendChild(li);
+  });
+  function showDemo(i) {
+    cur = i;
+    var d = demo[i];
+    document.getElementById("demo-screen").textContent = d.s;
+    document.getElementById("demo-title").textContent = d.t;
+    document.getElementById("demo-why").textContent = d.w;
+    document.getElementById("demo-count").textContent = (i + 1) + " / " + demo.length;
+    stage.classList.toggle("is-moment", !!d.m);
+    list.querySelectorAll("button").forEach(function (b, j) { if (j === i) b.setAttribute("aria-current", "step"); else b.removeAttribute("aria-current"); });
+    document.getElementById("prev").disabled = i === 0;
+    document.getElementById("next").disabled = i === demo.length - 1;
+  }
+  document.getElementById("prev").addEventListener("click", function () { if (cur > 0) showDemo(cur - 1); });
+  document.getElementById("next").addEventListener("click", function () { if (cur < demo.length - 1) showDemo(cur + 1); });
+  showDemo(0);
+
+  // Boundary tabs
+  var tabs = Array.prototype.slice.call(document.querySelectorAll('[role="tab"]'));
+  function selectTab(tab) {
+    tabs.forEach(function (t) {
+      var on = t === tab;
+      t.setAttribute("aria-selected", on);
+      t.tabIndex = on ? 0 : -1;
+      document.getElementById(t.getAttribute("aria-controls")).hidden = !on;
+    });
+    tab.focus();
+  }
+  tabs.forEach(function (t, i) {
+    t.addEventListener("click", function () { selectTab(t); });
+    t.addEventListener("keydown", function (e) {
+      if (e.key === "ArrowRight") selectTab(tabs[(i + 1) % tabs.length]);
+      if (e.key === "ArrowLeft") selectTab(tabs[(i - 1 + tabs.length) % tabs.length]);
+    });
+  });
+})();
+</script>
+</body>
+</html>
