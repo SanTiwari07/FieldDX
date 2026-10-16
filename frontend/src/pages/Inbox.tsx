@@ -2,8 +2,8 @@ import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { ChevronRight, List, Map as MapIcon, Wheat } from "lucide-react";
 import { api, InboxRow, Provenance } from "../api";
-import { fmtDate, fmtDelta } from "../lib/format";
-import { ConfidenceMeter, SeverityBadge, StatusBadge } from "../components/ui";
+import { fmtDate, fmtDelta, sureWord } from "../lib/format";
+import { SeverityBadge, StatusBadge } from "../components/ui";
 import { paintRaster } from "../components/RasterOverlay";
 
 const FieldsMap = lazy(() => import("../components/FieldsMap"));
@@ -60,12 +60,11 @@ function Row({ row }: { row: InboxRow }) {
           </>
         ) : (
           <>
-            <span className="lead-name">{row.leading}</span>
+            <span className="lead-name">{row.leading}{row.confidence && <em className={`sure sure-${row.confidence}`}>{sureWord(row.confidence)}</em>}</span>
             {(row.outcome === "area_alert" || row.outcome === "watch") && row.reason && <small>{row.reason}</small>}
           </>
         )}
       </span>
-      <span role="cell" className="c-conf">{row.confidence ? <ConfidenceMeter level={row.confidence} /> : <span className="muted">&ndash;</span>}</span>
       <span role="cell" className="c-status">
         {muted ? <span className="muted small">{fmtDate(row.alert_date)}</span> : <StatusBadge outcome={row.outcome} />}
         <ChevronRight size={16} aria-hidden className="chev" />
@@ -81,7 +80,7 @@ function Group({ id, title, note, rows, divider }: { id: string; title: string; 
       <h2 id={id} className={`group-title ${divider ? "divider" : ""}`}>{title} <span className="count">{rows.length}</span></h2>
       {note && <p className="group-note">{note}</p>}
       <div className="inbox-head" role="row" aria-hidden>
-        <span>Priority</span><span>Field</span><span>Change</span><span>Likely cause</span><span>How sure</span><span>Status</span>
+        <span>Priority</span><span>Field</span><span>Change</span><span>Likely cause</span><span>Status</span>
       </div>
       <div className="rows">{rows.map((r) => <Row key={r.id} row={r} />)}</div>
     </>
@@ -118,7 +117,7 @@ function Harvest({ rows }: { rows: InboxRow[] }) {
       <details>
         <summary>Show the {rows.length} fields</summary>
         <div className="inbox-head" role="row" aria-hidden>
-          <span>Priority</span><span>Field</span><span>Change</span><span>Likely cause</span><span>How sure</span><span>Status</span>
+          <span>Priority</span><span>Field</span><span>Change</span><span>Likely cause</span><span>Status</span>
         </div>
         <div className="rows">{rows.map((r) => <Row key={r.id} row={r} />)}</div>
       </details>
