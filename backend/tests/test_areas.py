@@ -172,3 +172,22 @@ def test_a_network_blip_is_not_read_as_a_state_without_fields(monkeypatch):
         raise urllib.error.HTTPError(req.full_url, 404, "Not Found", {}, None)
     monkeypatch.setattr(places.urllib.request, "urlopen", missing)
     assert places.ftw_partition("IN", "LD") is None
+
+
+def test_a_taluka_is_found_without_the_word_taluka(monkeypatch):
+    from app import places
+    monkeypatch.setattr(places, "_found", places.OrderedDict())
+    asked = []
+
+    def nominatim(q):
+        asked.append(q)
+        # Nominatim knows the taluka by its bare name only, and sometimes has a bad moment
+        return ({"name": "Raver", "kind": "Taluka"},) if q in ("raver", "raver, jalgaon") and len(asked) > 1 else ()
+    monkeypatch.setattr(places, "_search", nominatim)
+
+    assert places.search("Raver") == []  # a passing empty answer
+    assert places.search("Raver") == [{"name": "Raver", "kind": "Taluka"}]  # was not kept
+    assert places.search("Raver  Taluka, Jalgaon")[0]["name"] == "Raver"
+    assert asked[-2:] == ["raver taluka, jalgaon", "raver, jalgaon"]
+    assert places.bare_name("Dist. Jalgaon") == "jalgaon"
+    assert places.bare_name("Blockley") == "blockley"

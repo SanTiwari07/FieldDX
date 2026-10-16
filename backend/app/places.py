@@ -8,6 +8,7 @@ IN_MH.pmtiles), so the officer can see real field shapes before anything is buil
 from __future__ import annotations
 
 import json
+import re
 import threading
 import time
 import urllib.error
@@ -126,7 +127,6 @@ def _round_geom(g: dict, nd: int = 5) -> dict:
     return {"type": g["type"], "coordinates": walk(g["coordinates"])}
 
 
-@lru_cache(maxsize=256)
 def _search(q: str) -> tuple[dict, ...]:
     params = {"q": q, "format": "jsonv2", "addressdetails": 1, "limit": 8, "polygon_geojson": 1,
               "polygon_threshold": 0.003}
@@ -146,6 +146,8 @@ def _search(q: str) -> tuple[dict, ...]:
         geom = r.get("geojson") or {}
         boundary = _round_geom(geom) if geom.get("type") in ("Polygon", "MultiPolygon") else None
         kind = KINDS.get(r.get("addresstype") or r.get("type"), (r.get("addresstype") or "place").replace("_", " ").capitalize())
+        if r.get("addresstype") == "county" and addr.get("country_code") == "in":
+            kind = "Taluka"  # in India OpenStreetMap tags the taluka or tehsil as a county, under the district
         name = r.get("name") or r["display_name"].split(",")[0]
         key = (name, kind, round(s, 2), round(w, 2))
         if key in seen:
@@ -180,8 +182,29 @@ def nearest_name(lat: float, lon: float) -> str:
     return r.get("name") or ""
 
 
+# OpenStreetMap names a taluka "Raver", not "Raver taluka", and Nominatim finds nothing for the longer form
+ADMIN_WORDS = re.compile(r"\b(?:sub-?district|taluka|taluk|tehsil|tahsil|tahasil|district|dist|zilla|zila|block|mandal|village)\b\.?", re.I)
+_found: "OrderedDict[str, tuple[dict, ...]]" = OrderedDict()
+
+
+def bare_name(q: str) -> str:
+    """The query without words like taluka or district: "Raver taluka, Jalgaon" -> "raver, jalgaon"."""
+    q = ADMIN_WORDS.sub(" ", q.lower())
+    return " ".join(re.sub(r"\s*,[\s,]*", ", ", q).split()).strip(" ,")
+
+
 def search(q: str) -> list[dict]:
-    q = " ".join(q.split())[:120]
+    q = " ".join(q.split())[:120].lower()
     if len(q) < 2:
         return []
-    return [dict(p) for p in _search(q.lower())]
+    if q in _found:
+        return [dict(p) for p in _found[q]]
+    out = _search(q)
+    bare = bare_name(q)
+    if not out and len(bare) >= 2 and bare != q:
+        out = _search(bare)
+    if out:  # an empty answer is not kept: it may be a passing hiccup, and the officer will try again
+        _found[q] = out
+        while len(_found) > 256:
+            _found.popitem(last=False)
+    return [dict(p) for p in out]
