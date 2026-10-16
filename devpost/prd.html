@@ -1,0 +1,472 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FieldDx PRD</title>
+<meta name="description" content="Product requirements review for FieldDx: the core journey on Field 128, the investigation update after a finding, and what is built versus new. Companion to devpost/prd.md, which is canonical.">
+<style>
+  :root {
+    --canvas: #ffffff; --canvas-subtle: #f2f4ee; --canvas-sunken: #e8ece4;
+    --border: #dfe4da; --border-strong: #c7cfc2;
+    --ink: #123232; --text: #142222; --text-2: #4d5c58; --text-3: #6c7a76; --on-ink: #ffffff;
+    --brand-wash: #e3ece8;
+    --turmeric: #d99a1e; --turmeric-soft: #fbf1dc; --turmeric-ink: #7a5208;
+    --for: #1f5f99; --for-soft: #e6f0f9;
+    --ok: #1f6b45; --ok-soft: #e5f4e9;
+    --warn: #8a5a00; --warn-soft: #fdf4e3;
+    --bad: #b42318; --bad-soft: #fdecea;
+    --r-sm: 8px; --r-md: 12px;
+    --raised: 0 1px 0 rgba(18,50,50,.04), 0 4px 14px -6px rgba(18,50,50,.12);
+    --font: Figtree, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --display: "Bricolage Grotesque", var(--font);
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --canvas: #142020; --canvas-subtle: #0e1717; --canvas-sunken: #1a2828;
+      --border: #2a3a38; --border-strong: #3a4c4a;
+      --ink: #cfe3dc; --text: #e6eeea; --text-2: #a9bab4; --text-3: #84958f; --on-ink: #0e1717;
+      --brand-wash: #1d2f2c;
+      --turmeric: #e5ad3e; --turmeric-soft: #2e2512; --turmeric-ink: #f0c66e;
+      --for: #7fb2e0; --for-soft: #16283a; --ok: #6fc196; --ok-soft: #13291e;
+      --warn: #e5ad3e; --warn-soft: #2e2512; --bad: #f08a80; --bad-soft: #351816;
+      --raised: 0 1px 0 rgba(0,0,0,.2), 0 4px 14px -6px rgba(0,0,0,.5);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --canvas: #142020; --canvas-subtle: #0e1717; --canvas-sunken: #1a2828;
+    --border: #2a3a38; --border-strong: #3a4c4a;
+    --ink: #cfe3dc; --text: #e6eeea; --text-2: #a9bab4; --text-3: #84958f; --on-ink: #0e1717;
+    --brand-wash: #1d2f2c;
+    --turmeric: #e5ad3e; --turmeric-soft: #2e2512; --turmeric-ink: #f0c66e;
+    --for: #7fb2e0; --for-soft: #16283a; --ok: #6fc196; --ok-soft: #13291e;
+    --warn: #e5ad3e; --warn-soft: #2e2512; --bad: #f08a80; --bad-soft: #351816;
+    --raised: 0 1px 0 rgba(0,0,0,.2), 0 4px 14px -6px rgba(0,0,0,.5);
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: var(--canvas-subtle); color: var(--text); font: 16px/1.6 var(--font); }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 32px 16px 80px; }
+  h1, h2, h3 { font-family: var(--display); line-height: 1.2; margin: 0; color: var(--text); }
+  h1 { font-size: clamp(2rem, 5vw, 2.8rem); letter-spacing: -.02em; }
+  h2 { font-size: 1.35rem; letter-spacing: -.01em; margin-bottom: 4px; }
+  h3 { font-size: 1rem; }
+  p { margin: 0 0 12px; }
+  code { font-size: .88em; background: var(--canvas-sunken); padding: 1px 5px; border-radius: 4px; }
+  .eyebrow { font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; color: var(--text-3); font-weight: 600; }
+  .sub { color: var(--text-2); }
+  .lede { font-size: 1.15rem; color: var(--text-2); max-width: 62ch; margin-top: 10px; }
+  header.top { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: flex-end; justify-content: space-between; margin-bottom: 24px; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: .85rem; color: var(--text-3); }
+  .pill { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--border); background: var(--canvas); font-weight: 600; font-size: .8rem; color: var(--text-2); }
+  .pill.draft::before, .pill.approved::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--turmeric); }
+  .pill.approved::before { background: var(--ok); }
+  .theme-toggle { font: inherit; font-size: .8rem; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--border); background: var(--canvas); color: var(--text-2); cursor: pointer; }
+  nav.toc { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 24px; }
+  nav.toc a { font-size: .85rem; text-decoration: none; color: var(--text-2); padding: 5px 12px; border-radius: 999px; border: 1px solid var(--border); background: var(--canvas); }
+  nav.toc a:hover { color: var(--text); border-color: var(--border-strong); }
+  a:focus-visible, button:focus-visible, summary:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--turmeric); outline-offset: 2px; }
+  section { background: var(--canvas); border: 1px solid var(--border); border-radius: var(--r-md); padding: 24px; margin-bottom: 16px; box-shadow: var(--raised); }
+  section > header { margin-bottom: 16px; }
+
+  /* labels */
+  .lab { display: inline-flex; align-items: center; gap: 5px; font-size: .72rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; border: 1px solid; white-space: nowrap; }
+  .lab::before { font-size: .8rem; }
+  .lab.verified { color: var(--ok); background: var(--ok-soft); border-color: var(--ok); }
+  .lab.verified::before { content: "✓"; }
+  .lab.built { color: var(--text-2); background: var(--canvas-subtle); border-color: var(--border-strong); }
+  .lab.built::before { content: "●"; font-size: .55rem; }
+  .lab.change { color: var(--warn); background: var(--warn-soft); border-color: var(--warn); }
+  .lab.change::before { content: "↻"; }
+  .lab.new { color: var(--for); background: var(--for-soft); border-color: var(--for); }
+  .lab.new::before { content: "+"; }
+  .legend { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  @media (max-width: 720px) { .legend { grid-template-columns: 1fr 1fr; } }
+  .legend div { border: 1px solid var(--border); border-radius: var(--r-sm); padding: 10px 12px; font-size: .88rem; color: var(--text-2); }
+  .legend .lab { margin-bottom: 6px; }
+
+  /* journey diagram */
+  .diagram-scroll { overflow-x: auto; margin: 0 -8px; padding: 0 8px; }
+  .diagram-scroll svg { display: block; min-width: 600px; width: 100%; height: auto; }
+  .jn { cursor: pointer; }
+  .jn rect.box { fill: var(--canvas); stroke: var(--border-strong); stroke-width: 1.2; }
+  .jn:hover rect.box { stroke: var(--text-2); }
+  .jn.on rect.box { stroke: var(--turmeric); stroke-width: 2.4; }
+  .jn.payoff rect.box { fill: var(--ink); stroke: var(--ink); }
+  .jn.payoff text { fill: var(--on-ink) !important; }
+  .jn.payoff.on rect.box { stroke: var(--turmeric); }
+  .jn text.n { fill: var(--text-3); font: 600 11px var(--font); letter-spacing: .06em; }
+  .jn text.t { fill: var(--text); font: 600 14px var(--font); }
+  .jn text.s { fill: var(--text-3); font: 12px var(--font); }
+  .jn .tag-verified { fill: var(--ok); } .jn .tag-built { fill: var(--border-strong); } .jn .tag-change { fill: var(--warn); } .jn .tag-new { fill: var(--for); }
+  .edge { stroke: var(--text-3); stroke-width: 1.4; fill: none; }
+  .arrowhead { fill: var(--text-3); }
+  .detail { margin-top: 16px; border-top: 1px solid var(--border); padding-top: 16px; min-height: 130px; }
+  .detail .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 6px; }
+  .detail .screen { font-size: .8rem; color: var(--text-3); }
+
+  /* before / after */
+  .seg { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--border-strong); border-radius: var(--r-sm); overflow: hidden; margin-bottom: 16px; }
+  .seg button { font: inherit; font-size: .88rem; font-weight: 600; padding: 7px 14px; border: none; background: var(--canvas); color: var(--text-2); cursor: pointer; border-right: 1px solid var(--border-strong); }
+  .seg button:last-child { border-right: none; }
+  .seg button[aria-pressed="true"] { background: var(--ink); color: var(--on-ink); }
+  .case { border: 1px solid var(--border); border-radius: var(--r-md); background: var(--canvas-subtle); padding: 18px; }
+  .case-head { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 12px; }
+  .case-head h3 { font-size: 1.05rem; }
+  .status { font-size: .8rem; font-weight: 600; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--border-strong); background: var(--canvas); color: var(--text-2); }
+  .status.updated { border-color: var(--turmeric); color: var(--turmeric-ink); background: var(--turmeric-soft); }
+  .status.closed { border-color: var(--bad); color: var(--bad); background: var(--bad-soft); }
+  .causes { list-style: none; margin: 0 0 14px; padding: 0; display: grid; gap: 6px; }
+  .cause { background: var(--canvas); border: 1px solid var(--border); border-radius: var(--r-sm); padding: 10px 12px; display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; align-items: baseline; }
+  .cause .nm { font-weight: 600; }
+  .cause .st { font-size: .82rem; color: var(--text-2); text-align: right; }
+  .cause .mv { grid-column: 1 / -1; font-size: .86rem; color: var(--text-2); }
+  .cause .mv b { font-weight: 700; }
+  .cause.flag { border-color: var(--bad); }
+  .cause.flag .mv { color: var(--bad); }
+  .mvl { display: inline-block; font-size: .72rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; margin-right: 6px; padding: 1px 6px; border-radius: 4px; background: var(--canvas-sunken); color: var(--text-2); }
+  .slip { background: var(--ink); color: var(--on-ink); border-radius: var(--r-sm); padding: 14px 16px; }
+  .slip .k { font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; opacity: .72; font-weight: 600; }
+  .slip .c { font-family: var(--display); font-weight: 600; font-size: 1.05rem; margin: 2px 0 4px; }
+  .slip .w { font-size: .88rem; opacity: .88; margin: 0; }
+  .note { margin-top: 12px; font-size: .88rem; color: var(--text-2); }
+  .note.bad { color: var(--bad); }
+  .three { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 14px; }
+  @media (max-width: 720px) { .three { grid-template-columns: 1fr; } }
+  .three div { background: var(--canvas); border: 1px solid var(--border); border-radius: var(--r-sm); padding: 10px 12px; font-size: .88rem; color: var(--text-2); }
+  .three b { display: block; color: var(--text); font-family: var(--display); }
+
+  /* features */
+  details { border: 1px solid var(--border); border-radius: var(--r-sm); background: var(--canvas); margin-bottom: 8px; }
+  details summary { cursor: pointer; padding: 12px 14px; font-weight: 600; list-style: none; display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; }
+  details summary::-webkit-details-marker { display: none; }
+  details summary .ttl { flex: 1 1 auto; }
+  details summary::after { content: "+"; color: var(--text-3); font-weight: 500; }
+  details[open] summary::after { content: "−"; }
+  details[open] summary { border-bottom: 1px solid var(--border); }
+  details .body { padding: 12px 14px 14px; color: var(--text-2); }
+  details .body .src { font-size: .8rem; color: var(--text-3); margin-bottom: 8px; }
+  ul.crit { list-style: none; padding: 0; margin: 8px 0 0; display: grid; gap: 6px; }
+  ul.crit li { padding-left: 26px; position: relative; color: var(--text); }
+  ul.crit li::before { content: ""; position: absolute; left: 0; top: 4px; width: 14px; height: 14px; border: 1.5px solid var(--border-strong); border-radius: 3px; }
+  ul.plain { margin: 6px 0 0; padding-left: 18px; }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 720px) { .grid2 { grid-template-columns: 1fr; } }
+  .grid2 > section { margin-bottom: 0; }
+  .stack { margin-bottom: 16px; }
+  ul.states { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+  ul.states li { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; padding: 10px 12px; background: var(--canvas-subtle); border-radius: var(--r-sm); }
+  ul.states li span.d { grid-column: 1 / -1; color: var(--text-2); font-size: .9rem; }
+  ol.build { margin: 0; padding-left: 20px; }
+  ol.build li { margin-bottom: 6px; }
+  .foot { font-size: .85rem; color: var(--text-3); margin-top: 24px; }
+  .foot a { color: var(--text-2); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div>
+      <div class="eyebrow">Build With AI: Basics · Planning review 2 of 3</div>
+      <h1>FieldDx product requirements</h1>
+      <p class="lede">What a field officer sees, does and gets back on one real case, Field 128 in Niphad. And how a finding changes the investigation without pretending to know more than the evidence supports.</p>
+    </div>
+    <div class="meta">
+      <span class="pill approved" id="status">Approved</span>
+      <span>Sanskar Tiwari &amp; Shambhavi Patil</span>
+      <button class="theme-toggle" id="theme" type="button">Theme</button>
+    </div>
+  </header>
+
+  <nav class="toc" aria-label="Sections">
+    <a href="#labels">Labels</a>
+    <a href="#journey">Core journey</a>
+    <a href="#payoff">The payoff</a>
+    <a href="#features">Behaviours</a>
+    <a href="#states">States</a>
+    <a href="#building">What we're building</a>
+    <a href="#decisions">Decisions</a>
+    <a href="#open">Open questions</a>
+  </nav>
+
+  <section id="labels">
+    <header>
+      <div class="eyebrow">Built vs. proposed</div>
+      <h2>Every behaviour carries one label</h2>
+      <p class="sub">FieldDx was mostly built before this PRD. These labels keep us from promising behaviour that hasn't been verified.</p>
+    </header>
+    <div class="legend">
+      <div><span class="lab verified">Verified</span><br>Run on the real Field 128 case during this review.</div>
+      <div><span class="lab built">Built</span><br>Exists in the app today, not re-checked in this review.</div>
+      <div><span class="lab change">Change</span><br>Exists, but behaves differently from what this PRD asks.</div>
+      <div><span class="lab new">New</span><br>Does not exist yet.</div>
+    </div>
+  </section>
+
+  <section id="journey">
+    <header>
+      <div class="eyebrow">The core journey</div>
+      <h2>Eight steps on Field 128</h2>
+      <p class="sub">Scope said the officer's finding feeds back into the assessment. Here is exactly what that means. Select a step.</p>
+    </header>
+    <div class="diagram-scroll">
+      <svg viewBox="0 0 1000 250" role="group" aria-label="Core journey diagram, eight steps in two rows">
+        <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="arrowhead" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+        <g id="jedges"></g>
+        <g id="jnodes"></g>
+      </svg>
+    </div>
+    <div class="detail" id="jdetail" aria-live="polite"></div>
+    <noscript><p class="sub">Step details are in devpost/prd.md under "The Core Journey".</p></noscript>
+  </section>
+
+  <section id="payoff">
+    <header>
+      <div class="eyebrow">The payoff · Investigation update after a finding</div>
+      <h2>The officer records Drip line working on Field 128</h2>
+      <p class="sub">Compare the case before the finding, what the app does today, and what this PRD asks for. The first two views come from running the real case through FieldDx.</p>
+    </header>
+    <div class="seg" role="group" aria-label="Which view">
+      <button type="button" data-view="before" aria-pressed="true">Before the finding</button>
+      <button type="button" data-view="today" aria-pressed="false">After: app today</button>
+      <button type="button" data-view="prd" aria-pressed="false">After: this PRD</button>
+    </div>
+    <div class="case" id="case" aria-live="polite"></div>
+  </section>
+
+  <section id="features">
+    <header>
+      <div class="eyebrow">Features and behaviour</div>
+      <h2>Behaviours and how we'll know they work</h2>
+      <p class="sub">Each heading is an address the spec and build will cite. Open one for its behaviour and checkable criteria.</p>
+    </header>
+    <div id="feat"></div>
+  </section>
+
+  <div class="grid2 stack">
+    <section id="states">
+      <div class="eyebrow">States and boundaries</div>
+      <h2>What the case can be</h2>
+      <ul class="states">
+        <li><b>Alert set aside</b><span class="lab built">Built</span><span class="d">The drop isn't real or is ordinary. The reason is shown and no causes are ranked.</span></li>
+        <li><b>Open, before any finding</b><span class="lab verified">Verified</span><span class="d">Ranked causes and one next check.</span></li>
+        <li><b>Open, investigation updated</b><span class="lab new">New</span><span class="d">Before-and-after, new next check, still open.</span></li>
+        <li><b>None of the causes fits</b><span class="lab new">New</span><span class="d">The observation is kept, there's no forced diagnosis, and a next step is suggested.</span></li>
+        <li><b>Finding persists</b><span class="lab built">Built</span><span class="d">Stays in the evidence timeline on return. Re-check once cases stay open.</span></li>
+        <li><b>Phone</b><span class="lab built">Built</span><span class="d">Case summary, next check and finding form. Not re-checked this review.</span></li>
+      </ul>
+    </section>
+    <section>
+      <div class="eyebrow">Look and feel</div>
+      <h2>Quiet update, loud next check</h2>
+      <p>Keep <code>docs/DESIGN.md</code>: a calm clinical case file on a lichen-grey canvas, monsoon-teal type, and turmeric for what needs the officer.</p>
+      <ul class="plain sub">
+        <li>The dark next-check slip stays the strongest element.</li>
+        <li><i>Investigation updated</i> is a small, clear label, never a success popup.</li>
+        <li>Movement words ("less likely", "still leading", "new evidence") beside subtle indicators, never colour alone.</li>
+      </ul>
+    </section>
+  </div>
+
+  <section id="building">
+    <div class="eyebrow">What we're building</div>
+    <h2>Five changes, on the Niphad demo area</h2>
+    <ol class="build">
+      <li>Recording a finding no longer closes the case or marks anything confirmed. The results read Drip line working and Drip line not working. <span class="lab change">Change</span></li>
+      <li>The <i>Investigation updated</i> state replaces the confirmation card: the new evidence, a before-and-after for the causes, and evidence-linked reasons. <span class="lab new">New</span></li>
+      <li>Re-ranking only raises a cause on direct evidence. Nutrient deficiency stays ruled out after Drip line working. <span class="lab change">Change</span></li>
+      <li>The next check updates after a finding, with the reason: leaf undersides for thrips or mildew. <span class="lab new">New</span></li>
+      <li>A state for when none of the current explanations fits well. Built, but not filmed unless a genuine, reproducible example exists. <span class="lab new">New</span></li>
+    </ol>
+    <p class="sub" style="margin-top:10px">Everything else in the core journey already exists and should keep working.</p>
+  </section>
+
+  <section id="decisions">
+    <div class="eyebrow">Product decisions, deferred and non-goals</div>
+    <h2>What was decided, and what waits</h2>
+    <details open><summary><span class="ttl">Product decisions</span></summary><div class="body"><ul class="plain">
+      <li><b>Recording a finding never closes a case.</b> Closing is a deliberate officer action. Ruling out one cause is not the same as confirming another.</li>
+      <li><b>Ruling out is not confirming.</b> The top cause stays still leading unless field evidence directly confirms it.</li>
+      <li><b>The finding is named Drip line working</b> (and Drip line not working). It describes the observation, not a diagnosis.</li>
+      <li><b>Investigation updated replaces the confirmation card.</b> It shows the new evidence, the change in ranking, and the next check.</li>
+      <li><b>Reversible, never arbitrary.</b> Only direct evidence raises a cause.</li>
+      <li><b>Quiet update, loud next check.</b></li>
+      <li><b>Words, not just colour</b>, for every change.</li>
+      <li><b>The demo ends at Investigation updated plus the new next check</b>: one reliable, honest investigation from start to finish.</li>
+      <li><b>When No Cause Fits is built but not filmed</b> unless a genuine, reproducible example exists.</li>
+      <li><b>Keep the existing design language.</b></li>
+    </ul></div></details>
+    <details><summary><span class="ttl">Deferred from the proof of concept</span></summary><div class="body"><ul class="plain">
+      <li>Full closing workflow with four outcomes: cause identified, no active issue found, inconclusive / needs follow-up, data or false alarm.</li>
+      <li>Summary and confirmation screen before closing.</li>
+      <li>Follow-up state with scheduling, reminders and tracking.</li>
+      <li>Advanced handling of unusual findings and expert escalation.</li>
+      <li>From scope: accounts, region overview, new areas on demand, field-shape correction, Ask FieldDx chat, phone polish, learning from past findings. These exist in the app but aren't part of the proof.</li>
+    </ul></div></details>
+    <details><summary><span class="ttl">Non-goals</span></summary><div class="body"><ul class="plain">
+      <li>FieldDx does not declare a diagnosis. The officer stays responsible.</li>
+      <li>No celebration or success popup after a finding.</li>
+      <li>No new design system.</li>
+      <li>No new areas for the proof. Niphad only.</li>
+    </ul></div></details>
+  </section>
+
+  <section id="open">
+    <div class="eyebrow">Open questions</div>
+    <h2>None blocking</h2>
+    <p class="sub">Both earlier questions are now product decisions: the finding is named Drip line working, and Investigation updated replaces the confirmation card.</p>
+  </section>
+
+  <p class="foot">Companion to <a href="prd.md">devpost/prd.md</a>, which is canonical. Builds on <a href="scope.html">the approved scope</a>. Next: <code>4-spec</code>.</p>
+</div>
+
+<script>
+(function () {
+  var root = document.documentElement;
+  try { var saved = localStorage.getItem("fdx-theme"); if (saved) root.setAttribute("data-theme", saved); } catch (e) {}
+  document.getElementById("theme").addEventListener("click", function () {
+    var dark = root.getAttribute("data-theme") === "dark" || (!root.getAttribute("data-theme") && matchMedia("(prefers-color-scheme: dark)").matches);
+    var next = dark ? "light" : "dark"; root.setAttribute("data-theme", next);
+    try { localStorage.setItem("fdx-theme", next); } catch (e) {}
+  });
+
+  function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  function lab(kind) { var names = { verified: "Verified", built: "Built", change: "Change", "new": "New" }; return el("span", "lab " + kind, names[kind]); }
+  var SVG = "http://www.w3.org/2000/svg";
+  function s(tag, attrs, text) { var e = document.createElementNS(SVG, tag); for (var k in attrs) e.setAttribute(k, attrs[k]); if (text != null) e.textContent = text; return e; }
+
+  // ---- Core journey (prd.md > The Core Journey)
+  var J = [
+    { t: "Dashboard", sc: "Today", tag: "built", d: "The officer opens FieldDx on the Niphad demo area and sees the fields that need attention beside the area map." },
+    { t: "Open Field 128", sc: "Today → Case", tag: "verified", d: "Field 128 is flagged for a greenery drop near the south edge (alert date 5 Oct 2026)." },
+    { t: "What changed", sc: "Case", tag: "built", d: "Satellite imagery, the change in greenery over time, and the evidence behind the alert." },
+    { t: "Triage first", sc: "Case · Investigation", tag: "built", d: "Is the drop real (image quality)? Is it ordinary (harvest, pruning, weather, neighbours)? Only then are causes ranked.", c: ["Field 128 shows the data-quality and ordinary-change checks before the ranked causes."] },
+    { t: "Ranked causes", sc: "Case · Investigation", tag: "verified", d: "Pest or disease spread leads (high). Irrigation failure is possible (medium). Nutrient deficiency and standing water are ruled out. Each has evidence for and against.", c: ["Each cause shows a status, how sure FieldDx is, and linked evidence lines."] },
+    { t: "Next check", sc: "Case · dark slip", tag: "verified", d: "Check the drip line and valve on the south edge. Not working points to irrigation failure; working means look at the leaves for thrips and mildew.", c: ["The slip names the check and what each result would mean."] },
+    { t: "Record finding", sc: "Field checklist", tag: "change", d: "The officer records the example finding Drip line working. Recording already works; what happens next changes.", c: ["After recording, the case is still open and a field-visit item is in the evidence timeline.", "Nothing on the screen says confirmed or closed."] },
+    { t: "Investigation updated", sc: "Case", tag: "new", payoff: true, d: "The case stays open. Irrigation failure is ruled out with the reason. Pest or disease spread is still leading, not confirmed. Nutrient deficiency stays ruled out. The next check becomes the leaf undersides for thrips or mildew.", c: ["The screen answers: What changed? Why did it change? What should I do next?"] }
+  ];
+  var nodesG = document.getElementById("jnodes"), edgesG = document.getElementById("jedges");
+  var W = 210, H = 84, gap = 40, x0 = 15;
+  function pos(i) { var row = i < 4 ? 0 : 1; var col = row === 0 ? i : 7 - i; return { x: x0 + col * (W + gap), y: row === 0 ? 20 : 146 }; }
+  for (var i = 0; i < J.length - 1; i++) {
+    var a = pos(i), b = pos(i + 1);
+    if (i === 3) edgesG.appendChild(s("path", { "class": "edge", d: "M" + (a.x + W / 2) + " " + (a.y + H) + " V" + (b.y - 2), "marker-end": "url(#ah)" }));
+    else if (i < 3) edgesG.appendChild(s("line", { "class": "edge", x1: a.x + W, y1: a.y + H / 2, x2: b.x - 3, y2: b.y + H / 2, "marker-end": "url(#ah)" }));
+    else edgesG.appendChild(s("line", { "class": "edge", x1: a.x, y1: a.y + H / 2, x2: b.x + W + 3, y2: b.y + H / 2, "marker-end": "url(#ah)" }));
+  }
+  var jn = [];
+  J.forEach(function (st, i) {
+    var p = pos(i);
+    var g = s("g", { "class": "jn" + (st.payoff ? " payoff" : ""), tabindex: "0", role: "button", "aria-label": "Step " + (i + 1) + ", " + st.t });
+    g.appendChild(s("rect", { "class": "box", x: p.x, y: p.y, width: W, height: H, rx: 10 }));
+    g.appendChild(s("rect", { "class": "tag-" + st.tag, x: p.x + 14, y: p.y + 14, width: 8, height: 8, rx: 2 }));
+    g.appendChild(s("text", { "class": "n", x: p.x + 28, y: p.y + 22 }, "STEP " + (i + 1) + " · " + st.tag.toUpperCase()));
+    g.appendChild(s("text", { "class": "t", x: p.x + 14, y: p.y + 48 }, st.t));
+    g.appendChild(s("text", { "class": "s", x: p.x + 14, y: p.y + 68 }, st.sc));
+    g.addEventListener("click", function () { showJ(i); });
+    g.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); showJ(i); } });
+    nodesG.appendChild(g); jn.push(g);
+  });
+  var jd = document.getElementById("jdetail");
+  function showJ(i) {
+    jn.forEach(function (g, j) { g.classList.toggle("on", i === j); g.setAttribute("aria-pressed", i === j); });
+    var st = J[i]; jd.innerHTML = "";
+    var row = el("div", "row"); row.appendChild(el("h3", null, "Step " + (i + 1) + ": " + st.t)); row.appendChild(lab(st.tag)); row.appendChild(el("span", "screen", "Screen: " + st.sc));
+    jd.appendChild(row); jd.appendChild(el("p", null, st.d));
+    if (st.c) { var ul = el("ul", "crit"); st.c.forEach(function (c) { ul.appendChild(el("li", null, c)); }); jd.appendChild(ul); }
+  }
+  showJ(7);
+
+  // ---- Payoff: before / today / PRD. "before" and "today" are from running the real F128 case.
+  var V = {
+    before: { status: ["Open", ""], causes: [
+      ["Pest or disease spread", "Leading · high"], ["Irrigation failure", "Possible · medium"],
+      ["Nutrient deficiency", "Ruled out"], ["Standing water", "Ruled out"]],
+      slip: ["Check the drip line and valve on the south edge", "Not working points to irrigation failure. Working means look at the leaves for thrips and mildew."],
+      note: "Real output for Field 128 before any finding.", noteCls: "" },
+    today: { status: ["Closed · Confirmed on the ground", "closed"], causes: [
+      ["Pest or disease spread", "Confirmed", "flag", "Marked confirmed, though no leaf has been inspected."],
+      ["Nutrient deficiency", "Possible · medium", "flag", "Back in from ruled out, because a working line was counted as support."],
+      ["Irrigation failure", "Ruled out"], ["Standing water", "Ruled out"]],
+      slip: ["Check the drip line and valve on the south edge", "Unchanged, although the check was just done."],
+      note: "Real output today, where the app labels the finding Drip line wet: every finding closes the case, and no before-and-after is shown.", noteCls: "bad" },
+    prd: { status: ["Investigation updated · still open", "updated"], causes: [
+      ["Pest or disease spread", "Still leading · not confirmed", "", "", "Still leading", "Still the best fit, but nothing on site has confirmed it yet."],
+      ["Irrigation failure", "Ruled out", "", "", "Ruled out", "The officer recorded that the drip line is working (field visit)."],
+      ["Nutrient deficiency", "Ruled out", "", "", "Unchanged", "A working drip line says nothing about nutrients."],
+      ["Standing water", "Ruled out", "", "", "Unchanged", ""]],
+      slip: ["Inspect the undersides of leaves for thrips or mildew", "Why this changed: the drip line is working, so irrigation is out. Leaf undersides separate pests from mildew."],
+      three: true, note: "Proposed. Every change carries a word label and an evidence-linked reason.", noteCls: "" }
+  };
+  var box = document.getElementById("case");
+  function showV(k) {
+    document.querySelectorAll(".seg button").forEach(function (b) { b.setAttribute("aria-pressed", b.dataset.view === k); });
+    var v = V[k]; box.innerHTML = "";
+    var head = el("div", "case-head"); head.appendChild(el("h3", null, "Field 128 · Niphad"));
+    head.appendChild(el("span", "status " + v.status[1], v.status[0])); box.appendChild(head);
+    var ul = el("ul", "causes");
+    v.causes.forEach(function (c) {
+      var li = el("li", "cause" + (c[2] ? " " + c[2] : ""));
+      li.appendChild(el("span", "nm", c[0])); li.appendChild(el("span", "st", c[1]));
+      if (c[3]) li.appendChild(el("span", "mv", c[3]));
+      if (c[4]) { var mv = el("span", "mv"); mv.appendChild(el("span", "mvl", c[4])); if (c[5]) mv.appendChild(document.createTextNode(c[5])); li.appendChild(mv); }
+      ul.appendChild(li);
+    });
+    box.appendChild(ul);
+    var slip = el("div", "slip"); slip.appendChild(el("div", "k", "Next check")); slip.appendChild(el("div", "c", v.slip[0])); slip.appendChild(el("p", "w", v.slip[1])); box.appendChild(slip);
+    if (v.three) {
+      var t = el("div", "three");
+      [["What changed?", "Irrigation failure is ruled out. The next check moved to the leaves."], ["Why?", "The officer recorded the drip line is working (new field-visit evidence)."], ["What next?", "Inspect the leaf undersides for thrips or mildew. The case stays open."]]
+        .forEach(function (q) { var d = el("div"); d.appendChild(el("b", null, q[0])); d.appendChild(document.createTextNode(q[1])); t.appendChild(d); });
+      box.appendChild(t);
+    }
+    box.appendChild(el("p", "note " + v.noteCls, v.note));
+  }
+  document.querySelectorAll(".seg button").forEach(function (b) { b.addEventListener("click", function () { showV(b.dataset.view); }); });
+  showV("before");
+
+  // ---- Features (prd.md > Features and Behavior)
+  var F = [
+    ["Alert Triage Before Diagnosis", "built", "Develops scope.md > The Core Loop steps 2–3",
+      "Before ranking causes, FieldDx checks if the drop is real and if something ordinary explains it. An alert explained here is set aside with the reason.",
+      ["Field 128 shows the data-quality and ordinary-change checks before the ranked causes."]],
+    ["Ranked Causes With Evidence", "verified", "Develops scope.md > The Core Loop step 4",
+      "Causes are ranked with a status, how sure FieldDx is, and evidence lines for and against, each linked to evidence.",
+      ["Field 128: pest or disease spread leading, irrigation failure possible, nutrient deficiency and standing water ruled out, each with linked evidence."]],
+    ["The Next Check", "verified", "Develops scope.md > The Unique Kernel",
+      "One practical check, chosen because its results separate the leading causes, with what each result would mean.",
+      ["Field 128's slip recommends checking the drip line and valve on the south edge, with results for working and not working."]],
+    ["Recording a Finding", "change", "Develops scope.md > The Core Loop step 6",
+      "The officer records the result on the field checklist, and it appears as a field-visit evidence item. The results read Drip line working and Drip line not working. Recording does not close or resolve the case. Today, any finding closes it and marks the top cause confirmed on the ground.",
+      ["After Drip line working on Field 128, the case is still open and the field-visit item is in the timeline.", "Nothing on the screen says confirmed or closed."]],
+    ["Investigation Update After a Finding", "new", "Develops scope.md > What Working Looks Like step 6",
+      "Investigation updated replaces the confirmation card. It shows the new evidence, the updated leading cause, and a before-and-after with movement labels (more likely, less likely, ruled out, unchanged, newly considered) and evidence-linked reasons. The leading cause reads still leading, not confirmed.",
+      ["Irrigation failure shows ruled out, with a reason that cites the field-visit evidence.", "Pest or disease spread shows still leading, and nowhere confirmed.", "Every changed cause has a movement label and a one-line reason. Unchanged causes say unchanged.", "Understandable without colour: each change has a word label."]],
+    ["Reversible but Never Arbitrary", "change", "Learner principle",
+      "A finding raises a cause only if it directly supports it. Ruling one cause out never promotes another. A strongly ruled-out cause returns only with meaningful contradicting evidence, with the reason shown. Today, a working drip line brings nutrient deficiency back to possible.",
+      ["After Drip line working, nutrient deficiency stays ruled out and shows unchanged.", "Any cause that rises shows the specific evidence that raised it."]],
+    ["Next Check Responds to the Finding", "new", "Develops scope.md > Carried Into the PRD",
+      "The dark slip updates to the next most useful check, says why it changed, and what each result would mean. For Field 128 after Drip line working: inspect the undersides of leaves for thrips or mildew.",
+      ["The slip shows the leaf-underside check with a reason that refers to the drip-line finding.", "The slip remains the strongest visual element on the case."]],
+    ["When No Cause Fits", "new", "Learner decision · built, but not in the one-minute demo unless a genuine, reproducible example exists",
+      "If a finding fits none of the causes (for example, healthy leaves), FieldDx records it, says the expected signs weren't found, and can say none of the current explanations fits well. It does not declare the field healthy or the alert false, and it suggests another check or an expert.",
+      ["A finding that supports no cause leaves no cause marked leading or confirmed on its strength, and the case says none of the current explanations fits well."]]
+  ];
+  var fw = document.getElementById("feat");
+  F.forEach(function (f, i) {
+    var d = el("details"); if (i === 4) d.open = true;
+    var sm = el("summary"); sm.appendChild(el("span", "ttl", f[0])); sm.appendChild(lab(f[1])); d.appendChild(sm);
+    var b = el("div", "body"); b.appendChild(el("div", "src", f[2])); b.appendChild(el("p", null, f[3]));
+    var ul = el("ul", "crit"); f[4].forEach(function (c) { ul.appendChild(el("li", null, c)); }); b.appendChild(ul);
+    d.appendChild(b); fw.appendChild(d);
+  });
+})();
+</script>
+</body>
+</html>

@@ -224,7 +224,7 @@
   <section class="slip" id="kernel">
     <div class="eyebrow">The unique kernel</div>
     <p class="big">FieldDx doesn't stop at a red patch or a list of causes. It picks <strong>one practical check whose outcomes best separate the leading causes</strong>. The officer's finding then goes back in as evidence and changes the assessment.</p>
-    <blockquote>"I don't want it to confidently diagnose something when the available data isn't enough."</blockquote>
+    <blockquote>It stays honest about uncertainty and never diagnoses with confidence the data doesn't support.</blockquote>
   </section>
 
   <section id="loop">
@@ -307,8 +307,8 @@
     <section>
       <div class="eyebrow">Why it matters</div>
       <h2>Support judgement, don't replace it</h2>
-      <blockquote class="q">"The gap between detecting a problem and actually helping someone decide what to do about it."</blockquote>
-      <p class="sub" style="margin-top:12px">Success means technically useful, honest about its limits, and practical enough that an officer knows what to do next "without blindly trusting an AI-generated answer." Identity: a case file, not a heatmap.</p>
+      <blockquote class="q">Close the gap between detecting a problem and helping someone decide what to do about it.</blockquote>
+      <p class="sub" style="margin-top:12px">Success means technically useful, honest about its limits, and practical enough that an officer knows what to do next without blindly trusting an AI answer. Identity: a case file, not a heatmap.</p>
     </section>
   </div>
 
@@ -338,7 +338,7 @@
     <header>
       <div class="eyebrow">The proof-of-concept boundary</div>
       <h2>Now, later, cut</h2>
-      <p class="sub">"If I were starting again, I'd focus on proving the investigation loop first and add the supporting features only when they became necessary."</p>
+      <p class="sub">Prove the investigation loop first, and add supporting features only when they become necessary.</p>
     </header>
     <div class="tabs" role="tablist" aria-label="Scope decisions">
       <button role="tab" aria-selected="true" aria-controls="p-now" id="t-now">Now<span class="c">6</span></button>
@@ -368,7 +368,7 @@
     </div>
 
     <div role="tabpanel" id="p-cut" aria-labelledby="t-cut" hidden>
-      <div class="empty">Nothing is cut permanently. "Most have a genuine purpose; they simply don't all need to exist at the beginning."</div>
+      <div class="empty">Nothing is cut permanently. Each feature has a genuine purpose; they just don't all need to exist at the start.</div>
     </div>
   </section>
 
@@ -376,7 +376,7 @@
     <div class="eyebrow">Where this stands</div>
     <h2>Written after the build, as a look back</h2>
     <p>Most of FieldDx was built before this scope, and the app already includes several <em>Later</em> items. This document names the core the demo has to prove.</p>
-    <blockquote class="q">"I think I tried to build too much around the core idea. If I were starting again, I'd focus on proving the investigation loop first."</blockquote>
+    <blockquote class="q">Looking back, too much was built around the core idea too early. Starting again, the investigation loop would come first.</blockquote>
   </section>
 
   <section id="carried">
@@ -384,7 +384,7 @@
     <h2>Raised at scope review</h2>
     <ul class="now">
       <li><strong>Define the payoff exactly.</strong> After a finding is recorded: how the evidence updates, how the ranking of causes moves, and how the next check responds. The before-and-after should read without a long explanation.</li>
-      <li><strong>Built vs. proposed.</strong> Each behaviour says whether FieldDx already does it (verified), or whether it is something to demonstrate or improve, "so we don't accidentally promise behaviour that hasn't been verified."</li>
+      <li><strong>Built vs. proposed.</strong> Each behaviour says whether FieldDx already does it (verified), or whether it is something to demonstrate or improve, so the plan never promises unverified behaviour.</li>
     </ul>
   </section>
 
@@ -411,7 +411,7 @@
     { t: "Ordinary change?", d: "Then whether something normal explains it.", l: ["Harvesting or pruning", "Weather conditions", "The same change in neighbouring fields"] },
     { t: "Rank causes", d: "If it still looks concerning, the possible causes are ranked. Each shows the evidence for it and against it, and the uncertainty is made clear.", l: ["Irrigation failure", "Pest or disease spread", "Nutrient deficiency", "Standing water"] },
     { t: "One next check", d: "The kernel. One practical check whose possible outcomes best separate the leading causes, instead of several unnecessary ones.", l: ["Example: inspect the drip line and valve near the affected part of a vineyard", "The officer decides whether to call the farmer, ask a few questions, or visit"] },
-    { t: "Record finding", d: "The officer records what they found. A dry line supports irrigation; a working line counts against it. FieldDx updates its assessment, and the case is resolved, monitored, or investigated further.", l: ["The finding loops back into the ranking as new evidence"] }
+    { t: "Record finding", d: "The officer records what they found. A line that isn't working supports irrigation failure; a working line counts against it. FieldDx updates its assessment and the investigation continues.", l: ["The finding loops back into the ranking as new evidence"] }
   ];
   var nodes = document.querySelectorAll(".node");
   var detail = document.getElementById("loop-detail");
@@ -437,8 +437,8 @@
     { s: "Case", t: "What changed, and the evidence", w: "Satellite imagery, the change in greenery over time, and the evidence behind the alert." },
     { s: "Investigation", t: "No jump from red patch to diagnosis", w: "Data quality, neighbouring fields, weather and season are checked, then the possible causes are ranked." },
     { s: "Next check", t: "Inspect the drip line and valve, south edge", w: "Chosen because its possible outcomes separate an irrigation problem from pest or disease spread." },
-    { s: "Field checklist", t: "Record a finding", w: "A clearly labelled example result is recorded: the drip line is working properly." },
-    { s: "Updated case", t: "The finding changes the assessment", w: "The evidence and the ranking visibly change because of the officer's finding, not just a \"resolved\" stamp. Alert, then investigation, then next step, then finding, then a new assessment.", m: true }
+    { s: "Field checklist", t: "Record a finding", w: "A clearly labelled example result is recorded: the drip line is working." },
+    { s: "Updated case", t: "The finding changes the assessment", w: "The evidence and the ranking visibly change because of the officer's finding, rather than the case simply being stamped resolved. Alert, then investigation, then next step, then finding, then a new assessment.", m: true }
   ];
   var list = document.getElementById("demo-steps");
   var stage = document.getElementById("demo-stage");
