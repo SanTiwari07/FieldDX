@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, Check, LineChart, ListChecks, Stethoscope } from "lucide-react";
+import { ArrowLeft, LineChart, ListChecks, MessageCircleQuestion, Stethoscope } from "lucide-react";
 import { api, CaseResult, MapData, SeriesData } from "../api";
-import { STEPS, useInvestigation } from "../hooks";
+import { useInvestigation } from "../hooks";
 import { fmtDate, fmtDelta } from "../lib/format";
 import { Diagnosis } from "../components/Diagnosis";
 import { Dock, RecordDialog } from "../components/Dock";
@@ -10,9 +10,11 @@ import { InvestigationRail } from "../components/Investigation";
 import { MapWorkspace } from "../components/MapWorkspace";
 import { CandidatesTable } from "../components/NextCheck";
 import { Timeline } from "../components/Timeline";
+import { Summary } from "../components/Summary";
+import { AskPanel } from "../components/Ask";
 import { LimitsNote, SeverityBadge, Spinner, StatusBadge } from "../components/ui";
 
-type Tab = "findings" | "evidence" | "trend";
+type Tab = "summary" | "ask" | "evidence" | "trend";
 
 function StageHead({ r }: { r: CaseResult }) {
   const h = r.headline;
@@ -29,8 +31,8 @@ function StageHead({ r }: { r: CaseResult }) {
         <div className="case-badges"><StatusBadge outcome={r.outcome} /><SeverityBadge level={r.severity} /></div>
         {h && (
           <div className="case-delta" title={`Against baseline ${h.baseline_label}`}>
-            <span className="data-lg">&Delta;NDVI {fmtDelta(h.delta)}</span>
-            <span className="caption">{h.zone_label}, {fmtDate(h.date)}{h.quality === "partial" && ", partial scene"}</span>
+            <span className="data-lg">{fmtDelta(h.delta)}</span>
+            <span className="caption">Greenness change (NDVI), {h.zone_label.toLowerCase()}, {fmtDate(h.date)}{h.quality === "partial" && ", partial scene"}</span>
           </div>
         )}
       </div>
@@ -40,38 +42,23 @@ function StageHead({ r }: { r: CaseResult }) {
 
 export default function CasePage() {
   const { id = "" } = useParams();
-  const inv = useInvestigation(id);
+  // the case opens on its summary; the checks run without replaying step by step unless the officer asks
+  const inv = useInvestigation(id, true);
   const [map, setMap] = useState<MapData | null>(null);
   const [series, setSeries] = useState<SeriesData | null>(null);
-  const [tab, setTab] = useState<Tab>("evidence");
+  const [tab, setTab] = useState<Tab>("summary");
   const [recording, setRecording] = useState(false);
-  const shown = useRef(false);
 
   useEffect(() => {
     setMap(null);
     setSeries(null);
-    shown.current = false;
-    setTab("evidence");
+    setTab("summary");
     api.map(id).then(setMap).catch(() => undefined);
     api.series(id).then(setSeries).catch(() => undefined);
   }, [id]);
 
   const r = inv.result;
   const ready = inv.steps.next_check.state === "done" || inv.steps.next_check.state === "skipped";
-  const done = STEPS.filter((s) => inv.steps[s.tool].state === "done" || inv.steps[s.tool].state === "skipped").length;
-  const running = inv.phase === "running";
-  const current = STEPS.find((s) => inv.steps[s.tool].state === "running");
-
-  // open the evidence while it streams, then land on the findings once
-  useEffect(() => {
-    if (ready && !shown.current) {
-      shown.current = true;
-      setTab("findings");
-    }
-  }, [ready]);
-  useEffect(() => {
-    if (inv.phase === "running" && !ready) setTab("evidence");
-  }, [inv.phase, ready]);
 
   const live = useMemo(() => (r && ready ? { ...r, evidence: inv.evidence } : r), [r, ready, inv.evidence]);
 
@@ -83,7 +70,7 @@ export default function CasePage() {
   const onSaved = (next: CaseResult) => {
     inv.apply(next);
     setRecording(false);
-    setTab("findings");
+    setTab("summary");
   };
 
   return (
@@ -101,39 +88,31 @@ export default function CasePage() {
         </section>
 
         <aside className="panel" aria-label="Case file">
-          {running && (
-            <div className="progress" role="status">
-              <div className="progress-bar"><span style={{ width: `${(done / STEPS.length) * 100}%` }} /></div>
-              <p><Spinner size={12} /> {current ? `${current.running}…` : done === STEPS.length ? "Writing the case file" : "Starting"} <span className="muted">{done} of {STEPS.length}</span></p>
-            </div>
-          )}
           <div className="tabs" role="tablist" aria-label="Case sections">
-            <button role="tab" id="t-findings" aria-selected={tab === "findings"} aria-controls="p-findings" className={tab === "findings" ? "on" : ""} onClick={() => setTab("findings")}>
-              <Stethoscope size={15} aria-hidden /> Findings
-            </button>
-            <button role="tab" id="t-evidence" aria-selected={tab === "evidence"} aria-controls="p-evidence" className={tab === "evidence" ? "on" : ""} onClick={() => setTab("evidence")}>
-              <ListChecks size={15} aria-hidden /> Evidence <span className="tab-count">{inv.evidence.length}</span>
-            </button>
-            <button role="tab" id="t-trend" aria-selected={tab === "trend"} aria-controls="p-trend" className={tab === "trend" ? "on" : ""} onClick={() => setTab("trend")}>
-              <LineChart size={15} aria-hidden /> Trend
-            </button>
+            {([
+              ["summary", "Summary", Stethoscope, null],
+              ["ask", "Ask", MessageCircleQuestion, null],
+              ["evidence", "Evidence", ListChecks, inv.evidence.length],
+              ["trend", "Trend", LineChart, null],
+            ] as const).map(([k, label, Icon, n]) => (
+              <button key={k} role="tab" id={`t-${k}`} aria-selected={tab === k} aria-controls={`p-${k}`} className={tab === k ? "on" : ""} onClick={() => setTab(k)}>
+                <Icon size={15} aria-hidden /> {label}{n ? <span className="tab-count">{n}</span> : null}
+              </button>
+            ))}
           </div>
 
           <div className="panel-body">
-            <div role="tabpanel" id="p-findings" aria-labelledby="t-findings" hidden={tab !== "findings"}>
-              {ready ? (
-                <>
-                  <Diagnosis r={live} />
-                  <CandidatesTable r={r} />
-                  <LimitsNote>{r.limits}</LimitsNote>
-                </>
-              ) : (
-                <div className="waiting"><Spinner size={16} /> The diagnosis appears when the last check finishes. <button className="linklike" onClick={() => setTab("evidence")}>Watch the evidence</button></div>
-              )}
+            <div role="tabpanel" id="p-summary" aria-labelledby="t-summary" hidden={tab !== "summary"}>
+              <Summary r={live} onAsk={() => setTab("ask")} onEvidence={() => setTab("evidence")} />
+            </div>
+            <div role="tabpanel" id="p-ask" aria-labelledby="t-ask" hidden={tab !== "ask"} className="ask-tab">
+              <AskPanel caseId={r.case_id} fieldName={r.field.name} />
             </div>
             <div role="tabpanel" id="p-evidence" aria-labelledby="t-evidence" hidden={tab !== "evidence"}>
+              {ready && <Diagnosis r={live} />}
               <InvestigationRail steps={inv.steps} evidence={inv.evidence} phase={inv.phase} onReplay={inv.replay} />
-              {ready && <button className="btn btn-secondary wide" onClick={() => setTab("findings")}><Check size={15} aria-hidden /> See the diagnosis</button>}
+              {ready && <CandidatesTable r={r} />}
+              {ready && <LimitsNote>{r.limits}</LimitsNote>}
             </div>
             <div role="tabpanel" id="p-trend" aria-labelledby="t-trend" hidden={tab !== "trend"}>
               {series ? <Timeline series={series} /> : <div className="timeline skeleton" aria-busy="true" />}
@@ -142,7 +121,7 @@ export default function CasePage() {
             {inv.phase === "error" && <p className="form-error" role="alert">{inv.error}</p>}
           </div>
 
-          {ready && <Dock r={r} onRecord={() => setRecording(true)} />}
+          {tab !== "ask" && <Dock r={r} onRecord={() => setRecording(true)} />}
         </aside>
       </div>
       <RecordDialog r={r} open={recording} onClose={() => setRecording(false)} onSaved={onSaved} />
