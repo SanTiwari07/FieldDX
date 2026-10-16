@@ -14,20 +14,32 @@ function since(iso?: string, until?: string): string {
   return s < 60 ? `${Math.round(s)} s` : `${Math.floor(s / 60)} min ${Math.round(s % 60)} s`;
 }
 
-function StepRow({ s }: { s: BuildStep }) {
+/** Each build step in the officer's words, with what it is for until the build says more. */
+const STEP_WORDS: Record<string, [string, string]> = {
+  boundaries: ["Field shapes", "The outline of every field, from the Fields of the World map"],
+  imagery: ["Satellite passes", "Sentinel-2 images of the area, with clouds taken out"],
+  weather: ["Rain and heat", "Daily weather for the area"],
+  fields: ["Fields to watch", "The fields big and clear enough to read from space"],
+  seasons: ["Harvest season", "When crops here were cut last year"],
+  alerts: ["Alerts", "Fields that lost green, and the likely reason"],
+};
+
+function StepRow({ s, said }: { s: BuildStep; said?: string }) {
+  const [label, what] = STEP_WORDS[s.id] ?? [s.label, ""];
+  const word = s.state === "done" ? "Done" : s.state === "running" ? "Working on it" : s.state === "failed" ? "Stopped" : "Waiting";
   return (
-    <li className={`bstep bstep-${s.state}`}>
+    <li className={`bstep bstep-${s.state}`} aria-current={s.state === "running" ? "step" : undefined}>
       <span className="bstep-icon" aria-hidden>
         {s.state === "done" ? <Check size={13} strokeWidth={3} /> : s.state === "running" ? <Spinner size={14} /> : s.state === "failed" ? <X size={13} strokeWidth={3} /> : <CircleDashed size={14} />}
       </span>
       <div className="bstep-body">
         <div className="bstep-head">
-          <strong>{s.label}</strong>
-          {(s.state === "running" || s.state === "done") && <small className="muted">{since(s.started_at, s.ended_at)}</small>}
+          <strong>{label}</strong>
+          <small><span className="sr-only">{word}. </span>{s.state === "running" || s.state === "done" ? since(s.started_at, s.ended_at) : ""}</small>
         </div>
-        {s.detail && <p>{s.detail}</p>}
+        <p>{said ?? (s.detail || what)}</p>
         {s.state === "running" && s.progress !== null && s.progress !== undefined && (
-          <div className="bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(s.progress * 100)}>
+          <div className="bar" role="progressbar" aria-label={`${label} downloaded`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(s.progress * 100)}>
             <span style={{ width: `${Math.max(3, s.progress * 100)}%` }} />
           </div>
         )}
@@ -36,10 +48,8 @@ function StepRow({ s }: { s: BuildStep }) {
   );
 }
 
-const PENDING_STEPS: BuildStep[] = [
-  ["boundaries", "Field boundaries"], ["imagery", "Sentinel-2 passes"], ["weather", "Weather"],
-  ["fields", "Fields and pixel zones"], ["seasons", "Harvest season"], ["alerts", "Alerts"],
-].map(([id, label]) => ({ id, label, state: "queued", detail: "", progress: null }));
+const PENDING_STEPS: BuildStep[] = Object.entries(STEP_WORDS)
+  .map(([id, [label]]) => ({ id, label, state: "queued", detail: "", progress: null }));
 
 /** While the area is being built: what is being fetched, from where, and how far along it is. */
 function Building() {
@@ -81,37 +91,50 @@ function Building() {
     nav("/setup");
   };
 
+  const queued = b?.status === "queued";
+  const now = steps.find((s) => s.state === "running");
   return (
     <main className="page narrow building">
-      <div className="eyebrow">Step 3 of 3 · Building your area</div>
-      <h1>{failed ? `Setting up ${area.name} stopped` : `Setting up ${area.name}`}</h1>
-      <p className="lede">
-        {failed
-          ? canRetry
-            ? "Nothing is lost: what was already downloaded is kept, and a retry carries on from there."
-            : "The data was fetched, but this area has nothing FieldDx can watch zone by zone. Mark it differently."
-          : b?.status === "queued"
-            ? `Waiting for another area to finish${b.queue_position ? ` (number ${b.queue_position} in line)` : ""}.`
-            : `Real field shapes, satellite passes and weather for ${area.km2 ? `${area.km2} km²` : "your area"} in ${area.region || "your region"}. You can leave this page; it keeps going.`}
-      </p>
-      {!failed && <div className="bar big" aria-hidden><span style={{ width: `${Math.max(4, (done / steps.length) * 100)}%` }} /></div>}
-      <ol className="bsteps">{steps.map((s) => <StepRow key={s.id} s={s} />)}</ol>
+      <header className="build-head">
+        <p className="home-where"><MapPin size={14} aria-hidden /> {[area.region?.split(",")[0], area.km2 ? `${area.km2} km² marked` : ""].filter((x) => x && x !== area.name).join(", ") || "Your land"}</p>
+        <h1>{failed ? `${area.name} could not be set up` : queued ? `${area.name} is next in line` : `Setting up ${area.name}`}</h1>
+        <p className="lede">
+          {failed
+            ? canRetry
+              ? "Nothing is lost. What was already downloaded is kept, and trying again carries on from there."
+              : "The data came in, but none of the fields here are big enough to watch. Mark the land again with larger fields."
+            : queued
+              ? `Another area is being set up first${b?.queue_position ? `; this one is number ${b.queue_position} in line` : ""}. It starts on its own.`
+              : "FieldDx is gathering real field shapes, satellite passes and weather for your land. This takes a few minutes, and you can close this page while it runs."}
+        </p>
+      </header>
+      {!failed && (
+        <div className="build-progress">
+          <p><strong>{done} of {steps.length} steps done</strong>{now && <span>Now: {(STEP_WORDS[now.id]?.[0] ?? now.label).toLowerCase()}</span>}</p>
+          <div className="bar big" role="progressbar" aria-label="Setting up the area" aria-valuemin={0} aria-valuemax={steps.length} aria-valuenow={done}>
+            <span style={{ width: `${Math.max(4, (done / steps.length) * 100)}%` }} />
+          </div>
+        </div>
+      )}
       {failed && (
         <div className="build-error" role="alert">
-          <AlertTriangle size={16} aria-hidden />
+          <AlertTriangle size={18} aria-hidden />
           <div>
-            <strong>{b?.status === "interrupted" ? "The server restarted during the build." : canRetry ? "The build could not finish." : "No fields to watch here yet."}</strong>
+            <strong>{b?.status === "interrupted" ? "The server restarted partway through." : canRetry ? "One of the steps could not finish." : "No fields to watch here yet."}</strong>
             {b?.error && <p>{b.error}</p>}
             <div className="row">
               {canRetry && <button type="button" className="btn btn-primary" onClick={retry} disabled={busy}>{busy ? <Spinner /> : <RefreshCw size={14} aria-hidden />} Try again</button>}
-              <button type="button" className={`btn ${canRetry ? "btn-ghost" : "btn-primary"}`} onClick={other}>Mark the area again</button>
+              <button type="button" className={`btn ${canRetry ? "btn-outline" : "btn-primary"}`} onClick={other}>Mark the land again</button>
             </div>
           </div>
         </div>
       )}
-      <p className="muted small">
-        Field shapes: {area.field_source === "ftw_model" ? "the Fields of the World model, run on this area" : "the published Fields of the World map"}.
-        Imagery: Copernicus Sentinel-2 L2A through Google Earth Engine, clouds masked per pixel. Weather: Open-Meteo.
+      <ol className="bsteps" aria-label="Steps">
+        {steps.map((s) => <StepRow key={s.id} s={s} said={s.state === "failed" && b?.error && s.detail && b.error.startsWith(s.detail.slice(0, 80)) ? "Stopped here, for the reason above." : undefined} />)}
+      </ol>
+      <p className="build-sources">
+        Where the data comes from: field shapes from {area.field_source === "ftw_model" ? "the Fields of the World model, run on this land" : "the published Fields of the World map"};
+        satellite images from Copernicus Sentinel-2 through Google Earth Engine, with clouds masked pixel by pixel; weather from Open-Meteo.
       </p>
     </main>
   );

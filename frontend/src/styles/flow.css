@@ -200,27 +200,42 @@ body:has(.case-shell) .appbar-inner { max-width: none; }
 .ov-legend .legend-ends { display: flex; justify-content: space-between; color: var(--text-2); margin-top: 3px; }
 
 /* ---------- building ---------- */
-.building > * + * { margin-top: 16px; }
-.building h1 { font-size: 24px; }
+.building > * + * { margin-top: 20px; }
+.build-head { padding-top: 12px; }
+.build-head h1 { font-size: clamp(26px, 6vw, 32px); line-height: 1.1; letter-spacing: -0.025em; margin-top: 8px; text-wrap: balance; }
+.build-head .lede { margin-top: 10px; font-size: 15px; line-height: 1.55; }
+.build-progress p { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; font-size: 14px; }
+.build-progress p span { color: var(--turmeric-ink); font-weight: 600; font-size: 13px; }
 .bar { height: 6px; background: var(--canvas-sunken); border-radius: 9999px; overflow: hidden; margin-top: 8px; }
 .bar span { display: block; height: 100%; background: var(--ink); border-radius: 9999px; transition: width 600ms var(--ease); }
-.bar.big { height: 8px; }
-.bsteps { display: flex; flex-direction: column; background: var(--canvas); border: 1px solid var(--border); border-radius: var(--r-md); }
-.bstep { display: flex; gap: 12px; padding: 14px 16px; }
+.bar.big { height: 10px; }
+.bsteps { display: flex; flex-direction: column; background: var(--canvas); border: 1px solid var(--border); border-radius: var(--r-md); overflow: hidden; }
+.bstep { display: flex; gap: 12px; padding: 14px 16px; border-left: 4px solid transparent; }
 .bstep + .bstep { border-top: 1px solid var(--border); }
-.bstep-icon { flex: none; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; border: 1.5px solid var(--border-strong); color: var(--text-3); margin-top: 1px; }
+.bstep-icon { flex: none; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; border: 1.5px solid var(--border-strong); color: var(--text-3); }
 .bstep-done .bstep-icon { background: var(--ink); border-color: var(--ink); color: #fff; }
+.bstep-running { background: var(--turmeric-soft); border-left-color: var(--turmeric); }
 .bstep-running .bstep-icon { border-color: transparent; }
+.bstep-running .spinner { border-color: rgba(122, 82, 8, 0.25); border-top-color: var(--turmeric-ink); }
+.bstep-running .bar { background: rgba(122, 82, 8, 0.14); }
+.bstep-running .bar span { background: var(--turmeric-ink); }
+.bstep-failed { background: var(--sev-high-soft); border-left-color: var(--sev-high); }
 .bstep-failed .bstep-icon { background: var(--sev-high); border-color: var(--sev-high); color: #fff; }
 .bstep-body { flex: 1; min-width: 0; }
 .bstep-head { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
-.bstep-queued strong { color: var(--text-3); font-weight: 500; }
-.bstep-body p { color: var(--text-2); font-size: 13px; margin-top: 2px; overflow-wrap: anywhere; }
+.bstep-head strong { font-size: 15px; font-weight: 600; }
+.bstep-head small { flex: none; color: var(--text-3); font-variant-numeric: tabular-nums; }
+.bstep-queued strong { color: var(--text-2); font-weight: 500; }
+.bstep-body p { color: var(--text-2); font-size: 13.5px; line-height: 1.45; margin-top: 2px; overflow-wrap: anywhere; }
+.bstep-queued .bstep-body p { color: var(--text-3); }
 .bstep-failed .bstep-body p { color: var(--sev-high); }
-.build-error { display: flex; gap: 10px; padding: 14px 16px; border: 1px solid var(--sev-high-border); background: var(--sev-high-soft); border-radius: var(--r-md); color: var(--text); }
+.build-error { display: flex; gap: 12px; padding: 16px; border: 1px solid var(--sev-high-border); border-left: 4px solid var(--sev-high); background: var(--sev-high-soft); border-radius: var(--r-md); color: var(--text); }
 .build-error > svg { color: var(--sev-high); flex: none; margin-top: 2px; }
-.build-error p { margin-top: 4px; color: var(--text-2); overflow-wrap: anywhere; }
-.build-error .row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.build-error strong { font-size: 15px; }
+.build-error p { margin-top: 4px; color: var(--text); font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; }
+.build-error .row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.build-error .btn { min-height: 44px; }
+.build-sources { font-size: 12.5px; line-height: 1.5; color: var(--text-3); }
 
 /* ---------- today's briefing ---------- */
 .home > * + * { margin-top: 28px; }
